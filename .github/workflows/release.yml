@@ -14,6 +14,10 @@ jobs:
     steps:
       - name: Récupérer le code
         uses: actions/checkout@v4
+      - name: Installer Tkinter pour les tests GUI
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y python3-tk
       - name: Tester
         run: python3 -m unittest discover -s tests -v
       - name: Construire et publier la version
