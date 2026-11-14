@@ -47,3 +47,7 @@ Le tracker conserve les clés d'origine de la sauvegarde et traduit uniquement l
 
 ## Centre de progression V1.9
 L'écran d'accueil classe les objectifs mesurables à terminer par pourcentage accompli. Tu peux enregistrer des favoris propres à chaque personnage (stockés dans `%LOCALAPPDATA%\ValheimStatsTracker\favoris.json`), consulter les critères restants et ouvrir la fiche complète d’un succès. Le rapport de session compare des relevés séparés d'au plus 90 min. Ce n'est pas un suivi temps réel ni un relevé exact des connexions.
+
+
+## V2.0 Windows (Qt)
+La nouvelle interface PySide6 et ses graphiques interactifs sont livrés dans l'archive séparée `Valheim_Stats_Tracker_v2.0.0_Windows.zip`, avec l'exécutable autonome `ValheimStatsTracker.exe` (aucun Python requis). Le ZIP standard reste le programme Python historique, installable par l'updater V1.x. Les deux versions utilisent le même historique et les mêmes favoris. Voir [README_V2.md](README_V2.md) pour les instructions de transition.

@@ -1,5 +1,6 @@
 """Valheim Stats Tracker V1.4 — application de bureau sans mod (stdlib Python)."""
 import csv
+import webbrowser
 import hashlib
 import json
 import os
@@ -636,6 +637,8 @@ class TrackerApp(tk.Tk):
         tools = tk.Frame(self.sidebar, bg=SIDEBAR, padx=14, pady=12)
         tools.pack(fill='x', side='bottom')
         self._button(tools, 'Mises à jour', self.show_updater).pack(fill='x', pady=(0, 8))
+        self._button(tools, 'Interface Windows V2 (Qt)',
+            lambda: webbrowser.open('https://github.com/LorthRuthven/valheim-stats-tracker/releases/latest')).pack(fill='x', pady=(0, 8))
         self._button(tools, 'Changer de personnage', self.pick_file).pack(fill='x', pady=(0, 8))
         self._button(tools, 'Actualiser maintenant', self.manual_refresh, accent=True).pack(fill='x')
         lbl(tools, 'État du suivi', 9, MUTED, True).pack(anchor='w', pady=(12, 4))

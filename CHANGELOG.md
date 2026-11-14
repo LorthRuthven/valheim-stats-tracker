@@ -1,3 +1,8 @@
+## v2.0.0
+- Interface Windows Qt autonome : tableau de bord moderne, graphiques interactifs, succès, boss et rapports.
+- Nouveau moteur indépendant de Tkinter conservant l'historique SQLite et les favoris existants.
+- Double distribution : ZIP historique compatible avec l'updater V1.x + ZIP Windows autonome.
+
 ## v1.9.0
 - Centre de progression : classement des succès mesurables, critères restants, favoris persistants par personnage.
 - Rapports des sessions estimées avec comparaisons de sauvegardes, compétences et nouveaux objectifs.

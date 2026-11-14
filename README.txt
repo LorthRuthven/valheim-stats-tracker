@@ -67,3 +67,5 @@ V1.8.2 : noms et descriptions des succès français et explication des objectifs
 Version 1.8.3 : affichage français des récoltes et sept libellés récents indicatifs, sans modification des compteurs.
 
 V1.8.4 — « Actualiser maintenant » relit le fichier sélectionné et indique s'il a changé. Sans mod, l'évolution se voit seulement lors d'une nouvelle sauvegarde Valheim/Steam Cloud.
+
+V2.0.0 : l'installation Python historique reste compatible avec l'updater. Pour la vraie nouvelle interface Qt Windows sans Python, installer le ZIP `_Windows.zip` depuis GitHub Releases. Le bouton « Interface Windows V2 (Qt) » ouvre la page officielle.

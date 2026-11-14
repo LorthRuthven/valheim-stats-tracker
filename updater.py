@@ -20,7 +20,7 @@ import zipfile
 from pathlib import Path
 from urllib.parse import urlparse
 
-VERSION = '1.9.0'
+VERSION = '2.0.0'
 DEFAULT_MANIFEST_URL = 'https://raw.githubusercontent.com/LorthRuthven/valheim-stats-tracker/main/update.json'
 MAX_ZIP_SIZE = 80 * 1024 * 1024
 MAX_UNPACKED_SIZE = 120 * 1024 * 1024
