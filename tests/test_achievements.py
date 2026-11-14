@@ -12,7 +12,7 @@ def synthetic():
     groups = {}
     for name in ('Any', 'Default', 'Hard'):
         stats = [0.0] * 205
-        groups[name] = {'stats': stats, 'enemies': [{}, {}, {}, {}, {}], 'pickables': {}}
+        groups[name] = {'stats': stats, 'enemies': [{}, {}, {}, {}, {}], 'pickables': {}, 'crafted': {}}
     groups['RawStats'] = {'stats': [0.0]*205}
     return {'groups': groups}
 
@@ -90,6 +90,61 @@ class AchievementRulesTests(unittest.TestCase):
         self.assertTrue(all('steam_unlocked' not in r for r in a))
         self.assertGreaterEqual(len(a), 30)
 
+
+
+
+class InternalCatalogueTests(unittest.TestCase):
+    def test_full_internal_catalogue_55_and_steam_53(self):
+        self.assertEqual(len(SPECS), 55)
+        self.assertEqual(len({s.key for s in SPECS}), 55)
+        extras = [s for s in SPECS if s.origin == 'Interne uniquement']
+        self.assertEqual({s.title for s in extras}, {'The Pugilist', 'The Most Worthy'})
+
+    def test_unverified_internal_never_claims_unlock(self):
+        p = synthetic()
+        for spec_ in SPECS:
+            if spec_.origin != 'Interne uniquement':
+                continue
+            result = evaluate_one(p, spec_)
+            self.assertFalse(result['complete'])
+            self.assertFalse(result['measurable'])
+            self.assertIsNone(result['percent'])
+            self.assertEqual(result['origin'], 'Interne uniquement')
+        p['groups']['Any']['enemies'][1]['$enemy_eikthyr'] = 6
+        pug = evaluate_one(p, next(x for x in SPECS if x.key == 'pugilist_internal'))
+        self.assertEqual(pug['parts'][0]['current'], 6.0)
+        self.assertFalse(pug['complete'])
+        self.assertIsNone(pug['fraction'])
+
+    def test_individual_boss_and_crafting(self):
+        p = synthetic()
+        eik = next(x for x in SPECS if x.key == 'boss_single_eikthyr')
+        chosen = next(x for x in SPECS if x.key == 'chosen')
+        self.assertFalse(evaluate_one(p, eik)['complete'])
+        p['groups']['Any']['enemies'][0]['$enemy_eikthyr'] = 1
+        p['groups']['Any']['crafted']['$item_sword_dyrnwyn'] = 1
+        self.assertTrue(evaluate_one(p, eik)['complete'])
+        self.assertTrue(evaluate_one(p, chosen)['complete'])
+
+    def test_building_cluster_and_arrival(self):
+        p = synthetic()
+        for key, value in [('BuildClusterFloor',6),('BuildClusterWall',8),('BuildClusterRoof',4),
+                           ('BuildClusterFurniture',1),('BuildClusterLighting',1),('BuildClusterStorage',1)]:
+            p['groups']['Any']['stats'][STAT_INDEX[key]] = value
+        home = evaluate_one(p, next(x for x in SPECS if x.key == 'homesteader'))
+        self.assertEqual(home['completed_conditions'], 6)
+        self.assertTrue(home['complete'])
+        arrived = evaluate_one(p, next(x for x in SPECS if x.key == 'arrived'))
+        self.assertFalse(arrived['complete'])
+        p['groups']['Any']['stats'][STAT_INDEX['PlayerSpawn']] = 1
+        self.assertTrue(evaluate_one(p, next(x for x in SPECS if x.key == 'arrived'))['complete'])
+
+    def test_no_guessing_for_collection_sets(self):
+        p = synthetic()
+        hunter = evaluate_one(p, next(x for x in SPECS if x.key == 'hunter'))
+        self.assertFalse(hunter['measurable'])
+        self.assertIsNone(hunter['percent'])
+        self.assertFalse(hunter['complete'])
 
 if __name__ == '__main__':
     unittest.main()

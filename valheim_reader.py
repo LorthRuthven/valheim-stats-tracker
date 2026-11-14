@@ -569,6 +569,8 @@ class AchievementSpec:
     kind: str = 'stat'          # stat / boss / fish / miniboss
     difficulty: str = 'Any'    # Any / Default / Hard
     secret: bool = False
+    origin: str = 'Jeu + Steam'
+    note: str = ''
 
 
 def one(key, title, category, desc, stat, goal, *, secret=False):
@@ -643,19 +645,142 @@ MINIBOSS_CRITERIA = (
 )
 
 
-def evaluate_one(profile, spec: AchievementSpec):
-    """L'évaluation lit exclusivement les groupes utilisés par les succès.
+# Le catalogue visible dans le jeu comporte les 53 succès actifs de Steam.
+# Deux entrées supplémentaires sont recensées dans les données internes :
+# leur règle active n'a PAS été vérifiée. Elles ne sont jamais considérées
+# comme obtenues sur la seule base des statistiques.
+# Références :
+# https://steamcommunity.com/stats/892970/achievements
+# https://www.valheim.tools/achievements
+# https://github.com/Melichor/ValheimSaveParser/blob/main/achi_hunter.py
 
-    Le statut calculé n'affirme pas que Steam a débloqué un succès.
+_EXTRA_BOSSES = (
+    ('eikthyr', 'Eikthyr', '$enemy_eikthyr'),
+    ('elder', 'The Elder', '$enemy_gdking'),
+    ('bonemass', 'Bonemass', '$enemy_bonemass'),
+    ('moder', 'Moder', '$enemy_dragon'),
+    ('yagluth', 'Yagluth', '$enemy_goblinking'),
+    ('queen', 'The Seeker Queen', '$enemy_seekerqueen'),
+    ('fader', 'Fader', '$enemy_fader'),
+    ('kall', 'Kall Fimbulbringer', '$enemy_frozenking_p3'),
+)
+_BOSS_SINGLE_SPECS = tuple(AchievementSpec(
+    f'boss_single_{slug}', title, 'Boss', f'Vaincre {title}',
+    ((title, token, 1),), kind='boss_single', secret=True,
+) for slug, title, token in _EXTRA_BOSSES)
+
+_HOMESTEADER = (
+    ('Sol', 'BuildClusterFloor', 6),
+    ('Murs', 'BuildClusterWall', 8),
+    ('Toit', 'BuildClusterRoof', 4),
+    ('Mobilier', 'BuildClusterFurniture', 1),
+    ('Éclairage', 'BuildClusterLighting', 1),
+    ('Rangement', 'BuildClusterStorage', 1),
+)
+_ARCHITECT = (
+    ('Bâtiments', 'BuildClusterBuilding', 10),
+    ('Sols', 'BuildClusterFloor', 40),
+    ('Murs', 'BuildClusterWall', 40),
+    ('Toits', 'BuildClusterRoof', 20),
+    ('Architecture', 'BuildClusterArchitecture', 10),
+    ('Mobilier', 'BuildClusterFurniture', 10),
+    ('Éclairage', 'BuildClusterLighting', 5),
+    ('Décoration', 'BuildClusterDecor', 5),
+)
+
+# Catalogue actif incomplet dans le moteur actuel : les collections reposent
+# sur des listes de prefabs versionnées. Afficher « non calculable » est plus sûr
+# qu'utiliser seulement un nombre d'entrées et annoncer un faux déblocage.
+_UNSUPPORTED_ACTIVE = (
+    ('hunter', 'The Hunter', 'Combat', 'Vaincre chaque espèce de créature (liste exacte dépendante du jeu).'),
+    ('master_hunter', 'The Master Hunter', 'Combat', 'Vaincre chaque espèce de créature en difficile ou plus.'),
+    ('trophy_collector', 'The Trophy Collector', 'Collection', 'Ramasser chaque trophée de la liste officielle.'),
+    ('blacksmith', 'The Blacksmith', 'Artisanat', 'Fabriquer chaque arme définie dans le jeu.'),
+    ('master_chef', 'The Master Chef', 'Cuisine', 'Cuisiner chaque plat de la liste officielle.'),
+    ('artisan', 'The Artisan', 'Artisanat', 'Fabriquer tous les objets requis par le jeu.'),
+    ('gourmet', 'The Gourmet', 'Cuisine', 'Consommer tous les aliments requis par le jeu.'),
+    ('carpenter', 'The Carpenter', 'Construction', 'Construire tous les éléments requis par le jeu.'),
+    ('kings_queens', 'Kings and Queens of Valheim', 'Maîtrise',
+     'Obtenir The Viking, The Hunter, The Artisan, The Master Chef, The Carpenter et The Explorer.'),
+    ('child_odin', 'Child of Odin', 'Maîtrise',
+     'Obtenir The Toughest Viking, The Master Hunter, The Survivor et The Pathfinder.'),
+)
+
+SPECS = SPECS + _BOSS_SINGLE_SPECS + (
+    one('arrived', 'I Have Arrived!', 'Exploration', 'Apparitions dans le monde', 'PlayerSpawn', 1, secret=True),
+    AchievementSpec('homesteader', 'The Homesteader', 'Construction',
+        'Construire une maison. Suivi des compteurs de catégories, non confirmation du test local des pièces.',
+        _HOMESTEADER, note='Le jeu peut également accepter une combinaison locale de pièces. Statut calculé indicatif.'),
+    AchievementSpec('architect', 'The Architect', 'Construction',
+        'Construire un village. Suivi des groupes de pièces, non confirmation du test local des pièces.',
+        _ARCHITECT, note='Le jeu peut également accepter une combinaison locale de pièces. Statut calculé indicatif.'),
+    AchievementSpec('chosen', 'The Chosen One', 'Artisanat', 'Fabriquer Dyrnwyn.',
+        (('Dyrnwyn', '$item_sword_dyrnwyn', 1),), kind='crafted_single', secret=True),
+) + tuple(AchievementSpec(key, title, category, description, tuple(), kind='not_calculable',
+       note='Il manque la liste exacte des objets/créatures ou le statut de succès du jeu pour une vérification sans faux positifs.')
+    for key, title, category, description in _UNSUPPORTED_ACTIVE) + (
+    AchievementSpec('pugilist_internal', 'The Pugilist', 'Interne',
+        'Vaincre tous les boss aux poings — entrée présente dans les ressources, déclencheur actif non confirmé.',
+        tuple(), kind='internal_unverified', origin='Interne uniquement',
+        note='Les éliminations classées Poings sont consultables, mais ne prouvent pas que tous les dégâts du combat ont été infligés aux poings.'),
+    AchievementSpec('most_worthy_internal', 'The Most Worthy', 'Interne',
+        'Obtenir tous les autres succès — entrée interne sans déblocage actif confirmé.',
+        tuple(), kind='internal_unverified', origin='Interne uniquement',
+        note='La sauvegarde du personnage ne contient pas la liste autoritative des succès réellement débloqués.'),
+)
+
+assert len(SPECS) == 55, f'Catalogue incomplet: {len(SPECS)} entrées'
+assert len({x.key for x in SPECS}) == 55
+assert sum(x.origin == 'Interne uniquement' for x in SPECS) == 2
+
+
+def evaluate_one(profile, spec: AchievementSpec):
+    """Évalue ce que la sauvegarde peut prouver, sans inventer de déblocages.
+
+    Statut 'non_calculable' : aucun pourcentage n'est publié. Les deux entrées
+    internes sont informatives, pas assimilées à des succès actifs.
     """
+    if spec.kind in ('not_calculable', 'internal_unverified'):
+        diagnostic_parts = []
+        if spec.key == 'pugilist_internal':
+            # Diagnostic : éliminations classées Poings par le jeu.
+            # Pas de preuve de combat intégral aux poings.
+            unarmed = profile['groups']['Any']['enemies'][1]
+            diagnostic_parts = [{
+                'label': name, 'key': token, 'current': float(unarmed.get(token, 0)),
+                'goal': None, 'remaining': None, 'complete': False, 'diagnostic': 'poings',
+            } for _, name, token in _EXTRA_BOSSES]
+        elif spec.key == 'most_worthy_internal':
+            official = [evaluate_one(profile, other) for other in SPECS
+                        if other.origin == 'Jeu + Steam']
+            known = sum(r['measurable'] for r in official)
+            done = sum(r['complete'] for r in official)
+            diagnostic_parts = [{
+                'label': f'Objectifs mesurables atteints ({known} suivis sur 53)',
+                'key': 'official_observed', 'current': float(done),
+                'goal': None, 'remaining': None, 'complete': False, 'diagnostic': 'partial',
+            }]
+        return {
+            'key': spec.key, 'title': spec.title, 'category': spec.category,
+            'description': spec.description, 'difficulty': spec.difficulty,
+            'secret': spec.secret, 'origin': spec.origin, 'note': spec.note,
+            'measurable': False, 'fraction': None, 'percent': None,
+            'completed_conditions': 0, 'total_conditions': 0, 'complete': False,
+            'parts': diagnostic_parts,
+        }
     group = profile['groups'][spec.difficulty]
-    if spec.kind in ('boss','miniboss'):
-        criteria = BOSS_CRITERIA if spec.kind == 'boss' else MINIBOSS_CRITERIA
+    if spec.kind in ('boss', 'boss_single', 'miniboss'):
+        criteria = (BOSS_CRITERIA if spec.kind == 'boss' else
+                    MINIBOSS_CRITERIA if spec.kind == 'miniboss' else spec.criteria)
         saved = group['enemies'][0]
         get_value = lambda key: saved.get(key, 0)
     elif spec.kind == 'fish':
         criteria = FISH_CRITERIA
         saved = group['pickables']
+        get_value = lambda key: saved.get(key, 0)
+    elif spec.kind == 'crafted_single':
+        criteria = spec.criteria
+        saved = group['crafted']
         get_value = lambda key: saved.get(key, 0)
     else:
         criteria = spec.criteria
@@ -676,7 +801,8 @@ def evaluate_one(profile, spec: AchievementSpec):
     return {
         'key': spec.key, 'title': spec.title, 'category': spec.category,
         'description': spec.description, 'difficulty': spec.difficulty,
-        'secret': spec.secret, 'fraction': fraction, 'percent': round(fraction * 100, 1),
+        'secret': spec.secret, 'origin': spec.origin, 'note': spec.note,
+        'measurable': True, 'fraction': fraction, 'percent': round(fraction * 100, 1),
         'completed_conditions': sum(p['complete'] for p in parts),
         'total_conditions': len(parts), 'complete': complete,
         'parts': parts,
@@ -688,7 +814,7 @@ def evaluate_all(profile):
 
 
 def progress_delta(current_result, prior_result):
-    if not prior_result:
+    if not prior_result or not current_result['measurable'] or not prior_result['measurable']:
         return None
     old = {p['key']: p['current'] for p in prior_result['parts']}
     deltas = []

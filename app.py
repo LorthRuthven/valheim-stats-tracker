@@ -300,6 +300,7 @@ class TrackerApp(tk.Tk):
         self.achievement_search = tk.StringVar()
         self.achievement_filter = tk.StringVar(value='Tous')
         self.achievement_category = tk.StringVar(value='Toutes les catégories')
+        self.achievement_origin = tk.StringVar(value='Jeu + Steam + internes')
         self.achievement_selected = 'lumberjack'
         self.achievement_results = []
         self.achievement_previous = {}
@@ -331,7 +332,7 @@ class TrackerApp(tk.Tk):
         self.history_period.trace_add('write', lambda *a: self.draw_history())
         self.history_mode.trace_add('write', lambda *a: self.draw_history())
         self.boss_difficulty.trace_add('write', lambda *a: self.refresh_bosses())
-        for var in (self.achievement_search, self.achievement_filter, self.achievement_category):
+        for var in (self.achievement_search, self.achievement_filter, self.achievement_category, self.achievement_origin):
             var.trace_add('write', lambda *a: self.refresh_achievements())
         config = app_dir() / 'config.json'
         try:
@@ -375,7 +376,7 @@ class TrackerApp(tk.Tk):
 
     def _ghost_button(self, parent, text, command):
         return tk.Button(parent, text=text, command=command, bg=SIDEBAR, fg=MUTED,
-                         activebackground=PANEL_SOFT, activeforeground=FG, relief='flat', bd=0,
+                         activebackground=PANEL_SOFT, activeforeground=FG, relief='flat', bd=0, highlightthickness=0,
                          padx=16, pady=10, font=('Segoe UI Semibold', 10), anchor='w', cursor='hand2')
 
     def _panel(self, parent, title=None, subtitle=None, pad=16):
@@ -507,7 +508,7 @@ class TrackerApp(tk.Tk):
         self.page_var.set(name)
         title_map = {
             'Vue d’ensemble': ('Vue d’ensemble', 'Les statistiques essentielles de ton personnage en un coup d’œil.'),
-            'Succès': ('Succès', 'Suivi précis des objectifs chiffrés à partir de la sauvegarde Valheim.'),
+            'Succès': ('Succès', '55 entrées du jeu : 53 actives sur Steam et 2 internes non vérifiées. Progrès issus de la sauvegarde.'),
             'Boss': ('Boss', 'Progression des 8 boss, filtres par difficulté et éliminations aux poings.'),
             'Combats': ('Combats', 'Bestiaire et types d’éliminations enregistrés par le jeu.'),
             'Activités': ('Activités', 'Ressources, fabrication, construction et vue nettoyée par catégories utiles.'),
@@ -589,7 +590,8 @@ class TrackerApp(tk.Tk):
             ('complete', 'Objectifs atteints', 'Selon la sauvegarde'),
             ('ongoing', 'En progression', 'Au moins un critère commencé'),
             ('remaining', 'Non commencés', 'Aucun critère validé'),
-            ('total', 'Succès suivis', 'Conditions statistiques fiables'),
+            ('unknown', 'Non calculables', 'Aucune validation déduite'),
+            ('total', 'Catalogue du jeu', '53 actifs + 2 internes'),
         )):
             card, value, small = self._metric_card(summary, name, accent=GREEN)
             card.grid(row=0, column=i, sticky='nsew', padx=5)
@@ -597,21 +599,27 @@ class TrackerApp(tk.Tk):
             self.achievement_cards[key] = value
             small.config(text=hint)
 
-        filt_shell, filt = self._panel(tab, 'Suivi des succès',
-            'Mesuré dans les groupes de succès Any, Normal+ ou Hard ; jamais à partir des seuls totaux bruts.', pad=12)
+        filt_shell, filt = self._panel(tab, 'Succès du jeu et Steam',
+            'Les données internes ne sont pas des déblocages confirmés. Les objectifs non calculables restent séparés.', pad=12)
         filt_shell.pack(fill='x', pady=(0, 10))
         filter_row = tk.Frame(filt, bg=PANEL)
         filter_row.pack(fill='x')
+        lbl(filter_row, 'Source :', 10, MUTED).pack(side='left', padx=(0, 8))
+        ttk.Combobox(filter_row, textvariable=self.achievement_origin,
+                     values=['Jeu + Steam + internes', 'Jeu + Steam (53)', 'Internes supplémentaires (2)'],
+                     width=25, state='readonly').pack(side='left', padx=(0, 18))
         lbl(filter_row, 'Chercher :', 10, MUTED).pack(side='left', padx=(0, 8))
         ttk.Entry(filter_row, textvariable=self.achievement_search, width=23).pack(side='left')
-        lbl(filter_row, 'Catégorie :', 10, MUTED).pack(side='left', padx=(16, 8))
-        ttk.Combobox(filter_row, textvariable=self.achievement_category,
+        second_filter = tk.Frame(filt, bg=PANEL)
+        second_filter.pack(fill='x', pady=(9, 0))
+        lbl(second_filter, 'Catégorie :', 10, MUTED).pack(side='left', padx=(0, 8))
+        ttk.Combobox(second_filter, textvariable=self.achievement_category,
                      values=['Toutes les catégories'] + sorted({x.category for x in SPECS}),
-                     width=18, state='readonly').pack(side='left')
-        lbl(filter_row, 'État :', 10, MUTED).pack(side='left', padx=(16, 8))
-        ttk.Combobox(filter_row, textvariable=self.achievement_filter,
-                     values=['Tous', 'À terminer', 'Objectif atteint', 'En progression', 'Non commencé'],
-                     width=18, state='readonly').pack(side='left')
+                     width=22, state='readonly').pack(side='left')
+        lbl(second_filter, 'État :', 10, MUTED).pack(side='left', padx=(18, 8))
+        ttk.Combobox(second_filter, textvariable=self.achievement_filter,
+                     values=['Tous', 'À terminer', 'Objectif atteint', 'En progression', 'Non commencé', 'Non calculable'],
+                     width=20, state='readonly').pack(side='left')
 
         body = tk.Frame(tab, bg=BG)
         body.pack(fill='both', expand=True)
@@ -624,15 +632,16 @@ class TrackerApp(tk.Tk):
         listing_shell.grid(row=0, column=0, sticky='nsew', padx=(0, 6))
         area, self.achievement_table = self._mk_table(listing,
             ('Succès', 'Progression', 'État'),
-            {'Succès': 280, 'Progression': 125, 'État': 136})
+            {'Succès': 214, 'Progression': 105, 'État': 150})
         area.pack(fill='both', expand=True)
         self.achievement_table.tag_configure('ach-done', background='#13332d', foreground=GREEN)
         self.achievement_table.tag_configure('ach-active', background=PANEL, foreground=FG)
         self.achievement_table.tag_configure('ach-idle', background='#172841', foreground=MUTED)
+        self.achievement_table.tag_configure('ach-unknown', background='#25243b', foreground='#d2bfd9')
         self.achievement_table.bind('<<TreeviewSelect>>', self._achievement_select)
 
         details_shell, details = self._panel(body, 'Détail du succès',
-            'Objectif atteint selon la sauvegarde ≠ succès Steam débloqué.', pad=12)
+            'Estimation basée sur la sauvegarde, sans confirmation du jeu.', pad=12)
         details_shell.grid(row=0, column=1, sticky='nsew', padx=(6, 0))
         title = tk.Frame(details, bg=PANEL)
         title.pack(fill='x', pady=(0, 10))
@@ -672,7 +681,7 @@ class TrackerApp(tk.Tk):
         c.delete('all')
         width = max(100, c.winfo_width())
         result = next((v for v in self.achievement_results if v['key'] == self.achievement_selected), None)
-        fraction = result['fraction'] if result else 0
+        fraction = (result['fraction'] or 0) if result else 0
         c.create_rectangle(0, 0, width, 14, fill=PANEL_SOFT, outline='')
         if fraction > 0:
             c.create_rectangle(0, 0, width * fraction, 14,
@@ -691,9 +700,15 @@ class TrackerApp(tk.Tk):
             self._paint_achievement_progress()
             return
         self.achievement_detail_title.config(text=result['title'])
-        self.achievement_detail_status.config(text=f"{result['percent']:.0f} % · " +
-            ('Objectif atteint' if result['complete'] else f"{result['completed_conditions']}/{result['total_conditions']} critères"),
-            fg=GREEN if result['complete'] else ACCENT)
+        if not result['measurable']:
+            self.achievement_detail_status.config(text='NON CALCULABLE · ' +
+                ('Entrée interne non vérifiée' if result['origin'] == 'Interne uniquement'
+                 else 'Liste complète des critères indisponible'), fg=ORANGE)
+        else:
+            self.achievement_detail_status.config(text=f"{result['percent']:.0f} % · " +
+                ('Objectif atteint selon la sauvegarde' if result['complete'] else
+                 f"{result['completed_conditions']}/{result['total_conditions']} critères"),
+                fg=GREEN if result['complete'] else ACCENT)
         self._paint_achievement_progress()
         older = self.achievement_previous.get(result['key'])
         changes = progress_delta(result, older)
@@ -701,7 +716,8 @@ class TrackerApp(tk.Tk):
         if changes:
             change_text = ' · Depuis le relevé précédent : ' + ', '.join(
                 f'{name} +{fmt(delta)}' if delta > 0 else f'{name} {fmt(delta)}' for name, delta in changes[:3])
-        self.achievement_note.config(text=result['description'] + change_text)
+        self.achievement_note.config(text=result['description'] +
+            ('\n\n' + result['note'] if result['note'] else '') + change_text)
         for part in result['parts']:
             row = tk.Frame(self.achievement_detail_body, bg=PANEL)
             row.pack(fill='x', pady=2)
@@ -709,10 +725,16 @@ class TrackerApp(tk.Tk):
                 GREEN if part['complete'] else MUTED, True).pack(side='left', padx=(0, 8))
             lbl(row, part['label'], 10, FG, False, wraplength=185, justify='left').pack(side='left')
             current = fmt(part['current'])
-            target = fmt(part['goal'])
-            remain = 'atteint' if part['complete'] else f"reste {fmt(part['remaining'])}"
-            lbl(row, f'{current} / {target} · {remain}', 10,
-                GREEN if part['complete'] else MUTED, True, wraplength=150, justify='right').pack(side='right')
+            if part.get('diagnostic'):
+                status_text = f'Poings : {current}' if part['diagnostic'] == 'poings' else f'{current} / 53 (indicatif)'
+                status_color = ORANGE
+            else:
+                target = fmt(part['goal'])
+                remain = 'atteint' if part['complete'] else f"reste {fmt(part['remaining'])}"
+                status_text = f'{current} / {target} · {remain}'
+                status_color = GREEN if part['complete'] else MUTED
+            lbl(row, status_text, 10, status_color, True,
+                wraplength=175, justify='right').pack(side='right')
         self.achievement_canvas.yview_moveto(0)
 
     def refresh_achievements(self):
@@ -725,41 +747,53 @@ class TrackerApp(tk.Tk):
             previous = evaluate_all(recent[-2][3])
             self.achievement_previous = {x['key']: x for x in previous}
         completed = sum(r['complete'] for r in self.achievement_results)
-        active = sum(0 < r['fraction'] < 1 for r in self.achievement_results)
-        idle = len(self.achievement_results) - completed - active
+        active = sum(r['measurable'] and 0 < r['fraction'] < 1 for r in self.achievement_results)
+        idle = sum(r['measurable'] and r['fraction'] == 0 for r in self.achievement_results)
+        unknown = sum(not r['measurable'] for r in self.achievement_results)
         for key, value in [('complete', completed), ('ongoing', active),
-                           ('remaining', idle), ('total', len(self.achievement_results))]:
+                           ('remaining', idle), ('unknown', unknown), ('total', len(self.achievement_results))]:
             self.achievement_cards[key].config(text=fmt(value))
         needle = self.achievement_search.get().strip().lower()
         category = self.achievement_category.get()
         status = self.achievement_filter.get()
+        origin = self.achievement_origin.get()
         visible = []
         for row in self.achievement_results:
+            if origin == 'Jeu + Steam (53)' and row['origin'] != 'Jeu + Steam':
+                continue
+            if origin == 'Internes supplémentaires (2)' and row['origin'] != 'Interne uniquement':
+                continue
             if needle and needle not in row['title'].lower() and needle not in row['description'].lower() and needle not in row['category'].lower():
                 continue
             if category != 'Toutes les catégories' and row['category'] != category:
                 continue
-            if status == 'À terminer' and row['complete']:
+            if status == 'À terminer' and (row['complete'] or not row['measurable']):
                 continue
             if status == 'Objectif atteint' and not row['complete']:
                 continue
-            if status == 'En progression' and not (0 < row['fraction'] < 1):
+            if status == 'En progression' and not (row['measurable'] and 0 < row['fraction'] < 1):
                 continue
-            if status == 'Non commencé' and row['fraction'] != 0:
+            if status == 'Non commencé' and (not row['measurable'] or row['fraction'] != 0):
+                continue
+            if status == 'Non calculable' and row['measurable']:
                 continue
             visible.append(row)
         tree = self.achievement_table
         tree.delete(*tree.get_children())
         for row in visible:
-            if row['total_conditions'] == 1:
-                p = row['parts'][0]
-                progress = f"{fmt(p['current'])} / {fmt(p['goal'])}"
-                rest = '—' if p['complete'] else fmt(p['remaining'])
+            if not row['measurable']:
+                progress = '—'
+                state = 'Interne non vérifié' if row['origin'] == 'Interne uniquement' else 'Non calculable'
+                tag = 'ach-unknown'
+            elif row['total_conditions'] == 1:
+                part = row['parts'][0]
+                progress = f"{fmt(part['current'])} / {fmt(part['goal'])}"
+                state = 'Objectif atteint' if row['complete'] else ('En cours' if row['fraction'] else 'Non commencé')
+                tag = 'ach-done' if row['complete'] else ('ach-active' if row['fraction'] else 'ach-idle')
             else:
                 progress = f"{row['completed_conditions']} / {row['total_conditions']} critères"
-                rest = '—' if row['complete'] else f"{row['total_conditions'] - row['completed_conditions']} critères"
-            state = 'Objectif atteint' if row['complete'] else ('En cours' if row['fraction'] else 'Non commencé')
-            tag = 'ach-done' if row['complete'] else ('ach-active' if row['fraction'] else 'ach-idle')
+                state = 'Objectif atteint' if row['complete'] else ('En cours' if row['fraction'] else 'Non commencé')
+                tag = 'ach-done' if row['complete'] else ('ach-active' if row['fraction'] else 'ach-idle')
             tree.insert('', 'end', iid=row['key'],
                         values=(row['title'], progress, state), tags=(tag,))
         if tree.exists(self.achievement_selected):

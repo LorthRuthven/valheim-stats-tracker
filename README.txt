@@ -50,3 +50,7 @@ Nouveautés V1.4.0 : grosse refonte graphique et vue Activités beaucoup plus li
 
 
 V1.5.0 : nouvel écran Succès. 31 objectifs chiffrés avec progression par critère, objectifs restants et filtres.
+
+
+Version 1.6.0 : la page Succès répertorie 55 entrées (53 actives sur Steam + 2 internes non vérifiées).
+43 sont mesurables depuis les sauvegardes .fch ; les autres sont signalées non calculables.

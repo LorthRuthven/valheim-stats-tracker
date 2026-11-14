@@ -1,21 +1,20 @@
-# Valheim Stats Tracker v1.5.0 — SUIVI DES SUCCÈS
+# Valheim Stats Tracker v1.6.0 — catalogue interne et Steam
 
-## Nouvelle page « Succès » (page d'accueil)
-- 31 succès dont les conditions sont mesurables automatiquement par les sauvegardes `.fch` Valheim 1.0.21.
-- Affichage des objectifs atteints, en cours et non commencés, avec filtres par domaine et par état.
-- Barre de progression par succès, détail de chaque critère et calcul précis du reste à faire.
-- Évolution entre deux relevés enregistrés dans l'historique SQLite.
-- Suivi des huit boss avec distinction des difficultés, des morts par 16 causes et des 10 variétés d'arbres.
-- Suivi des arbres réellement abattus, pièces construites comptabilisées, récoltes, miel, nourriture, navigation, survie, confort, poissons et mini-boss.
+## Catalogue des 55 entrées
+- 53 succès actifs répertoriés sur Steam et dans le jeu ; deux entrées présentes uniquement dans certaines données internes, sans déblocage actif confirmé.
+- Filtres « Jeu + Steam » / « Internes supplémentaires » et état « Non calculable ».
+- Affichage des entrées internes The Pugilist et The Most Worthy sans faux statut de déblocage.
 
-## Correction des statistiques
-- Correspondance vérifiée des 205 indices PlayerStatType pour les profils v46/v47.
-- `Tree` (arbres abattus) n'est pas `TreeChops` (coups de hache).
-- Règles de succès calculées dans le groupe `Any` ou, pour les boss, `Default`/`Hard` : les statistiques brutes ne sont pas considérées comme des succès.
-- Les noms techniques deviennent consultables dans l'onglet « Compteurs bruts ».
+## Progrès supplémentaires fiables
+- Huit succès individuels de boss, vérifiés par le fichier .fch.
+- I Have Arrived! suivi depuis le compteur PlayerSpawn.
+- The Homesteader et The Architect : suivi des catégories de construction, statut indicatif car les conditions locales de construction peuvent différer.
+- The Chosen One : détection de fabrication de Dyrnwyn.
+- 43 succès dont les conditions sont désormais calculables dans la sauvegarde ; 10 autres actifs affichés comme non calculables plutôt que de donner une estimation trompeuse.
+- The Pugilist : détail indicatif des éliminations classées Poings par boss, sans prétendre valider un combat 100 % aux poings.
+- The Most Worthy : indicateur partiel des objectifs mesurables, sans prétendre connaître les déblocages réels.
 
-## Technique et limites
-- Lecture seule, aucun mod, aucune modification des sauvegardes ou de l'historique existant.
-- Le statut « objectif atteint » est déduit des compteurs et ne constitue pas une preuve de déblocage sur Steam ou dans le jeu.
-- Les succès basés sur la fabrication de toutes les recettes/armes/structures ne sont pas encore inclus : ils nécessitent la liste exhaustive des objets exigés par le jeu.
-- Mise à jour compatible avec l'updater de la V1.4.0 : aucun fichier exécutable supplémentaire dans l'archive.
+## Fiabilité
+- Les compteurs sont lus en lecture seule, uniquement après sauvegarde du personnage.
+- Les données ne prouvent pas le déblocage réel du succès dans Steam ou le jeu.
+- Historique SQLite et configuration utilisateur préservés.
