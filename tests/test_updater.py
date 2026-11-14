@@ -19,7 +19,7 @@ class UpdaterTests(unittest.TestCase):
     def test_package_and_manifest(self):
         with tempfile.TemporaryDirectory() as tmp:
             current=updater.current_version()
-            archive,manifest_path=build(f'v{current}','exemple/valheim-stats-tracker',Path(tmp))
+            archive,manifest_path=build(f'v{current}','exemple/valheim-stats-tracker',Path(tmp),allow_test_fixture=True)
             version,members=updater.verify_zip(archive,minimum_version='1.1.0')
             self.assertEqual(version,current)
             self.assertIn('app.py',members)
@@ -31,6 +31,19 @@ class UpdaterTests(unittest.TestCase):
             self.assertEqual(manifest['url'].split('/')[-1],archive.name)
             with __import__('zipfile').ZipFile(archive) as z:
                 self.assertFalse(any(name.endswith('.fch') or 'historique' in name for name in z.namelist()))
+                reader = z.read('Valheim_Stats_Tracker/valheim_reader.py').decode('utf-8')
+                compile(reader, 'valheim_reader.py', 'exec')
+                self.assertNotIn('from localization_fr import localized_name', reader)
+                self.assertIn('PICKABLE_TO_ITEM', reader)
+                from types import ModuleType
+                probe = ModuleType('_valheim_zip_probe')
+                sys.modules[probe.__name__] = probe
+                try:
+                    exec(compile(reader, 'valheim_reader.py', 'exec'), probe.__dict__)
+                    self.assertEqual(probe.localized_name('Wood'), 'Bois')
+                    self.assertEqual(probe.localized_name('$enemy_root'), 'Racine')
+                finally:
+                    sys.modules.pop(probe.__name__, None)
 
     def test_legacy_manifest_link_migrates(self):
         from unittest.mock import patch

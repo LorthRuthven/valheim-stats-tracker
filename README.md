@@ -38,3 +38,8 @@ V1.7 : suivi des listes exhaustives (Valheim 1.0.21) pour créatures, trophées,
 Les noms de créatures, objets, trophées, poissons et constructions viennent de la traduction française du jeu publiée dans la documentation [Jötunn / Valheim-Modding](https://github.com/Valheim-Modding/Jotunn/blob/main/JotunnLib/Documentation/data/localization/translations/French.md). La base publiée correspond à une version antérieure du jeu (1.0.7) ; les noms récents qui ne figurent pas dans cette source conservent une étiquette de secours.
 
 Le fichier `fr_names.json` est fourni dans l’archive pour une utilisation hors connexion. Les clés utilisées pour compter la progression des succès ne sont jamais traduites : seul le texte affiché change.
+
+
+### Localisation française de la V1.8.3
+
+Le tracker conserve les clés d'origine de la sauvegarde et traduit uniquement leur affichage. Par exemple, la récolte `Raspberry` est reliée au nom officiel `$item_raspberries` (« Framboises »). Les sept libellés d'éléments récents absents de la localisation publiée sont descriptifs, non garantis comme noms officiels. Le ZIP reste compatible avec les anciens updaters : aucun mod ni fichier additionnel requis.

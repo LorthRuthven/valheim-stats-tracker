@@ -63,3 +63,5 @@ V1.8.0 : noms français des objets, créatures, trophées, poissons et construct
 Version 1.8.1 : correction de compatibilité de l’updater avec les anciennes versions.
 
 V1.8.2 : noms et descriptions des succès français et explication des objectifs exigeant la difficulté Difficile.
+
+Version 1.8.3 : affichage français des récoltes et sept libellés récents indicatifs, sans modification des compteurs.

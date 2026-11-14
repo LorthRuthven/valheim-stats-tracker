@@ -15,43 +15,26 @@ FILES = ('app.py', 'updater.py', 'update_worker.py', 'valheim_reader.py',
 
 
 
-def embedded_reader():
-    """Intègre les traductions dans le lecteur, sans fichier additionnel dans le ZIP."""
+def embedded_reader(allow_test_fixture=False):
+    """Embarque la même localisation qu'en développement dans le ZIP historique."""
     reader = (ROOT / 'valheim_reader.py').read_text(encoding='utf-8')
     marker = 'from localization_fr import localized_name'
     if reader.count(marker) != 1:
-        raise ValueError('Import de localisation introuvable dans le lecteur')
+        raise ValueError('Import de localisation introuvable ou dupliqué')
+    localization = (ROOT / 'localization_fr.py').read_text(encoding='utf-8')
+    localization = localization.replace('from __future__ import annotations\n', '')
+    if localization.count('_FR_PACKED_NAMES = None') != 1:
+        raise ValueError('Variable de données françaises introuvable')
     dictionary = (ROOT / 'fr_names.json').read_bytes()
+    data = json.loads(dictionary.decode('utf-8'))
+    if not isinstance(data, dict) or (len(data) < 100 and not allow_test_fixture):
+        raise ValueError('Dictionnaire français incomplet : construction refusée')
     payload = base64.b64encode(zlib.compress(dictionary, level=9)).decode('ascii')
-    replacement = (
-        'import base64 as _fr_b64\n'
-        'import zlib as _fr_zlib\n'
-        'import json as _fr_json\n'
-        'import re as _fr_re\n'
-        'import html as _fr_html\n'
-        'from functools import lru_cache as _fr_cache\n'
-        f'_FR_PAYLOAD = {payload!r}\n'
-        '@_fr_cache(maxsize=1)\n'
-        'def french_names():\n'
-        '    raw = _fr_zlib.decompress(_fr_b64.b64decode(_FR_PAYLOAD))\n'
-        '    data = _fr_json.loads(raw.decode("utf-8"))\n'
-        '    result = {}\n'
-        '    for key, value in data.items():\n'
-        '        if isinstance(key, str) and key.startswith(chr(36)) and isinstance(value, str):\n'
-        '            clean = _fr_html.unescape(_fr_re.sub(r"</?(?:color|b|i|size)(?:=[^>]*)?>", "", value, flags=_fr_re.I)).replace(chr(160), " ").strip()\n'
-        '            if clean and not clean.startswith(chr(36)) and len(clean) <= 140:\n'
-        '                result[key.casefold()] = clean\n'
-        '    return result\n'
-        'def localized_name(token, fallback=None):\n'
-        '    if not isinstance(token, str):\n'
-        '        return fallback or str(token)\n'
-        '    return french_names().get(token.casefold(), fallback if fallback is not None else token)\n'
-    )
-    return reader.replace(marker, replacement).encode('utf-8')
+    localization = localization.replace('_FR_PACKED_NAMES = None', f'_FR_PACKED_NAMES = {payload!r}')
+    return reader.replace(marker, localization).encode('utf-8')
 
 
-
-def build(tag, repo, output):
+def build(tag, repo, output, allow_test_fixture=False):
     if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+',tag):
         raise ValueError('Tag attendu : v1.2.3')
     if not re.fullmatch(r'[A-Za-z0-9-]+/[A-Za-z0-9._-]+',repo):
@@ -68,7 +51,7 @@ def build(tag, repo, output):
             file=ROOT/name_in
             if not file.is_file(): raise FileNotFoundError(name_in)
             if name_in == 'valheim_reader.py':
-                z.writestr('Valheim_Stats_Tracker/' + name_in, embedded_reader())
+                z.writestr('Valheim_Stats_Tracker/' + name_in, embedded_reader(allow_test_fixture))
             else:
                 z.write(file,arcname='Valheim_Stats_Tracker/'+name_in)
     sha=hashlib.sha256(target.read_bytes()).hexdigest()

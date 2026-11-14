@@ -1,8 +1,9 @@
-# Valheim Stats Tracker 1.8.2 — succès en français
+# Valheim Stats Tracker v1.8.3 — traductions françaises complémentaires
 
-- Localisation officielle des 55 titres et descriptions de succès (textes français de Valheim).
-- Menus de difficulté traduits : toutes difficultés, normal, difficile, très difficile, etc.
-- Fiche « Maîtrise de la chasse » : affiche séparément les espèces vaincues toutes difficultés confondues et celles vaincues en difficile.
-- Traduction des noms de boss (L'Aîné, Masse-d'Os, Kall Mandefimbul) et des prérequis des succès composés.
-- Les noms anglais restent recherchables, sans toucher aux identifiants de calcul des succès.
-- Archive compatible avec la liste blanche des anciens updaters (huit fichiers historiques) ; historique intact et aucun mod.
+- Les 50 identifiants de récoltes comme `Raspberry`, `Mushroom` et `AncientGemstoneBlack` sont reliés à leurs noms français d'objets : Framboises, Champignon, Draumyx, etc.
+- Sept nouveaux identifiants absents de la localisation française 1.0.7 disposent de libellés descriptifs. Ces sept libellés ne sont pas garantis comme traductions officielles.
+- Les noms officiels disponibles restent prioritaires. Les identifiants internes et les conditions des succès restent inchangés.
+- Le dictionnaire français est embarqué dans le lecteur de sauvegarde, sans fichier supplémentaire interdit par l'updater V1.7.
+- Tests de régression des alias, du lecteur généré dans le ZIP et de la compatibilité de l'updater.
+
+**Sources :** localisation française Valheim extraite par Jötunn (1.0.7) ; critères des succès issus de Valheim 1.0.21.

@@ -1,3 +1,9 @@
+## v1.8.3
+- Corrections des 50 identifiants de récolte affichés sans traduction française (par exemple Raspberry, Mushroom, AncientGemstoneBlack).
+- Sept noms descriptifs indicatifs pour identifiants récents absents des ressources françaises documentées.
+- Le code de traduction embarqué dans le ZIP utilise désormais la même logique que le module de développement.
+- Tests du code réellement empaqueté ; aucune modification des compteurs, sauvegardes ou succès.
+
 ## V1.8.2
 - 55 succès traduits selon la localisation française du jeu.
 - Sélecteurs de difficulté en français, sans changement des identifiants internes.
