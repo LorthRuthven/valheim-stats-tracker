@@ -1,0 +1,24 @@
+# Fichiers personnels Valheim : ne jamais publier
+*.fch
+*.fch.old
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.jsonl
+*.csv
+update_config.json
+config.json
+# Fichiers et caches locaux
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+dist/
+*.zip
+*.log
+.env
+.env.*
+.idea/
+.vscode/

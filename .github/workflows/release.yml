@@ -1,0 +1,30 @@
+name: Construire et publier Valheim Stats Tracker
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: valheim-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+      - name: Tester
+        run: python3 -m unittest discover -s tests -v
+      - name: Construire et publier la version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(python3 -c 'import json; print(json.load(open("version.json", encoding="utf8"))["version"])')
+          TAG="v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "La version $TAG est déjà publiée. Aucune modification."
+            exit 0
+          fi
+          python3 tools/build_release.py --tag "$TAG" --repo "$GITHUB_REPOSITORY" --output dist
+          gh release create "$TAG" dist/*.zip dist/update.json --target "$GITHUB_SHA" --title "Valheim Stats Tracker $TAG" --notes-file RELEASE_NOTES.md --latest
