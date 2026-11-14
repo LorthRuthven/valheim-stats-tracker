@@ -23,6 +23,8 @@ class UpdaterTests(unittest.TestCase):
             version,members=updater.verify_zip(archive,minimum_version='1.1.0')
             self.assertEqual(version,current)
             self.assertIn('app.py',members)
+            # Compatibilité avec la liste autorisée de l'updater V1.7.0.
+            self.assertEqual(set(members), {'app.py','updater.py','update_worker.py','valheim_reader.py','Lancer_Tracker.bat','README.txt','version.json','manifest.example.json'})
             manifest=json.loads(manifest_path.read_text(encoding='utf8'))
             self.assertEqual(manifest['sha256'],updater.sha256_file(archive))
             self.assertEqual(manifest['version'],version)

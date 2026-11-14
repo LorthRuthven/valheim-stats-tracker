@@ -15,9 +15,8 @@ from tkinter import filedialog, messagebox, ttk
 import tkinter as tk
 
 import updater
-from localization_fr import localized_name
 
-from valheim_reader import (BOSSES, DEATH_KINDS, GROUPS, SaveError,
+from valheim_reader import (localized_name, BOSSES, DEATH_KINDS, GROUPS, SaveError,
                             PLAYER_STAT_NAMES, SPECS, evaluate_all, evaluate_one, progress_delta,
                             defeated_bosses, decode, metrics, pretty_key,
                             total_kills)

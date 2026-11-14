@@ -1,3 +1,7 @@
+## V1.8.1
+- Corrige le refus de la V1.8 par les anciens updaters.
+- Embarque 1 763 noms français dans valheim_reader.py.
+
 ## V1.7.0
 - Collections exactes Valheim 1.0.21 : créatures, trophées, armes, nourritures et constructions.
 - Deux méta-succès suivis par leurs prérequis.
