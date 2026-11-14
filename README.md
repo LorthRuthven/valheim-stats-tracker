@@ -51,3 +51,10 @@ L'écran d'accueil classe les objectifs mesurables à terminer par pourcentage a
 
 ## V2.0 Windows (Qt)
 La nouvelle interface PySide6 et ses graphiques interactifs sont livrés dans l'archive séparée `Valheim_Stats_Tracker_v2.0.0_Windows.zip`, avec l'exécutable autonome `ValheimStatsTracker.exe` (aucun Python requis). Le ZIP standard reste le programme Python historique, installable par l'updater V1.x. Les deux versions utilisent le même historique et les mêmes favoris. Voir [README_V2.md](README_V2.md) pour les instructions de transition.
+
+
+## Interface Windows V2.1 — Chroniques nordiques
+
+La [dernière release](https://github.com/LorthRuthven/valheim-stats-tracker/releases/latest) contient une application Qt autonome pour Windows (archive avec suffixe \`_Windows.zip\`), sans installation de Python. La V2.1 ajoute un panorama de fjord et maison longue, un emblème runique, des pictogrammes de navigation, une jauge d'objectifs et des transitions animées désactivables. Les graphiques interactifs, succès et données de la V2 restent présents.
+
+**Note de compatibilité :** le ZIP sans suffixe \`_Windows\` est destiné à l'ancien updater Python et conserve l'interface historique. Il ne transforme pas l'ancien programme Tkinter en nouvelle application autonome. Les données locales sont partagées et préservées.
