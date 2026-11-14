@@ -1,0 +1,6 @@
+{
+  "version": "1.3.1",
+  "url": "https://github.com/LorthRuthven/valheim-stats-tracker/releases/download/v1.3.1/Valheim_Stats_Tracker_v1.3.1.zip",
+  "sha256": "5edc42116ec8788a003bec7b6b89593bd780579faa80798928219ea73c215e1c",
+  "notes": "## Valheim Stats Tracker V1.3.0\n\n- Nouvel onglet **Boss** : progression des huit boss selon la difficulté, comptages et éliminations enregistrées dans la catégorie poings.\n- Historique avec axe temporel fidèle aux dates des sauvegardes, filtres 7/30/90 jours et variations entre relevés.\n- Survol du graphique pour afficher la valeur exacte d'un relevé.\n- Historique des niveaux de magie élémentaire, magie du sang, poings, course et épées.\n- Présentation améliorée des tableaux et des compétences.\n- Lecture seule, aucune modification du jeu ni des sauvegardes. Compatibilité avec la mise à jour depuis la V1.2."
+}
