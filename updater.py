@@ -20,8 +20,8 @@ import zipfile
 from pathlib import Path
 from urllib.parse import urlparse
 
-VERSION = '1.3.0'
-DEFAULT_MANIFEST_URL = 'https://github.com/LorthRuthven/valheim-stats-tracker/releases/latest/download/update.json'
+VERSION = '1.3.1'
+DEFAULT_MANIFEST_URL = 'https://raw.githubusercontent.com/LorthRuthven/valheim-stats-tracker/main/update.json'
 MAX_ZIP_SIZE = 80 * 1024 * 1024
 MAX_UNPACKED_SIZE = 120 * 1024 * 1024
 MAX_MANIFEST_SIZE = 64 * 1024
@@ -71,12 +71,14 @@ def github_manifest_url(repo):
     owner, name = repo.split('/', 1)
     if name in ('.', '..') or name.endswith('.git'):
         raise UpdateError('Nom de dépôt GitHub invalide.')
-    return f'https://github.com/{owner}/{name}/releases/latest/download/update.json'
+    return f'https://raw.githubusercontent.com/{owner}/{name}/main/update.json'
 
 
 def repo_from_manifest_url(url):
-    match = re.fullmatch(r'https://github\.com/([^/]+)/([^/]+)/releases/latest/download/update\.json', url or '')
-    return f'{match.group(1)}/{match.group(2)}' if match else ''
+    match = re.fullmatch(r'https://(?:github\.com/([^/]+)/([^/]+)/releases/latest/download/update\.json|raw\.githubusercontent\.com/([^/]+)/([^/]+)/main/update\.json)', url or '')
+    if not match:
+        return ''
+    return f'{match.group(1) or match.group(3)}/{match.group(2) or match.group(4)}'
 
 
 def config_path():
@@ -92,6 +94,12 @@ def read_config():
     except (OSError, ValueError):
         pass
     if not isinstance(default['manifest_url'], str) or not default['manifest_url']:
+        default['manifest_url'] = DEFAULT_MANIFEST_URL
+    # Migration transparente des anciennes URLs de Releases, qui peuvent
+    # renvoyer une page HTML volumineuse sur certaines configurations.
+    if isinstance(default['manifest_url'], str) and re.fullmatch(
+            r'https://github\.com/LorthRuthven/valheim-stats-tracker/releases/latest/download/update\.json',
+            default['manifest_url']):
         default['manifest_url'] = DEFAULT_MANIFEST_URL
     default['check_at_startup'] = bool(default['check_at_startup'])
     return default
@@ -131,9 +139,14 @@ def _https_open(url, timeout=12):
 
 def load_manifest(url):
     with _https_open(url) as response:
+        content_type = response.headers.get('Content-Type', '').lower()
+        if 'text/html' in content_type:
+            raise UpdateError('Le serveur a renvoyé une page HTML au lieu du manifeste JSON. Vérifie l’URL.')
         raw = response.read(MAX_MANIFEST_SIZE + 1)
+    if raw.lstrip()[:15].lower().startswith((b'<!doctype html', b'<html')):
+        raise UpdateError('Page HTML reçue à la place du manifeste JSON. Vérifie l’URL.')
     if len(raw) > MAX_MANIFEST_SIZE:
-        raise UpdateError('Manifeste trop volumineux.')
+        raise UpdateError('Le fichier reçu dépasse 64 Ko : il ne semble pas être un manifeste JSON.')
     try:
         data = json.loads(raw.decode('utf8'))
     except (UnicodeError, ValueError) as exc:

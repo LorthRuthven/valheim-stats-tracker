@@ -14,21 +14,29 @@ jobs:
     steps:
       - name: Récupérer le code
         uses: actions/checkout@v4
-      - name: Installer Tkinter pour les tests GUI
+      - name: Installer Tkinter pour les tests de l'interface
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y python3-tk
       - name: Tester
         run: python3 -m unittest discover -s tests -v
-      - name: Construire et publier la version
+      - name: Construire et publier la version et le manifeste direct
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           VERSION=$(python3 -c 'import json; print(json.load(open("version.json", encoding="utf8"))["version"])')
           TAG="v$VERSION"
+          mkdir -p dist
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "La version $TAG est déjà publiée. Aucune modification."
-            exit 0
+            gh release download "$TAG" -p update.json -D dist
+          else
+            python3 tools/build_release.py --tag "$TAG" --repo "$GITHUB_REPOSITORY" --output dist
+            gh release create "$TAG" dist/*.zip dist/update.json --target "$GITHUB_SHA" --title "Valheim Stats Tracker $TAG" --notes-file RELEASE_NOTES.md --latest
           fi
-          python3 tools/build_release.py --tag "$TAG" --repo "$GITHUB_REPOSITORY" --output dist
-          gh release create "$TAG" dist/*.zip dist/update.json --target "$GITHUB_SHA" --title "Valheim Stats Tracker $TAG" --notes-file RELEASE_NOTES.md --latest
+          cp dist/update.json update.json
+          git add -f update.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "Mettre à jour le manifeste pour $TAG [skip ci]"
+            git push origin HEAD:main
+          fi
