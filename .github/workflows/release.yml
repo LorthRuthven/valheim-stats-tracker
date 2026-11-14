@@ -78,7 +78,7 @@ jobs:
           $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
           $check = Start-Process -FilePath $exe -ArgumentList '--verify-icon-extractor' -Wait -PassThru
           if ($check.ExitCode -ne 0) { throw "Le test d'extraction Sprite/Texture2D compilé a échoué : $($check.ExitCode)" }
-          Write-Host 'Extraction UnityPy / Pillow depuis l’EXE : OK'
+          Write-Host "Extraction UnityPy / Pillow depuis EXE : OK"
       - name: Tester remplacement et redémarrage Windows (installation réelle)
         shell: pwsh
         run: |
