@@ -16,7 +16,7 @@ Application Windows sans mod pour suivre les statistiques de personnages **Valhe
 - **Limite** : pas de lecture des dégâts à la seconde, pas de preuve de victoire solo.
 
 ## Mise à jour automatique
-La recherche de nouvelles versions est configurée vers ce dépôt. Le programme vérifie `releases/latest/download/update.json` au lancement, et propose une installation après confirmation. L'archive publiée dispose d'un SHA-256 contrôlé avant l'installation.
+La recherche de nouvelles versions est configurée vers ce dépôt. Le programme vérifie `https://raw.githubusercontent.com/LorthRuthven/valheim-stats-tracker/main/update.json` au lancement, et propose une installation après confirmation. L'archive publiée dispose d'un SHA-256 contrôlé avant l'installation.
 
 ## Développement et publication
 - `python3 -m unittest discover -s tests -v` lance les tests.

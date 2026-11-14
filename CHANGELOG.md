@@ -1,3 +1,8 @@
+## v1.3.1 (2026-11-14)
+- Réparation de la source des mises à jour (manifeste JSON direct sur GitHub Raw).
+- Migration automatique des anciennes URL et diagnostic HTML.
+- Synchronisation automatique du manifeste à chaque release.
+
 ## v1.3.0 (2026-11-14)
 - Nouvel onglet Boss et statistiques par difficulté.
 - Graphiques améliorés : dates réelles, filtres de période, deltas et survol.

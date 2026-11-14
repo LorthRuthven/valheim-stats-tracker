@@ -42,3 +42,5 @@ SÉCURITÉ
 Installer uniquement des mises à jour depuis une source de confiance :
 SHA-256 vérifie l'intégrité, mais ne remplace pas une signature d'éditeur.
 L'installeur conserve une sauvegarde des anciens fichiers du programme.
+
+Mise à jour : le manifeste est lu via raw.githubusercontent.com/LorthRuthven/valheim-stats-tracker/main/update.json.
