@@ -41,7 +41,7 @@ jobs:
       - name: Télécharger les véritables images officielles Valheim
         shell: pwsh
         run: |
-          python tools/fetch_game_assets.py
+          python -m tools.fetch_game_assets
       - name: Vérifier la nouvelle interface Qt (hors écran)
         shell: pwsh
         run: |
