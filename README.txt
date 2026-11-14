@@ -1,40 +1,44 @@
-VALHEIM STATS TRACKER V1.2.0 — SANS MOD
+VALHEIM STATS TRACKER V1.3.0 — SANS MOD
 =====================================
 
-UTILISATION
------------
-1. Extraire l'archive dans un dossier permanent.
-2. Installer Python 3.10+ si nécessaire (avec tkinter inclus).
+INSTALLATION
+------------
+1. Extraire le ZIP depuis les Releases GitHub vers un dossier permanent.
+2. Installer Python 3.10+ sur Windows (avec tkinter inclus).
 3. Double-cliquer sur Lancer_Tracker.bat.
-4. Choisir le personnage si la détection automatique n'est pas la bonne.
-5. Les fichiers .fch sont lus uniquement ; l'historique est conservé localement.
+4. Choisir le personnage si la détection automatique ne convient pas.
+5. Aucune écriture n'est faite dans les sauvegardes .fch.
+
+NOUVEAUTÉS V1.3
+---------------
+- Onglet Boss : huit boss, comptages par difficulté et catégorie poings.
+- Historique : périodes 7/30/90 jours, chronologie réelle, cumul ou gains.
+- Survol des graphiques : date et valeur des relevés.
+- Historique des niveaux de magie, poings, course et épées.
+Les catégories de difficulté sont imbriquées : leurs compteurs ne s'additionnent pas.
+La catégorie « Poings » n'atteste pas d'un combat entier exclusivement à mains nues.
 
 MISES À JOUR GITHUB
 -------------------
-La publication de nouvelles versions est préparée dans le kit GitHub séparé.
-Après publication, ouvrir « Mises à jour », entrer : propriétaire/nom-du-depot,
-puis cliquer sur « Configurer GitHub ». La vérification se fera au démarrage.
-Il faut un dépôt PUBLIC pour des mises à jour sans token GitHub.
-Les mises à jour ne s'installent qu'après une confirmation de l'utilisateur.
+Vérification automatique au démarrage via :
+https://github.com/LorthRuthven/valheim-stats-tracker/releases/latest/download/update.json
+Les mises à jour nécessitent l'accord de l'utilisateur avant installation.
 
-POUR PASSER DE LA V1.1 À LA V1.2
+POUR PASSER DE LA V1.2 À LA V1.3
 --------------------------------
-Fermer le tracker et extraire ce ZIP dans le dossier V1.1 en remplaçant les
-fichiers, ou installer le ZIP depuis « Mises à jour » → « Installer un ZIP local ».
+Fermer le tracker, utiliser le bouton « Mises à jour » de la V1.2,
+ou extraire le nouveau ZIP dans le même dossier en remplaçant les fichiers.
 
 HISTORIQUE ET PROTECTION
 -----------------------
 Historique : %LOCALAPPDATA%\ValheimStatsTracker\historique.sqlite3
 Personnage choisi : %LOCALAPPDATA%\ValheimStatsTracker\config.json
 Mises à jour : %LOCALAPPDATA%\ValheimStatsTracker\update_config.json
-Le contenu personnel n'est jamais téléchargé sur GitHub par le programme.
-Le logiciel n'interagit ni avec Valheim ni avec un serveur Valheim : aucun mod,
-aucune injection mémoire, aucune écriture dans les sauvegardes.
-Les données sont actualisées après chaque sauvegarde, pas à la seconde.
+L'application lit les données à chaque sauvegarde et non en direct du jeu.
+Aucune donnée de personnage n'est envoyée vers GitHub par le programme.
 
-SECURITE
+SÉCURITÉ
 --------
-N'installer que des versions provenant d'un dépôt de confiance : SHA-256
-protège l'intégrité des archives, pas contre un compte éditeur compromis.
-L'installeur garde une sauvegarde des fichiers du programme avant de les
-remplacer, sans déplacer les données personnelles.
+Installer uniquement des mises à jour depuis une source de confiance :
+SHA-256 vérifie l'intégrité, mais ne remplace pas une signature d'éditeur.
+L'installeur conserve une sauvegarde des anciens fichiers du programme.

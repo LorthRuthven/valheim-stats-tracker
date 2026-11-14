@@ -1,4 +1,4 @@
-"""Valheim Stats Tracker V1.2 — application de bureau sans mod (stdlib Python)."""
+"""Valheim Stats Tracker V1.3 — application de bureau sans mod (stdlib Python)."""
 import csv
 import queue
 import threading
@@ -33,7 +33,61 @@ SECTIONS = {
 }
 METRICS = {'Créatures tuées':'kills','Décès':'deaths','Boss différents':'bosses',
            'Objets fabriqués':'crafted','Éléments placés':'built',
-           'Objets ramassés':'picked_up','Temps de jeu (h)':'world_hours'}
+           'Objets ramassés':'picked_up','Temps de jeu (h)':'world_hours',
+           'Magie élémentaire (niveau)':'skill:Magie élémentaire',
+           'Magie du sang (niveau)':'skill:Magie du sang',
+           'Poings (niveau)':'skill:Poings',
+           'Course (niveau)':'skill:Course',
+           'Épées (niveau)':'skill:Épées'}
+CHART_PERIODS = {'Tous les relevés': None, '7 derniers jours': 7,
+                 '30 derniers jours': 30, '90 derniers jours': 90}
+
+
+def history_metric(snapshot, key, difficulty='Any'):
+    """Valeur cumulative fiable d'un relevé ; les niveaux ignorent la difficulté."""
+    if key.startswith('skill:'):
+        return float(snapshot.get('skills', {}).get(key[6:], {}).get('level', 0))
+    return metrics(snapshot, difficulty)[key]
+
+
+def history_series(rows, key, difficulty='Any', period_days=None, changes=False):
+    """[(timestamp, valeur, fichier)] chronologique. Variations entre deux sauvegardes.
+
+    Le calcul du delta se fait AVANT le filtrage pour conserver le point précédent.
+    Les périodes sont mesurées depuis le dernier relevé disponible.
+    """
+    ordered = sorted(rows, key=lambda row: (row[1], row[0]))
+    series = []
+    previous = None
+    for _, timestamp, filename, snapshot in ordered:
+        value = history_metric(snapshot, key, difficulty)
+        delta = value-previous if previous is not None else 0
+        series.append((timestamp, delta if changes else value, filename))
+        previous = value
+    if period_days is not None and series:
+        threshold = series[-1][0] - 86400*period_days
+        series = [p for p in series if p[0] >= threshold]
+    return series
+
+
+def boss_matrix(parsed):
+    """Comptes par difficulté (groupes imbriqués, jamais additionnés)."""
+    matrix = {}
+    for token, name in BOSSES.items():
+        row = {'name': name}
+        for group in ('Any', 'Default', 'Hard', 'VeryHard', 'Hardcore'):
+            enemies = parsed['groups'][group]['enemies']
+            row[group] = int(round(enemies[0].get(token, 0)))
+            # Ce compteur représente la catégorie de l'élimination, PAS une preuve
+            # que tout le combat a été effectué uniquement aux poings.
+            row[group + '_unarmed'] = int(round(enemies[1].get(token, 0)))
+        matrix[token] = row
+    return matrix
+
+
+def boss_progress(parsed, group='Default'):
+    return sum(row[group] > 0 for row in boss_matrix(parsed).values())
+
 
 
 def app_dir():
@@ -109,6 +163,10 @@ class TrackerApp(tk.Tk):
         self.activity=tk.StringVar(value='Objets fabriqués')
         self.metric=tk.StringVar(value='Créatures tuées')
         self.history_group=tk.StringVar(value='Any')
+        self.history_period=tk.StringVar(value='Tous les relevés')
+        self.history_mode=tk.StringVar(value='Total cumulé')
+        self.boss_difficulty=tk.StringVar(value='Default')
+        self._history_points=[]
         self.status=tk.StringVar(value='Choisis une sauvegarde pour commencer.')
         self.update_events=queue.Queue()
         self.update_window=None
@@ -121,6 +179,9 @@ class TrackerApp(tk.Tk):
             var.trace_add('write',lambda *a:self.refresh())
         self.metric.trace_add('write',lambda *a:self.draw_history())
         self.history_group.trace_add('write',lambda *a:self.draw_history())
+        self.history_period.trace_add('write',lambda *a:self.draw_history())
+        self.history_mode.trace_add('write',lambda *a:self.draw_history())
+        self.boss_difficulty.trace_add('write',lambda *a:self.refresh_bosses())
         config=app_dir()/'config.json'
         try: saved=json.loads(config.read_text(encoding='utf-8')).get('path','')
         except (OSError,ValueError):saved=''
@@ -173,11 +234,12 @@ class TrackerApp(tk.Tk):
         self.notebook=ttk.Notebook(self)
         self.notebook.pack(fill='both',expand=True,padx=24,pady=(0,8))
         self.tabs={}
-        for name in ('Vue d’ensemble','Combats','Activités','Compétences','Historique','Compteurs bruts'):
+        for name in ('Vue d’ensemble','Boss','Combats','Activités','Compétences','Historique','Compteurs bruts'):
             panel=tk.Frame(self.notebook,bg=BG)
             self.notebook.add(panel,text=name)
             self.tabs[name]=panel
         self._dashboard_ui()
+        self._boss_ui()
         self._combat_ui()
         self._activity_ui()
         self._skills_ui()
@@ -229,6 +291,55 @@ class TrackerApp(tk.Tk):
         self.previous_text=lbl(right,'',10,ACCENT,False,justify='left',anchor='w')
         self.previous_text.pack(anchor='w',pady=(18,0))
 
+    def _boss_ui(self):
+        tab=self.tabs['Boss']
+        head=tk.Frame(tab,bg=BG)
+        head.pack(fill='x',padx=12,pady=(16,10))
+        lbl(head,'PROGRESSION DES BOSS',15,FG,True).pack(side='left')
+        lbl(head,'Difficulté suivie :',10,MUTED).pack(side='left',padx=(28,7))
+        ttk.Combobox(head,textvariable=self.boss_difficulty,
+                     values=['Any','Default','Hard','VeryHard','Hardcore'],
+                     width=14,state='readonly').pack(side='left')
+        self.boss_group_text=lbl(head,'',10,MUTED)
+        self.boss_group_text.pack(side='left',padx=10)
+        counters=tk.Frame(tab,bg=BG)
+        counters.pack(fill='x',padx=10,pady=(0,12))
+        self.boss_cards={}
+        for i,(group,name) in enumerate((('Default','Normal ou +'),('Hard','Difficile ou +'),
+                                         ('VeryHard','Très difficile ou +'),('Hardcore','Extrême'))):
+            card,value=self._card(counters,name)
+            card.grid(row=0,column=i,sticky='ew',padx=4)
+            counters.grid_columnconfigure(i,weight=1,uniform='bosscards')
+            self.boss_cards[group]=value
+        self.boss_table=self._mk_table(tab,
+              ('Boss','Total','Normal +','Difficile +','Très difficile +','Extrême','Poings*'),
+              {'Boss':190,'Total':80,'Normal +':95,'Difficile +':105,
+               'Très difficile +':120,'Extrême':90,'Poings*':90})
+        self.boss_table.tag_configure('completed',background='#14342e',foreground=GREEN)
+        self.boss_table.tag_configure('missing',background=PANEL,foreground=FG)
+        lbl(tab,'* Poings : éliminations enregistrées dans cette catégorie à la difficulté sélectionnée. '
+                'Cela ne prouve pas que tout le combat a été effectué à mains nues.',
+            9,MUTED,wraplength=1050,justify='left').pack(anchor='w',padx=13,pady=(0,5))
+        lbl(tab,'Les groupes de difficulté se recouvrent : ils ne sont pas additionnables. '
+                'Aucune information fiable sur un combat réalisé entièrement en solo.',
+            9,MUTED,wraplength=1050,justify='left').pack(anchor='w',padx=13,pady=(0,12))
+
+    def refresh_bosses(self):
+        if not self.current or not hasattr(self,'boss_table'):return
+        matrix=boss_matrix(self.current)
+        group=self.boss_difficulty.get()
+        self.boss_group_text.config(text=GROUP_FR.get(group,group))
+        for difficulty,value in self.boss_cards.items():
+            value.config(text=f'{sum(x[difficulty]>0 for x in matrix.values())} / 8')
+        tree=self.boss_table
+        tree.delete(*tree.get_children())
+        for row in matrix.values():
+            completed=row[group]>0
+            vals=(('✓ ' if completed else '○ ')+row['name'],fmt(row['Any']),
+                  fmt(row['Default']),fmt(row['Hard']),fmt(row['VeryHard']),
+                  fmt(row['Hardcore']),fmt(row[group+'_unarmed']))
+            tree.insert('','end',values=vals,tags=('completed' if completed else 'missing',))
+
     def _mk_table(self, parent, columns, widths=None):
         area=tk.Frame(parent,bg=BG)
         area.pack(fill='both',expand=True,padx=8,pady=(4,8))
@@ -239,6 +350,8 @@ class TrackerApp(tk.Tk):
             table.column(col,width=widths.get(col,140),anchor='w' if col==columns[0] else 'e')
         scroll=ttk.Scrollbar(area,orient='vertical',command=table.yview)
         table.configure(yscrollcommand=scroll.set)
+        table.tag_configure('odd',background='#1b2a3d')
+        table.tag_configure('even',background=PANEL)
         table.pack(side='left',fill='both',expand=True)
         scroll.pack(side='right',fill='y')
         return table
@@ -273,7 +386,9 @@ class TrackerApp(tk.Tk):
 
     def _skills_ui(self):
         tab=self.tabs['Compétences']
-        lbl(tab,'Niveaux et progression sauvegardés — pas un flux direct du jeu',10,MUTED).pack(anchor='w',padx=14,pady=12)
+        lbl(tab,'Niveaux sauvegardés — progression suivie par les relevés, sans lecture en direct.',10,MUTED).pack(anchor='w',padx=14,pady=(12,5))
+        self.skills_summary=lbl(tab,'',10,ACCENT)
+        self.skills_summary.pack(anchor='w',padx=14,pady=(0,4))
         self.skill_table=self._mk_table(tab,('Compétence','Niveau','XP vers le suivant','Progression'),{'Compétence':300})
 
     def _history_ui(self):
@@ -285,9 +400,20 @@ class TrackerApp(tk.Tk):
         lbl(bar,'Difficulté',10,MUTED).pack(side='left',padx=(22,8))
         ttk.Combobox(bar,textvariable=self.history_group,values=['Any','Default','Hard','RawStats'],state='readonly',width=14).pack(side='left')
         self._button(bar,'Exporter CSV',self.export_csv).pack(side='right')
+        options=tk.Frame(tab,bg=BG)
+        options.pack(fill='x',padx=10,pady=(4,4))
+        lbl(options,'Période',10,MUTED).pack(side='left',padx=(2,8))
+        ttk.Combobox(options,textvariable=self.history_period,values=list(CHART_PERIODS),
+                     width=19,state='readonly').pack(side='left')
+        lbl(options,'Affichage',10,MUTED).pack(side='left',padx=(22,8))
+        ttk.Combobox(options,textvariable=self.history_mode,
+                     values=['Total cumulé','Gains entre sauvegardes'],
+                     width=25,state='readonly').pack(side='left')
         self.chart=tk.Canvas(tab,bg=PANEL,highlightthickness=0,height=330)
         self.chart.pack(fill='both',expand=True,padx=12,pady=(10,4))
         self.chart.bind('<Configure>',lambda e:self.draw_history())
+        self.chart.bind('<Motion>',self._history_hover)
+        self.chart.bind('<Leave>',lambda e:self.chart.delete('tooltip'))
         self.history_info=lbl(tab,'',9,MUTED)
         self.history_info.pack(anchor='w',padx=12,pady=(3,10))
 
@@ -530,7 +656,7 @@ class TrackerApp(tk.Tk):
 
     def _put(self,tree,rows):
         tree.delete(*tree.get_children())
-        for vals in rows:tree.insert('','end',values=vals)
+        for i,vals in enumerate(rows):tree.insert('','end',values=vals,tags=('odd' if i%2 else 'even',))
 
     def refresh(self):
         if not self.current:return
@@ -586,6 +712,9 @@ class TrackerApp(tk.Tk):
             pct=100*item['xp']/req if req else 0
             skills.append((name,f"{item['level']:.2f}".replace('.',','),fmt(item['xp']),f'{min(100,max(0,pct)):.0f} %'))
         self._put(self.skill_table,skills)
+        best=sorted(p['skills'].items(),key=lambda item:-item[1]['level'])[:3]
+        self.skills_summary.config(text='Compétences les plus développées :  '+
+                '   ·   '.join(f'{name} {value["level"]:.1f}' for name,value in best))
         search=self.search_raw.get().strip().lower()
         rows=[]
         for index,val in enumerate(p['groups'][g]['stats']):
@@ -593,51 +722,99 @@ class TrackerApp(tk.Tk):
             if search and search not in nm.lower() and search not in str(index):continue
             rows.append((str(index),nm,fmt(val)))
         self._put(self.raw_table,rows)
+        self.refresh_bosses()
         self.draw_history()
 
     def draw_history(self):
         if not hasattr(self,'chart') or not self.current:return
-        c=self.chart;c.delete('all')
-        w,h=max(420,c.winfo_width()),max(260,c.winfo_height())
+        c=self.chart
+        c.delete('all')
+        self._history_points=[]
+        w,h=max(480,c.winfo_width()),max(280,c.winfo_height())
         rows=sample_rows(self.db,self.current['name'])
         if not rows:
-            c.create_text(w/2,h/2,text='Aucun historique',fill=MUTED,font=('Segoe UI',13));return
+            c.create_text(w/2,h/2,text='Aucun relevé enregistré',fill=MUTED,font=('Segoe UI',13))
+            return
         metric=METRICS.get(self.metric.get(),'kills')
         group=self.history_group.get()
-        values=[metrics(snapshot,group)[metric] for _,_,_,snapshot in rows]
-        left,top,right,bottom=75,36,w-30,h-52
+        changes=self.history_mode.get()=='Gains entre sauvegardes'
+        series=history_series(rows,metric,group,CHART_PERIODS.get(self.history_period.get()),changes)
+        if not series:
+            c.create_text(w/2,h/2,text='Aucun relevé sur cette période',fill=MUTED,font=('Segoe UI',13))
+            self.history_info.config(text='Modifie la période sélectionnée pour afficher des données.')
+            return
+        left,top,right,bottom=80,48,w-30,h-66
+        values=[point[1] for point in series]
         minimum,maxval=min(values),max(values)
+        if changes:
+            minimum=min(minimum,0)
+            maxval=max(maxval,0)
         if minimum==maxval:
-            minimum-=max(1,abs(minimum)*0.08)
-            maxval+=max(1,abs(maxval)*0.08)
+            pad=max(1,abs(minimum)*0.08)
+            minimum-=pad;maxval+=pad
         else:
-            margin=(maxval-minimum)*0.15
-            minimum-=margin;maxval+=margin
+            pad=(maxval-minimum)*0.10
+            minimum-=pad;maxval+=pad
         for i in range(5):
-            val=minimum+(maxval-minimum)*i/4
+            value=minimum+(maxval-minimum)*i/4
             y=bottom-(bottom-top)*i/4
             c.create_line(left,y,right,y,fill=BORDER,dash=(3,4))
-            c.create_text(left-12,y,text=fmt(val),fill=MUTED,anchor='e',font=('Segoe UI',9))
-        coords=[]
-        for i,value in enumerate(values):
-            x=left+(right-left)*(i/(len(values)-1) if len(values)>1 else .5)
+            c.create_text(left-10,y,text=fmt(value),fill=MUTED,anchor='e',font=('Segoe UI',9))
+        first,last=series[0][0],series[-1][0]
+        span=max(1,last-first)
+        coordinates=[]
+        for timestamp,value,filename in series:
+            x=left+(right-left)*((timestamp-first)/span if len(series)>1 and last>first else 0.5)
             y=bottom-(value-minimum)/(maxval-minimum)*(bottom-top)
-            coords.extend((x,y))
-        if len(coords)>=4:
-            c.create_line(*coords,fill=ACCENT,width=3,smooth=False)
-        for j in range(0,len(coords),2):
-            x,y=coords[j:j+2]
-            c.create_oval(x-4,y-4,x+4,y+4,fill=GREEN,outline=PANEL)
-        labels=[(0,rows[0][1])]
-        if len(rows)>1:labels.append((len(rows)-1,rows[-1][1]))
-        for index,stamp in labels:
-            x=left+(right-left)*(index/(len(rows)-1) if len(rows)>1 else .5)
-            c.create_text(x,bottom+24,text=datetime.fromtimestamp(stamp).strftime('%d/%m %H:%M'),
-                          fill=MUTED,font=('Segoe UI',9))
-        c.create_text(left,14,text=f'{self.metric.get()} • {GROUP_FR.get(group,group)}',fill=FG,
-                      anchor='w',font=('Segoe UI',11,'bold'))
-        self.history_info.config(text=f'{len(rows)} relevé(s) distinct(s) • Source : date de modification des fichiers'
-             ' • Première importation : pas de reconstitution des anciennes sessions')
+            coordinates.append((x,y,timestamp,value,filename))
+        if changes:
+            zero=bottom-(0-minimum)/(maxval-minimum)*(bottom-top)
+            c.create_line(left,zero,right,zero,fill=MUTED,width=1)
+            bar_width=max(2,min(22,(right-left)/max(1,len(series))*0.65))
+            for x,y,_,value,_ in coordinates:
+                c.create_rectangle(x-bar_width/2,min(y,zero),x+bar_width/2,max(y,zero)+0.5,
+                                   fill=GREEN if value>=0 else '#f28a87',outline='')
+        else:
+            points=[coord for x,y,*_ in coordinates for coord in (x,y)]
+            if len(points)>=4:
+                c.create_line(*points,fill=ACCENT,width=2.5,smooth=False)
+            if len(coordinates)<=125:
+                for x,y,*_ in coordinates:
+                    c.create_oval(x-3,y-3,x+3,y+3,fill=GREEN,outline=PANEL)
+        # Graduations en TEMPS réel, jamais des indices espacés artificiellement.
+        for i in range(5 if last>first else 1):
+            fraction=i/4 if last>first else .5
+            timestamp=first+(last-first)*fraction
+            x=left+(right-left)*fraction
+            c.create_text(x,bottom+23,text=datetime.fromtimestamp(timestamp).strftime('%d/%m %H:%M'),
+                          fill=MUTED,font=('Segoe UI',8))
+        c.create_text(left,18,text=f'{self.metric.get()} • {GROUP_FR.get(group,group)}',
+                      fill=FG,anchor='w',font=('Segoe UI',11,'bold'))
+        self._history_points=coordinates
+        change=values[-1]-values[0] if not changes else sum(values)
+        first_value=history_metric(rows[0][3],metric,group)
+        last_value=history_metric(rows[-1][3],metric,group)
+        self.history_info.config(text=f'{len(series)} relevé(s) affiché(s) sur {len(rows)} • '
+             f'Dernière valeur : {fmt(last_value)} • Évolution depuis le premier relevé : {fmt(last_value-first_value)}'
+             ' • Glisse la souris sur le graphique pour voir les relevés')
+
+    def _history_hover(self,event):
+        points=self._history_points
+        if not points:return
+        x,y,stamp,value,filename=min(points,key=lambda p:abs(p[0]-event.x))
+        if abs(x-event.x)>24:
+            self.chart.delete('tooltip')
+            return
+        self.chart.delete('tooltip')
+        line=f'{datetime.fromtimestamp(stamp):%d/%m/%Y %H:%M}  ·  {fmt(value)}'
+        if self.history_mode.get()=='Gains entre sauvegardes':
+            line+=' (variation)'
+        tw=max(200,len(line)*7)
+        tx=min(max(10,x+12),max(10,self.chart.winfo_width()-tw-15))
+        ty=max(10,y-40)
+        self.chart.create_rectangle(tx,ty,tx+tw,ty+28,fill='#253d55',outline=ACCENT,tags='tooltip')
+        self.chart.create_text(tx+8,ty+14,text=line,anchor='w',fill=FG,
+                               font=('Segoe UI',9),tags='tooltip')
 
     def export_csv(self):
         if not self.current:return

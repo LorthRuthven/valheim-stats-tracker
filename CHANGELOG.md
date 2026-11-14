@@ -1,3 +1,8 @@
+## v1.3.0 (2026-11-14)
+- Nouvel onglet Boss et statistiques par difficulté.
+- Graphiques améliorés : dates réelles, filtres de période, deltas et survol.
+- Suivi historique des niveaux de compétences.
+
 # Historique des versions
 
 ## 1.2.0 — Intégration GitHub Releases
