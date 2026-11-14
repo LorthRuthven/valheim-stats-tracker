@@ -1,3 +1,8 @@
+## v1.8.4
+- Bouton « Actualiser maintenant » avec confirmation horodatée et erreurs visibles.
+- Détection explicite de sauvegarde inchangée ; actualisation des succès si nouvelle sauvegarde.
+- Tests des scénarios de relecture, de modification et d'erreur.
+
 ## v1.8.3
 - Corrections des 50 identifiants de récolte affichés sans traduction française (par exemple Raspberry, Mushroom, AncientGemstoneBlack).
 - Sept noms descriptifs indicatifs pour identifiants récents absents des ressources françaises documentées.

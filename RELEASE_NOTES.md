@@ -1,9 +1,11 @@
-# Valheim Stats Tracker v1.8.3 — traductions françaises complémentaires
+# Valheim Stats Tracker v1.8.4 — correction Actualiser maintenant
 
-- Les 50 identifiants de récoltes comme `Raspberry`, `Mushroom` et `AncientGemstoneBlack` sont reliés à leurs noms français d'objets : Framboises, Champignon, Draumyx, etc.
-- Sept nouveaux identifiants absents de la localisation française 1.0.7 disposent de libellés descriptifs. Ces sept libellés ne sont pas garantis comme traductions officielles.
-- Les noms officiels disponibles restent prioritaires. Les identifiants internes et les conditions des succès restent inchangés.
-- Le dictionnaire français est embarqué dans le lecteur de sauvegarde, sans fichier supplémentaire interdit par l'updater V1.7.
-- Tests de régression des alias, du lecteur généré dans le ZIP et de la compatibilité de l'updater.
+- Le bouton « Actualiser maintenant » relit le fichier `.fch` et affiche une confirmation horodatée.
+- Quand la sauvegarde n'a pas changé, l'application l'indique clairement au lieu de laisser croire que le bouton ne répond pas.
+- Si une nouvelle sauvegarde est disponible, la progression des succès, les autres statistiques et l'historique sont recalculés.
+- Les erreurs de lecture déclenchées par le bouton s'affichent dans une fenêtre explicite, sans planter silencieusement.
+- Un indicateur visible en haut de la page rappelle la date du dernier relevé.
+- Le suivi automatique toutes les cinq secondes et le système de mise à jour restent inchangés.
+- Limite sans mod : le bouton ne peut pas demander à Valheim de sauvegarder ses données en jeu ; il lit le dernier fichier disponible.
 
-**Sources :** localisation française Valheim extraite par Jötunn (1.0.7) ; critères des succès issus de Valheim 1.0.21.
+Aucune modification de la sauvegarde, de l'historique SQLite ou du serveur Valheim.

@@ -65,3 +65,5 @@ Version 1.8.1 : correction de compatibilité de l’updater avec les anciennes v
 V1.8.2 : noms et descriptions des succès français et explication des objectifs exigeant la difficulté Difficile.
 
 Version 1.8.3 : affichage français des récoltes et sept libellés récents indicatifs, sans modification des compteurs.
+
+V1.8.4 — « Actualiser maintenant » relit le fichier sélectionné et indique s'il a changé. Sans mod, l'évolution se voit seulement lors d'une nouvelle sauvegarde Valheim/Steam Cloud.

@@ -317,6 +317,7 @@ class TrackerApp(tk.Tk):
         self.boss_difficulty_display = tk.StringVar(value=GROUP_FR['Default'])
         self._history_points = []
         self.status = tk.StringVar(value='Choisis une sauvegarde pour commencer.')
+        self.refresh_notice = tk.StringVar(value='Lecture automatique des sauvegardes toutes les 5 secondes.')
         self.sidebar_player = tk.StringVar(value='Aucun personnage')
         self.sidebar_subtitle = tk.StringVar(value='Aucune sauvegarde chargée')
         self.quick_time = tk.StringVar(value='—')
@@ -485,7 +486,7 @@ class TrackerApp(tk.Tk):
         tools.pack(fill='x', side='bottom')
         self._button(tools, 'Mises à jour', self.show_updater).pack(fill='x', pady=(0, 8))
         self._button(tools, 'Changer de personnage', self.pick_file).pack(fill='x', pady=(0, 8))
-        self._button(tools, 'Actualiser maintenant', lambda: self.read_and_record(force=True), accent=True).pack(fill='x')
+        self._button(tools, 'Actualiser maintenant', self.manual_refresh, accent=True).pack(fill='x')
         lbl(tools, 'État du suivi', 9, MUTED, True).pack(anchor='w', pady=(12, 4))
         tk.Label(tools, textvariable=self.status, fg=ACCENT2, bg=SIDEBAR, wraplength=208, justify='left', font=('Segoe UI', 9)).pack(anchor='w')
 
@@ -498,6 +499,8 @@ class TrackerApp(tk.Tk):
         self.page_title.pack(anchor='w')
         self.page_subtitle = lbl(left, 'Tableau de bord complet et lecture seule de tes sauvegardes Valheim.', 10, MUTED)
         self.page_subtitle.pack(anchor='w', pady=(4, 0))
+        tk.Label(left, textvariable=self.refresh_notice, fg=ACCENT2, bg=BG,
+                 font=('Segoe UI', 9), anchor='w', justify='left').pack(anchor='w', pady=(5, 0))
         right = tk.Frame(header, bg=BG)
         right.pack(side='right')
         self.header_group = lbl(right, 'Toutes difficultés', 10, ACCENT, True)
@@ -1217,24 +1220,60 @@ class TrackerApp(tk.Tk):
                          zlib.compress(json.dumps(decoded, ensure_ascii=False, separators=(',', ':')).encode('utf8'))))
         self.db.commit()
 
+    def manual_refresh(self):
+        """Relit réellement le fichier .fch et indique si Valheim l'a modifié."""
+        checked_at = datetime.now().strftime('%H:%M:%S')
+        if not self.path:
+            self.status.set('Aucun personnage sélectionné.')
+            self.refresh_notice.set('Sélectionne une sauvegarde .fch pour l’actualiser.')
+            messagebox.showwarning(APP_NAME, 'Aucun personnage sélectionné. Utilise « Changer de personnage ».')
+            return
+        try:
+            result = self.read_and_record(force=True)
+        except Exception as exc:
+            self.status.set('Échec de la vérification : ' + str(exc)[:110])
+            self.refresh_notice.set(f'Échec de lecture à {checked_at} — consulte le message d’erreur.')
+            messagebox.showerror(
+                APP_NAME,
+                'Impossible de lire la sauvegarde sélectionnée :\n\n'
+                + self.path + '\n\n'
+                + str(exc),
+            )
+            return
+        if result == 'unchanged':
+            written_at = datetime.fromtimestamp(Path(self.path).stat().st_mtime).strftime('%d/%m/%Y %H:%M:%S')
+            self.status.set(f'Vérifié à {checked_at} • aucune nouvelle sauvegarde. Fichier : {written_at}')
+            self.refresh_notice.set(
+                f'Vérifié à {checked_at} : sauvegarde inchangée (écrite le {written_at}).'
+            )
+        elif result == 'updated':
+            self.status.set(f'Nouveau relevé chargé à {checked_at} depuis {Path(self.path).name}.')
+            self.refresh_notice.set(f'Nouveau relevé chargé à {checked_at} — tableaux et succès actualisés.')
+        elif result == 'busy':
+            self.refresh_notice.set('Valheim/Steam écrit la sauvegarde : nouvelle tentative au prochain contrôle.')
+        else:
+            self.status.set('Aucune nouvelle sauvegarde lisible.')
+            self.refresh_notice.set(f'Vérifié à {checked_at} : aucune donnée nouvelle.')
+
     def read_and_record(self, force=False):
         if not self.path:
-            return
+            return 'missing'
         p = Path(self.path)
         try:
             stat_before = p.stat()
             stamp = (stat_before.st_mtime_ns, stat_before.st_size)
             if stamp == self.file_stamp and not force:
-                return
+                return 'unchanged'
             raw = p.read_bytes()
             stat_after = p.stat()
             if (stat_after.st_mtime_ns, stat_after.st_size) != stamp:
                 self.status.set('Écriture en cours : nouvelle tentative dans 5 secondes')
-                return
+                return 'busy'
             digest = hashlib.sha256(raw).hexdigest()
-            if digest == self.current_digest and not force:
+            if digest == self.current_digest and self.current is not None:
+                # Ne pas simuler une sauvegarde nouvelle si elle est identique.
                 self.file_stamp = stamp
-                return
+                return 'unchanged'
             decoded = decode(raw)
             old_path = Path(str(p) + '.old')
             self.old = None
@@ -1257,11 +1296,14 @@ class TrackerApp(tk.Tk):
             self.sidebar_subtitle.set(f'Sauvegarde v{decoded["version"]}\nMise à jour : {when}')
             self.status.set('Lecture valide • ' + when)
             self.refresh()
+            self.refresh_notice.set('Dernière sauvegarde chargée : ' + when + ' • ' + p.name)
+            return 'updated'
         except (OSError, SaveError, ValueError, IndexError, UnicodeError) as e:
             self.file_stamp = None
             self.status.set('Lecture différée : ' + str(e)[:120])
             if force:
                 raise
+            return 'error'
 
     def poll(self):
         if self.path:
