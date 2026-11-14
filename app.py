@@ -294,6 +294,7 @@ class TrackerApp(tk.Tk):
         self.old = None
         self.page_var = tk.StringVar(value='Vue d’ensemble')
         self.group = tk.StringVar(value='Any')
+        self.group_display = tk.StringVar(value=GROUP_FR['Any'])
         self.search_combat = tk.StringVar()
         self.search_activity = tk.StringVar()
         self.search_raw = tk.StringVar()
@@ -309,9 +310,11 @@ class TrackerApp(tk.Tk):
         self.activity = tk.StringVar(value='Ressources collectées')
         self.metric = tk.StringVar(value='Créatures tuées')
         self.history_group = tk.StringVar(value='Any')
+        self.history_group_display = tk.StringVar(value=GROUP_FR['Any'])
         self.history_period = tk.StringVar(value='Tous les relevés')
         self.history_mode = tk.StringVar(value='Total cumulé')
         self.boss_difficulty = tk.StringVar(value='Default')
+        self.boss_difficulty_display = tk.StringVar(value=GROUP_FR['Default'])
         self._history_points = []
         self.status = tk.StringVar(value='Choisis une sauvegarde pour commencer.')
         self.sidebar_player = tk.StringVar(value='Aucun personnage')
@@ -334,6 +337,9 @@ class TrackerApp(tk.Tk):
         self.history_period.trace_add('write', lambda *a: self.draw_history())
         self.history_mode.trace_add('write', lambda *a: self.draw_history())
         self.boss_difficulty.trace_add('write', lambda *a: self.refresh_bosses())
+        self.group_display.trace_add('write', lambda *a: self._set_difficulty(self.group_display, self.group))
+        self.history_group_display.trace_add('write', lambda *a: self._set_difficulty(self.history_group_display, self.history_group))
+        self.boss_difficulty_display.trace_add('write', lambda *a: self._set_difficulty(self.boss_difficulty_display, self.boss_difficulty))
         for var in (self.achievement_search, self.achievement_filter, self.achievement_category, self.achievement_origin):
             var.trace_add('write', lambda *a: self.refresh_achievements())
         self.achievement_detail_search.trace_add('write', lambda *a: self._render_achievement_details())
@@ -349,6 +355,13 @@ class TrackerApp(tk.Tk):
         self.after(200, self._update_pump)
         self.after(2200, self._startup_update_check)
         self.protocol('WM_DELETE_WINDOW', self.close)
+
+    @staticmethod
+    def _set_difficulty(label_var, group_var):
+        lookup = {label: key for key, label in GROUP_FR.items()}
+        value = lookup.get(label_var.get())
+        if value and group_var.get() != value:
+            group_var.set(value)
 
     def _style(self):
         s = ttk.Style(self)
@@ -454,7 +467,7 @@ class TrackerApp(tk.Tk):
         row = tk.Frame(char, bg=PANEL)
         row.pack(fill='x', pady=(0, 8))
         lbl(row, 'Vue de stats', 9, MUTED).pack(side='left')
-        ttk.Combobox(row, textvariable=self.group, values=['Any', 'Default', 'Hard', 'VeryHard', 'Hardcore', 'RawStats'], width=13, state='readonly').pack(side='right')
+        ttk.Combobox(row, textvariable=self.group_display, values=[GROUP_FR[k] for k in ('Any', 'Default', 'Hard', 'VeryHard', 'Hardcore', 'RawStats')], width=19, state='readonly').pack(side='right')
         lbl(char, 'Temps de jeu', 9, MUTED).pack(anchor='w', pady=(8, 0))
         tk.Label(char, textvariable=self.quick_time, fg=FG, bg=PANEL, font=('Segoe UI Semibold', 11)).pack(anchor='w')
         lbl(char, 'Monde principal', 9, MUTED).pack(anchor='w', pady=(8, 0))
@@ -729,8 +742,21 @@ class TrackerApp(tk.Tk):
         if changes:
             change_text = ' · Depuis le relevé précédent : ' + ', '.join(
                 f'{name} +{fmt(delta)}' if delta > 0 else f'{name} {fmt(delta)}' for name, delta in changes[:3])
+        extra_note = ''
+        if result['key'] == 'master_hunter' and self.current:
+            any_spec = next(sp for sp in SPECS if sp.key == 'hunter')
+            any_result = evaluate_one(self.current, any_spec)
+            extra_note = (
+                f"\n\nDifficulté : DIFFICILE OU SUPÉRIEUR UNIQUEMENT. "
+                f"Toutes difficultés : {any_result['completed_conditions']}/{any_result['total_conditions']} espèces ; "
+                f"difficile ou supérieur : {result['completed_conditions']}/{result['total_conditions']}. "
+                "Les éliminations faites en normal ne sont pas reprises dans le compteur difficile. "
+                "En changeant la difficulté du serveur, il faudra vaincre à nouveau les espèces concernées."
+            )
+        elif result['key'] == 'toughest':
+            extra_note = "\n\nSeules les victoires en difficile ou supérieur comptent. Les boss déjà vaincus en normal doivent être refaits."
         self.achievement_note.config(text=result['description'] +
-            ('\n\n' + result['note'] if result['note'] else '') + change_text)
+            ('\n\n' + result['note'] if result['note'] else '') + extra_note + change_text)
         all_parts = sorted(result['parts'], key=lambda part: (part['complete'], part['label'].casefold()))
         term = self.achievement_detail_search.get().strip().casefold()
         if term:
@@ -792,7 +818,7 @@ class TrackerApp(tk.Tk):
                 continue
             if origin == 'Internes supplémentaires (2)' and row['origin'] != 'Interne uniquement':
                 continue
-            if needle and needle not in row['title'].lower() and needle not in row['description'].lower() and needle not in row['category'].lower():
+            if needle and needle not in row['title'].lower() and needle not in row.get('title_en', '').lower() and needle not in row['description'].lower() and needle not in row['category'].lower():
                 continue
             if category != 'Toutes les catégories' and row['category'] != category:
                 continue
@@ -843,9 +869,9 @@ class TrackerApp(tk.Tk):
         row = tk.Frame(inner, bg=PANEL)
         row.pack(fill='x')
         lbl(row, 'Difficulté suivie', 10, MUTED).pack(side='left')
-        ttk.Combobox(row, textvariable=self.boss_difficulty,
-                     values=['Any', 'Default', 'Hard', 'VeryHard', 'Hardcore'],
-                     width=14, state='readonly').pack(side='left', padx=(10, 0))
+        ttk.Combobox(row, textvariable=self.boss_difficulty_display,
+                     values=[GROUP_FR[k] for k in ('Any', 'Default', 'Hard', 'VeryHard', 'Hardcore')],
+                     width=20, state='readonly').pack(side='left', padx=(10, 0))
         self.boss_group_text = lbl(row, '', 10, ACCENT, True)
         self.boss_group_text.pack(side='left', padx=12)
 
@@ -951,7 +977,7 @@ class TrackerApp(tk.Tk):
         lbl(bar, 'Mesure', 10, MUTED).pack(side='left', padx=(0, 8))
         ttk.Combobox(bar, textvariable=self.metric, values=list(METRICS), width=26, state='readonly').pack(side='left')
         lbl(bar, 'Difficulté', 10, MUTED).pack(side='left', padx=(18, 8))
-        ttk.Combobox(bar, textvariable=self.history_group, values=['Any', 'Default', 'Hard', 'RawStats'], state='readonly', width=14).pack(side='left')
+        ttk.Combobox(bar, textvariable=self.history_group_display, values=[GROUP_FR[k] for k in ('Any', 'Default', 'Hard', 'RawStats')], state='readonly', width=19).pack(side='left')
         self._button(bar, 'Exporter CSV', self.export_csv).pack(side='right')
 
         options = tk.Frame(inner, bg=PANEL)

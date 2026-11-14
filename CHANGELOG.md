@@ -1,3 +1,9 @@
+## V1.8.2
+- 55 succès traduits selon la localisation française du jeu.
+- Sélecteurs de difficulté en français, sans changement des identifiants internes.
+- Diagnostic de la progression difficile pour « Maîtrise de la chasse ».
+- Noms de boss et objectifs composés localisés.
+
 ## V1.8.1
 - Corrige le refus de la V1.8 par les anciens updaters.
 - Embarque 1 763 noms français dans valheim_reader.py.

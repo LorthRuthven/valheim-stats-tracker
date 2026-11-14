@@ -16,13 +16,13 @@ GROUPS = ('RawStats', 'Any', 'Hammer', 'Casual', 'VeryEasy', 'Easy',
 MODIFIERS = ('Total', 'Poings', 'Magie', 'Distance', 'Mêlée')
 BOSSES = {
     '$enemy_eikthyr': 'Eikthyr',
-    '$enemy_gdking': 'L’Ancien',
-    '$enemy_bonemass': 'Masse d’os',
+    '$enemy_gdking': 'L’Aîné',
+    '$enemy_bonemass': 'Masse-d’Os',
     '$enemy_dragon': 'Moder',
     '$enemy_goblinking': 'Yagluth',
     '$enemy_seekerqueen': 'La Reine',
     '$enemy_fader': 'Fader',
-    '$enemy_frozenking_p3': 'Kall Fimbulbringer',
+    '$enemy_frozenking_p3': 'Kall Mandefimbul',
 }
 SKILLS = {
     1:'Épées', 2:'Couteaux', 3:'Masses', 4:'Armes d’hast', 5:'Lances',
@@ -679,13 +679,13 @@ SPECS = (
 # L'ordre de l'énumération est également documenté dans valheim_reader.py.
 BOSS_CRITERIA = (
     ('Eikthyr', '$enemy_eikthyr', 1),
-    ('L’Ancien', '$enemy_gdking', 1),
-    ('Masse d’os', '$enemy_bonemass', 1),
+    ('L’Aîné', '$enemy_gdking', 1),
+    ('Masse-d’Os', '$enemy_bonemass', 1),
     ('Moder', '$enemy_dragon', 1),
     ('Yagluth', '$enemy_goblinking', 1),
     ('La Reine', '$enemy_seekerqueen', 1),
     ('Fader', '$enemy_fader', 1),
-    ('Kall Fimbulbringer', '$enemy_frozenking_p3', 1),
+    ('Kall Mandefimbul', '$enemy_frozenking_p3', 1),
 )
 
 FISH_CRITERIA = tuple((label, f'$animal_fish{i}', 1) for i, label in enumerate((
@@ -697,8 +697,8 @@ FISH_CRITERIA = tuple((label, f'$animal_fish{i}', 1) for i, label in enumerate((
 MINIBOSS_CRITERIA = (
     ('Geirrhafa', '$enemy_fenringcultist_hildir', 1),
     ('Brenna', '$enemy_skeletonfire', 1),
-    ('Lord Reto', '$enemy_charred_melee_Dyrnwyn', 1),
-    ('Zil & Thungr', '$enemy_goblinbrute_hildircombined', 1),
+    ('Seigneur Reto', '$enemy_charred_melee_Dyrnwyn', 1),
+    ('Zil et Thungr', '$enemy_goblinbrute_hildircombined', 1),
     ('Zil', '$enemy_goblin_hildir', 1),
 )
 
@@ -791,8 +791,21 @@ SPECS = SPECS + _BOSS_SINGLE_SPECS + (
         note='La sauvegarde du personnage ne contient pas la liste autoritative des succès réellement débloqués.'),
 )
 
+
+# Titres et descriptions officiels en français (localisation Valheim via Jötunn).
+# Les règles techniques utilisent toujours les identifiants des succès et de la sauvegarde.
+import json as _ach_json
+ACHIEVEMENTS_FR = _ach_json.loads("{\"lumberjack\":[\"Bûcheronnage\",\"Abattez 500 arbres.\"],\"builder\":[\"Construction\",\"Fabriquez 500 pièces.\"],\"farmer\":[\"Agriculture\",\"Récoltez 500 cultures.\"],\"beekeeper\":[\"Apiculture\",\"Récoltez 500 unités de miel.\"],\"forager\":[\"Cueillette\",\"Récoltez 250 baies et 250 champignons.\"],\"cook\":[\"Cuisine\",\"Cuisinez 100 plats.\"],\"stomach\":[\"On ne part pas à l'aventure l'estomac vide\",\"Consommez 500 unités de nourriture.\"],\"sailor\":[\"Navigation\",\"Naviguez suffisamment longtemps pour faire deux fois le tour du monde.\"],\"captain\":[\"Capitaine\",\"Naviguez suffisamment longtemps en tenant la barre pour faire le tour du monde.\"],\"explorer\":[\"Exploration\",\"Voyagez loin dans les quatre directions.\"],\"pathfinder\":[\"Errance\",\"Voyagez loin dans les quatre directions sans l'aide d'une carte.\"],\"survivor\":[\"Survie\",\"Survivez pendant 30 jours consécutifs.\"],\"comfort\":[\"Le confort avant tout\",\"Atteignez un niveau de confort de 20.\"],\"mighty\":[\"Magnifiques halles\",\"Construisez un bâtiment très haut.\"],\"top\":[\"Sommet du monde\",\"Construisez quelque chose en très haute altitude.\"],\"fish4\":[\"Une prise digne de Njörd\",\"Attrapez un poisson quatre étoiles.\"],\"solo\":[\"Loup solitaire\",\"Terrassez un boss sans l'aide de personne.\"],\"coop\":[\"L'union fait la force\",\"Terrassez un boss avec un ami.\"],\"firstdeath\":[\"La première, mais pas la dernière\",\"Trouvez la mort, et préparez-vous à tout recommencer...\"],\"accident\":[\"Un accident est vite arrivé\",\"Faites-vous écraser par un arbre.\"],\"treesall\":[\"Ça ne tient plus de l'accident\",\"Faites-vous écraser par chaque type d'arbre.\"],\"deathall\":[\"Ça va ?\",\"Mourez de toutes les manières possibles.\"],\"obliterated\":[\"Oblitération\",\"Vous étiez un peu trop près.\"],\"legend\":[\"Les légendes sont vraies\",\"Naviguez au-delà du bout du monde.\"],\"treasure\":[\"Chasse au trésor\",\"Découvrez 10 trésors enfouis.\"],\"leviathan\":[\"Pas le temps de dormir\",\"Réveillez une créature marine.\"],\"fisherman\":[\"Pêche\",\"Attrapez tous les types de poisson.\"],\"miniboss\":[\"Odin est satisfait\",\"Terrassez tous les miniboss.\"],\"viking\":[\"Viking\",\"Terrassez tous les boss dans n'importe quelle difficulté.\"],\"tough\":[\"Viking coriace\",\"Terrassez tous les boss en mode normal ou supérieur.\"],\"toughest\":[\"Viking redoutable\",\"Terrassez tous les boss en mode difficile.\"],\"boss_single_eikthyr\":[\"Eikthyr\",\"Terrassez le Cerf de l'orage.\"],\"boss_single_elder\":[\"L'Aîné\",\"Terrassez la Forêt vivante.\"],\"boss_single_bonemass\":[\"Masse osseuse\",\"Terrassez la Mort difforme.\"],\"boss_single_moder\":[\"Moder\",\"Terrassez la Mère des dragons.\"],\"boss_single_yagluth\":[\"Yagluth\",\"Terrassez l'Âme tourmentée.\"],\"boss_single_queen\":[\"La reine des fouineurs\",\"Terrassez la Matriarche rampante.\"],\"boss_single_fader\":[\"Fader\",\"Terrassez la Flamme d'émeraude.\"],\"boss_single_kall\":[\"Kall Mandefimbul\",\"Terrassez l'Enchaîné.\"],\"arrived\":[\"Me voilà !\",\"Entrez dans le dixième monde.\"],\"homesteader\":[\"Colonie\",\"Construisez une maison.\"],\"architect\":[\"Architecture\",\"Construisez un village.\"],\"chosen\":[\"Destinée\",\"Reformez Dyrnwyn.\"],\"hunter\":[\"Chasse\",\"Abattez chaque type de créature.\"],\"master_hunter\":[\"Maîtrise de la chasse\",\"Abattez chaque type de créature en mode difficile.\"],\"trophy_collector\":[\"Collection de trophées\",\"Obtenez tous les trophées.\"],\"blacksmith\":[\"Forge\",\"Fabriquez tous les types d'arme.\"],\"master_chef\":[\"Maîtrise de la cuisine\",\"Cuisinez tous les types de plat.\"],\"artisan\":[\"Artisanat\",\"Fabriquez tous les types d'objet.\"],\"gourmet\":[\"Gastronomie\",\"Mangez tous les types d'objet consommable.\"],\"carpenter\":[\"Menuiserie\",\"Fabriquez tout.\"],\"kings_queens\":[\"Rois et reines de Valheim\",\"Maîtrisez l'art viking, la chasse, l'artisanat, la cuisine, la menuiserie et l'exploration.\"],\"child_odin\":[\"Enfant d'Odin\",\"Incarnez le viking redoutable, maître de la chasse et adepte de la survie et de l'errance.\"],\"pugilist_internal\":[\"Pugilat\",\"Terrassez tous les boss uniquement à l'aide de vos poings.\"],\"most_worthy_internal\":[\"On ne peut plus digne\",\"Débloquez tous les autres succès.\"]}")
+
+def achievement_title(key):
+    return ACHIEVEMENTS_FR[key][0]
+
+def achievement_description(key):
+    return ACHIEVEMENTS_FR[key][1]
+
 assert len(SPECS) == 55, f'Catalogue incomplet: {len(SPECS)} entrées'
 assert len({x.key for x in SPECS}) == 55
+assert {x.key for x in SPECS} == set(ACHIEVEMENTS_FR)
 assert sum(x.origin == 'Interne uniquement' for x in SPECS) == 2
 
 
@@ -809,7 +822,7 @@ def evaluate_one(profile, spec: AchievementSpec):
             # Pas de preuve de combat intégral aux poings.
             unarmed = profile['groups']['Any']['enemies'][1]
             diagnostic_parts = [{
-                'label': name, 'key': token, 'current': float(unarmed.get(token, 0)),
+                'label': localized_name(token, name), 'key': token, 'current': float(unarmed.get(token, 0)),
                 'goal': None, 'remaining': None, 'complete': False, 'diagnostic': 'poings',
             } for _, name, token in _EXTRA_BOSSES]
         elif spec.key == 'most_worthy_internal':
@@ -823,8 +836,8 @@ def evaluate_one(profile, spec: AchievementSpec):
                 'goal': None, 'remaining': None, 'complete': False, 'diagnostic': 'partial',
             }]
         return {
-            'key': spec.key, 'title': spec.title, 'category': spec.category,
-            'description': spec.description, 'difficulty': spec.difficulty,
+            'key': spec.key, 'title': achievement_title(spec.key), 'title_en': spec.title, 'category': spec.category,
+            'description': achievement_description(spec.key), 'difficulty': spec.difficulty,
             'secret': spec.secret, 'origin': spec.origin, 'note': spec.note,
             'measurable': False, 'fraction': None, 'percent': None,
             'completed_conditions': 0, 'total_conditions': 0, 'complete': False,
@@ -836,7 +849,7 @@ def evaluate_one(profile, spec: AchievementSpec):
             'kings_queens': ('viking', 'hunter', 'artisan', 'master_chef', 'carpenter', 'explorer'),
             'child_odin': ('toughest', 'master_hunter', 'survivor', 'pathfinder'),
         }[spec.key]
-        criteria = tuple((next(s.title for s in SPECS if s.key == target), target, 1)
+        criteria = tuple((achievement_title(target), target, 1)
                          for target in required)
         prereqs = {target: evaluate_one(profile, next(s for s in SPECS if s.key == target))
                    for target in required}
@@ -883,8 +896,8 @@ def evaluate_one(profile, spec: AchievementSpec):
     fraction = sum(fractions) / len(fractions) if fractions else 0
     complete = all(p['complete'] for p in parts) and bool(parts)
     return {
-        'key': spec.key, 'title': spec.title, 'category': spec.category,
-        'description': spec.description, 'difficulty': spec.difficulty,
+        'key': spec.key, 'title': achievement_title(spec.key), 'title_en': spec.title, 'category': spec.category,
+        'description': achievement_description(spec.key), 'difficulty': spec.difficulty,
         'secret': spec.secret, 'origin': spec.origin, 'note': spec.note,
         'measurable': True, 'fraction': fraction, 'percent': round(fraction * 100, 1),
         'completed_conditions': sum(p['complete'] for p in parts),

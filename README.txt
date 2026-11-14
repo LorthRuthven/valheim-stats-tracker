@@ -61,3 +61,5 @@ V1.7 : suivi des listes exhaustives (Valheim 1.0.21) pour créatures, trophées,
 V1.8.0 : noms français des objets, créatures, trophées, poissons et constructions dans les listes et la page Succès.
 
 Version 1.8.1 : correction de compatibilité de l’updater avec les anciennes versions.
+
+V1.8.2 : noms et descriptions des succès français et explication des objectifs exigeant la difficulté Difficile.
