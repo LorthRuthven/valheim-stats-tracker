@@ -1,3 +1,10 @@
+## V2.2.0 — restauration et ressources réelles
+- Restaure les cinq pages supprimées et complète les pages Boss, Combat, Historique et Succès.
+- Rétablit toutes les listes de critères, filtres, export CSV, compteur bruts et XP des compétences.
+- Visuels de Valheim issus du kit presse et badges officiels Steam ; sprites d'objets importables depuis le jeu installé.
+- Met en place le vrai système de mise à jour de l'application Windows autonome, avec sauvegarde.
+- Tests de non-régression et compatibilité avec les données V1.x.
+
 ## V2.1.1 — correctif de l'interface
 - Supprime les rectangles noirs créés par l'application du style Qt à tous les QWidget.
 - Améliore lisibilité des cartes et tableaux ; affine les espacements et les bordures.

@@ -28,6 +28,19 @@ class VectorArtworkTests(unittest.TestCase):
         self.assertIn('QLabel{{background:transparent',ui)
         self.assertNotIn("QMainWindow,QWidget{{background:",ui)
 
+
+    def test_real_assets_and_restore_pages_source(self):
+        import ast
+        for module in ('restored_pages.py','real_assets.py','windows_update.py',
+                       'windows_update_ui.py','game_icon_extraction.py',
+                       'tools/fetch_game_assets.py'):
+            ast.parse((ROOT/module).read_text(encoding='utf8'),filename=module)
+        theme=(ROOT/'nordic_ui.py').read_text(encoding='utf8')
+        self.assertIn('RestoredPagesMixin',theme)
+        self.assertIn('hero_photo()',theme)
+        self.assertIn('achievement_icon',theme)
+        self.assertIn('UpdatePanel',theme)
+
     def test_no_network_in_new_theme(self):
         text=(ROOT/'nordic_ui.py').read_text(encoding='utf8')
         self.assertNotIn('urllib.request',text)

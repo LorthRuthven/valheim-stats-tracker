@@ -15,6 +15,22 @@ except ImportError:
 @unittest.skipIf(QApplication is None,'Qt non installé dans cet environnement')
 class QtWindowTests(unittest.TestCase):
 
+
+    def test_all_restored_pages_and_windows_updater(self):
+        app=QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            self.assertEqual(w.stack.count(),10)
+            self.assertTrue(hasattr(w,'activity_items'))
+            self.assertTrue(hasattr(w,'skills_table'))
+            self.assertTrue(hasattr(w,'raw_table_restored'))
+            self.assertTrue(hasattr(w,'boss_table'))
+            self.assertTrue(hasattr(w,'focus_table'))
+            self.assertTrue(hasattr(w,'history_changes_restored'))
+            self.assertTrue(hasattr(w,'combat_details'))
+            self.assertTrue(hasattr(w,'update_controller'))
+            w.close()
+
     def test_labels_have_transparent_background(self):
         # Régression visuelle V2.1 : les QLabel ne doivent pas devenir
         # des rectangles opaques autour de chaque texte.
@@ -39,13 +55,13 @@ class QtWindowTests(unittest.TestCase):
             w=NordicWindow(TrackerStore(tmp))
             w.show()
             app.processEvents()
-            self.assertEqual(w.stack.count(),5)
+            self.assertEqual(w.stack.count(),10)
             self.assertTrue(w.hero.renderer.isValid())
             self.assertFalse(rune_icon('trophy').pixmap(28,28).isNull())
             self.assertFalse(w.grab().isNull())
             w.hero.ring.move_to(48,animated=False)
             self.assertAlmostEqual(w.hero.ring.get_value(),48)
-            for i in range(5):
+            for i in range(10):
                 w.show_page(i)
                 self.assertEqual(w.stack.currentIndex(),i)
                 self.assertTrue(w.nav_buttons[i].isChecked())

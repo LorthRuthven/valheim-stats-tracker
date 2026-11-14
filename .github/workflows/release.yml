@@ -21,7 +21,7 @@ jobs:
       - name: Tester le moteur, l'historique et l'updater
         run: python3 -m unittest discover -s tests -v
       - name: Vérifier les fichiers Python
-        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py
+        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_update_ui.py game_icon_extraction.py tools/fetch_game_assets.py
 
   windows:
     runs-on: windows-latest
@@ -38,11 +38,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-windows.txt
+      - name: Télécharger les véritables images officielles Valheim
+        shell: pwsh
+        run: |
+          python tools/fetch_game_assets.py
       - name: Vérifier la nouvelle interface Qt (hors écran)
         shell: pwsh
         run: |
           $env:QT_QPA_PLATFORM = 'offscreen'
-          python -c "from PySide6.QtWidgets import QApplication; from nordic_ui import NordicWindow as TrackerWindow; from v2_core import TrackerStore; import tempfile; app=QApplication([]); tmp=tempfile.TemporaryDirectory(); w=TrackerWindow(store=TrackerStore(tmp.name)); assert w.stack.count()==5; assert w.NAV[0][0]=='Vue d’ensemble'; w.show(); app.processEvents(); assert w.hero.renderer.isValid(); assert not w.grab().isNull(); w.set_motion(False); assert not w.motion; w.close(); tmp.cleanup(); print('Interface Qt V2.1 et illustrations : OK')"
+          python -c "from PySide6.QtWidgets import QApplication; from nordic_ui import NordicWindow as TrackerWindow; from v2_core import TrackerStore; import tempfile; app=QApplication([]); tmp=tempfile.TemporaryDirectory(); w=TrackerWindow(store=TrackerStore(tmp.name)); assert w.stack.count()==10; assert w.NAV[0][0]=='Vue d’ensemble'; w.show(); app.processEvents(); assert w.hero.renderer.isValid(); assert not w.grab().isNull(); assert w.update_controller is not None; w.set_motion(False); assert not w.motion; w.close(); tmp.cleanup(); print('Interface Qt V2.1 et illustrations : OK')"
       - name: Tester les interactions et les animations Qt
         shell: pwsh
         run: |
@@ -51,7 +55,7 @@ jobs:
       - name: Construire l'application Windows autonome
         shell: pwsh
         run: |
-          python -m PyInstaller --noconfirm --clean --windowed --onedir --name ValheimStatsTracker --add-data 'fr_names.json;.' --hidden-import localization_fr --hidden-import PySide6.QtSvg nordic_ui.py
+          python -m PyInstaller --noconfirm --clean --windowed --onedir --name ValheimStatsTracker --add-data 'fr_names.json;.' --add-data 'assets;assets' --hidden-import localization_fr --hidden-import UnityPy --hidden-import PySide6.QtSvg nordic_ui.py
           $version = (Get-Content version.json | ConvertFrom-Json).version
           $archive = "dist/Valheim_Stats_Tracker_v${version}_Windows.zip"
           Compress-Archive -Path dist/ValheimStatsTracker -DestinationPath $archive -CompressionLevel Optimal

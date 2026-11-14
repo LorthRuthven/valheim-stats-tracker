@@ -1,0 +1,528 @@
+"""Restitution des fonctions V1.9 dans l'interface Qt Windows.
+
+Aucune écriture de sauvegarde. Pages supplémentaires assemblées en Qt natif.
+Le fonctionnement des succès est fourni par valheim_reader ; pas de fausses validations Steam.
+"""
+from __future__ import annotations
+
+import csv
+from datetime import datetime
+from pathlib import Path
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QIcon
+from PySide6.QtWidgets import (
+    QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QHeaderView, QLabel,
+    QLineEdit, QMessageBox, QProgressBar, QPushButton, QTableWidget,
+    QTableWidgetItem, QVBoxLayout, QWidget, QSplitter,
+)
+from desktop_v2 import label, panel, table, txt
+from valheim_reader import (
+    BOSSES, PLAYER_STAT_NAMES, STAT_INDEX, evaluate_all, metrics,
+    localized_name, prefab_label,
+)
+from v2_core import progress_ranking, pending_actions, session_report
+from real_assets import achievement_icon, game_icon
+
+GROUP_CHOICES = (
+    ('Toutes difficultés', 'Any'), ('Normal ou +', 'Default'),
+    ('Difficile ou +', 'Hard'), ('Très difficile ou +', 'VeryHard'),
+    ('Extrême', 'Hardcore'), ('Brut (tous)', 'RawStats'),
+)
+ACTIVITY_CHOICES = (
+    ('Ressources collectées', 'pickables'),
+    ('Objets ramassés', 'picked_up'),
+    ('Objets fabriqués', 'crafted'),
+    ('Éléments placés', 'pieces_built'),
+    ('Nourritures consommées', 'foods_eaten'),
+)
+ACTIVITY_CATEGORIES = (
+    ('Bois et arbres', ('wood','log','tree','branch','finewood','corewood','bark','beech','pine','oak')),
+    ('Métaux et minerais', ('metal','iron','copper','tin','silver','bronze','flametal','ore','scrap')),
+    ('Pierre et minéraux', ('stone','flint','obsidian','crystal','marble','grausten')),
+    ('Cuisine et nourriture', ('meat','fish','berry','mushroom','honey','bread','soup','stew','salad','egg')),
+    ('Plantes et graines', ('seed','turnip','carrot','flax','barley','onion','vine','thistle','flower')),
+    ('Matériel et armes', ('sword','axe','bow','staff','helmet','armor','shield','spear','knife')),
+    ('Constructions', ('wall','floor','roof','door','beam','gate','portal','fire','torch','workbench')),
+)
+
+def group_control():
+    widget = QComboBox()
+    for name, key in GROUP_CHOICES:
+        widget.addItem(name, key)
+    return widget
+
+def activity_category(key):
+    token = key.casefold()
+    for title, terms in ACTIVITY_CATEGORIES:
+        if any(term in token for term in terms):
+            return title
+    return 'Autres'
+
+def _display_token(token):
+    if token.startswith('$'):
+        return localized_name(token, prefab_label(token))
+    translated = localized_name(token)
+    return translated if translated != token else prefab_label(token)
+
+def _table_item(text, icon=None):
+    cell = QTableWidgetItem(str(text))
+    if icon is not None and not icon.isNull():
+        cell.setIcon(icon)
+    return cell
+
+def _fill_table(widget, rows, icons=None):
+    widget.setUpdatesEnabled(False)
+    try:
+        widget.setRowCount(len(rows))
+        for i, cells in enumerate(rows):
+            for j, val in enumerate(cells):
+                icon = icons[i] if icons and j == 0 and i < len(icons) else None
+                widget.setItem(i, j, _table_item(val, icon))
+    finally:
+        widget.setUpdatesEnabled(True)
+
+def _sample_values(profile, group, key):
+    if key.startswith('skill:'):
+        return float(profile.get('skills', {}).get(key.split(':',1)[1], {}).get('level',0))
+    if key in ('kills','deaths','bosses','crafted','built','picked_up','world_hours'):
+        return float(metrics(profile,group).get(key,0))
+    index=STAT_INDEX.get(key)
+    return float(profile['groups'][group]['stats'][index]) if index is not None else 0.0
+
+def history_points(rows, key, group, changes=False):
+    samples=sorted((float(row[1]), _sample_values(row[3], group, key)) for row in rows)
+    if not changes:
+        return samples
+    previous=None
+    points=[]
+    for timestamp, value in samples:
+        # A rollback/reset ne doit jamais être présenté comme une perte d'actions.
+        delta = 0.0 if previous is None else max(0, value-previous)
+        points.append((timestamp, delta))
+        previous=value
+    return points
+
+
+class RestoredPagesMixin:
+    """Ajoute les écrans V1.9 perdus, sans toucher à la sauvegarde du personnage."""
+
+    def _make_restored_pages(self):
+        self._make_progress_center()
+        self._make_boss_detail()
+        self._make_activity_detail()
+        self._make_skill_detail()
+        self._make_raw_detail()
+        self._restore_history_controls()
+        self._restore_achievement_controls()
+        self._restore_combat_controls()
+
+    def _make_progress_center(self):
+        page=self._scroll_page()
+        intro, il = panel("CENTRE DE PROGRESSION",
+            "Tous les objectifs calculables, les favoris et un plan d'action précis.")
+        row=QHBoxLayout()
+        self.focus_filter=QComboBox()
+        self.focus_filter.addItems(["Plus proches", "Favoris", "Non commencés"])
+        self.focus_filter.currentIndexChanged.connect(self._refresh_progress_center)
+        row.addWidget(label("Afficher :",muted=True));row.addWidget(self.focus_filter)
+        row.addStretch();il.addLayout(row)
+        self.focus_table=table(["Favori", "Succès", "Progression", "Restants"])
+        self.focus_table.setIconSize(__import__('PySide6.QtCore',fromlist=['QSize']).QSize(38,38))
+        self.focus_table.verticalHeader().setDefaultSectionSize(46)
+        self.focus_table.itemSelectionChanged.connect(self._focus_selection)
+        il.addWidget(self.focus_table,1)
+        page.addWidget(intro,5)
+        detail,dl=panel("CRITÈRES À TERMINER", "Les prochaines actions viennent directement de la sauvegarde.")
+        self.focus_title=label("Choisis un objectif",section=True)
+        dl.addWidget(self.focus_title)
+        self.focus_note=label("",muted=True,wrap=True);dl.addWidget(self.focus_note)
+        actions=QHBoxLayout()
+        self.focus_star=QPushButton("☆ Ajouter aux favoris")
+        self.focus_star.clicked.connect(self._toggle_focus_favorite)
+        self.focus_open=QPushButton("Ouvrir la fiche")
+        self.focus_open.clicked.connect(self._open_focus_achievement)
+        actions.addWidget(self.focus_star);actions.addWidget(self.focus_open);actions.addStretch()
+        dl.addLayout(actions)
+        self.focus_actions=table(["Action", "Actuel", "Encore"])
+        self.focus_actions.setIconSize(__import__('PySide6.QtCore',fromlist=['QSize']).QSize(35,35))
+        self.focus_actions.verticalHeader().setDefaultSectionSize(43)
+        dl.addWidget(self.focus_actions,1)
+        page.addWidget(detail,4)
+        session,sl=panel("RAPPORT DE SESSION", "Gains comparés entre sauvegardes enregistrées.")
+        self.focus_session=label("En attente de deux relevés rapprochés.",wrap=True)
+        sl.addWidget(self.focus_session)
+        page.addWidget(session,2)
+        self.focus_key=''
+
+    def _make_boss_detail(self):
+        page=self._scroll_page()
+        top,tl=panel("BOSS ET DIFFICULTÉS", "Ne jamais additionner les groupes : ils se recouvrent.")
+        row=QHBoxLayout()
+        self.boss_group_choice=group_control()
+        self.boss_group_choice.currentIndexChanged.connect(self._refresh_boss_detail)
+        row.addWidget(label("Difficulté :",muted=True));row.addWidget(self.boss_group_choice)
+        row.addStretch();tl.addLayout(row)
+        self.boss_table=table(["Boss", "Toutes", "Normal ou +", "Difficile ou +", "Très difficile ou +", "Extrême"])
+        self.boss_table.setIconSize(__import__('PySide6.QtCore',fromlist=['QSize']).QSize(40,40))
+        self.boss_table.verticalHeader().setDefaultSectionSize(48)
+        tl.addWidget(self.boss_table)
+        page.addWidget(top,1)
+        info,il=panel("CONDITIONS DE VALIDATION",
+            "Les victoires sur un boss en normal ne comptent pas pour les objectifs en difficile.")
+        self.boss_info=label("La sauvegarde du personnage n'est pas encore chargée.",muted=True,wrap=True)
+        il.addWidget(self.boss_info);page.addWidget(info)
+
+    def _make_activity_detail(self):
+        page=self._scroll_page()
+        filt, fl=panel("ACTIVITÉS ET COLLECTIONS", "Ressources, objets, constructions et nourritures réellement enregistrés.")
+        controls=QHBoxLayout()
+        self.activity_choice=QComboBox()
+        for title,field in ACTIVITY_CHOICES:self.activity_choice.addItem(title,field)
+        self.activity_difficulty=group_control()
+        self.activity_search=QLineEdit()
+        self.activity_search.setPlaceholderText("Rechercher un objet…")
+        for x in (self.activity_choice,self.activity_difficulty):x.currentIndexChanged.connect(self._refresh_activity)
+        self.activity_search.textChanged.connect(self._refresh_activity)
+        controls.addWidget(self.activity_choice);controls.addWidget(self.activity_difficulty)
+        controls.addWidget(self.activity_search,1)
+        fl.addLayout(controls)
+        self.activity_summary=label("",muted=True,wrap=True)
+        fl.addWidget(self.activity_summary)
+        page.addWidget(filt)
+        row=QHBoxLayout()
+        main,ml=panel("OBJETS", "Noms français lorsqu'ils sont connus ; véritables icônes si disponibles.")
+        self.activity_items=table(["Catégorie", "Objet / ressource", "Quantité"])
+        self.activity_items.setIconSize(__import__('PySide6.QtCore',fromlist=['QSize']).QSize(34,34))
+        self.activity_items.verticalHeader().setDefaultSectionSize(42)
+        ml.addWidget(self.activity_items)
+        row.addWidget(main,3)
+        side,sl=panel("RÉPARTITION", "Familles d'objets après filtrage.")
+        self.activity_families=table(["Famille", "Quantité", "Part"])
+        sl.addWidget(self.activity_families)
+        row.addWidget(side,2);page.addLayout(row,1)
+
+    def _make_skill_detail(self):
+        page=self._scroll_page()
+        p,pl=panel("COMPÉTENCES DU VIKING",
+           "Niveaux et XP exacts enregistrés dans la dernière sauvegarde.")
+        self.skills_table=table(["Compétence", "Niveau", "XP enregistré", "Niveau relatif"])
+        self.skills_table.verticalHeader().setDefaultSectionSize(42)
+        pl.addWidget(self.skills_table)
+        page.addWidget(p,1)
+
+    def _make_raw_detail(self):
+        page=self._scroll_page()
+        p,pl=panel("COMPTEURS BRUTS",
+           "205 indices par groupe de difficulté ; indices sans nom conservés.")
+        row=QHBoxLayout()
+        self.raw_group=group_control()
+        self.raw_search=QLineEdit()
+        self.raw_search.setPlaceholderText("Chercher un indice, un nom ou une valeur…")
+        self.raw_group.currentIndexChanged.connect(self._refresh_raw)
+        self.raw_search.textChanged.connect(self._refresh_raw)
+        row.addWidget(self.raw_group)
+        row.addWidget(self.raw_search,1)
+        pl.addLayout(row)
+        self.raw_count=label("",muted=True);pl.addWidget(self.raw_count)
+        self.raw_table_restored=table(["Indice", "Nom technique", "Valeur"])
+        pl.addWidget(self.raw_table_restored)
+        page.addWidget(p,1)
+
+    def _restore_history_controls(self):
+        area=self.stack.widget(3)
+        interior=area.widget() if hasattr(area,'widget') else None
+        if interior is None:return
+        top=interior.layout().itemAt(0)
+        if top is None:return
+        header=top.widget()
+        if header is None:return
+        container=header.layout()
+        controls=QHBoxLayout()
+        self.history_group_restored=group_control()
+        self.history_group_restored.currentIndexChanged.connect(self._draw_history_restored)
+        self.history_changes_restored=QComboBox()
+        self.history_changes_restored.addItems(["Total cumulé","Gains entre sauvegardes"])
+        self.history_changes_restored.currentIndexChanged.connect(self._draw_history_restored)
+        export=QPushButton("Exporter CSV")
+        export.clicked.connect(self.export_history_csv)
+        controls.addWidget(label("Difficulté :",muted=True))
+        controls.addWidget(self.history_group_restored)
+        controls.addWidget(label("Affichage :",muted=True))
+        controls.addWidget(self.history_changes_restored)
+        controls.addWidget(export)
+        container.insertLayout(1,controls)
+        self.history_metric.currentIndexChanged.connect(self._draw_history_restored)
+        self.history_period.currentIndexChanged.connect(self._draw_history_restored)
+
+    def _restore_achievement_controls(self):
+        # Les 53 succès et les deux entrées internes restent dans le moteur.
+        area=self.stack.widget(1)
+        interior=area
+        row=interior.layout()
+        if row is None:return
+        first=row.itemAt(0).widget()
+        if first is None:return
+        layout=first.layout()
+        line=QHBoxLayout()
+        self.ach_category=QComboBox()
+        self.ach_category.addItem("Toutes catégories")
+        if hasattr(__import__('valheim_reader'),'SPECS'):
+            for category in sorted({s.category for s in __import__('valheim_reader').SPECS}):
+                self.ach_category.addItem(category)
+        self.ach_origin=QComboBox()
+        self.ach_origin.addItems(["Actifs + internes","Succès actifs (53)","Internes non vérifiés (2)"])
+        self.ach_category.currentIndexChanged.connect(self.draw_achievements)
+        self.ach_origin.currentIndexChanged.connect(self.draw_achievements)
+        line.addWidget(self.ach_category)
+        line.addWidget(self.ach_origin)
+        layout.insertLayout(2,line)
+        self.ach_parts_search=QLineEdit()
+        self.ach_parts_search.setPlaceholderText("Filtrer les critères de ce succès…")
+        self.ach_parts_search.textChanged.connect(self.draw_success_detail)
+        second=row.itemAt(1).widget()
+        if second is not None:
+            second.layout().insertWidget(second.layout().count()-1, self.ach_parts_search)
+
+    def _restore_combat_controls(self):
+        page=self.stack.widget(2)
+        interior=page.widget() if hasattr(page,'widget') else None
+        if interior is None:return
+        layout=interior.layout()
+        if layout is None:return
+        p,pl=panel("DÉTAIL DES ÉLIMINATIONS",
+            "Poings, magie, distance et mêlée : catégories enregistrées par le jeu.")
+        self.combat_search_restored=QLineEdit()
+        self.combat_search_restored.setPlaceholderText("Rechercher une créature…")
+        self.combat_search_restored.textChanged.connect(self._refresh_combat_detail)
+        pl.addWidget(self.combat_search_restored)
+        self.combat_details=table(["Créature","Total","Poings","Magie","Distance","Mêlée"])
+        self.combat_details.setIconSize(__import__('PySide6.QtCore',fromlist=['QSize']).QSize(34,34))
+        self.combat_details.verticalHeader().setDefaultSectionSize(42)
+        pl.addWidget(self.combat_details,1)
+        layout.addWidget(p,2)
+        self.combat_group.currentIndexChanged.connect(self._refresh_combat_detail)
+
+
+    def draw_success_detail(self):
+        """Restaure les listes complètes, sans limite cachée de 50/200 critères."""
+        super().draw_success_detail()
+        if not hasattr(self,'ach_parts_search') or not getattr(self,'results',None):
+            return
+        achievement=next((a for a in self.results
+                          if a['key']==self.selected_achievement),None)
+        if achievement is None:return
+        self.ach_parts.setColumnCount(3)
+        self.ach_parts.setHorizontalHeaderLabels(['Critère','Acquis / objectif','Restant'])
+        query=self.ach_parts_search.text().strip().casefold()
+        parts=sorted(achievement['parts'],key=lambda p:(p.get('complete',False),str(p['label']).casefold()))
+        if query:
+            parts=[p for p in parts if query in str(p['label']).casefold() or query in str(p.get('key','')).casefold()]
+        self.ach_parts.setRowCount(len(parts))
+        for i,part in enumerate(parts):
+            icon=game_icon(part.get('key',''))
+            if icon.isNull():icon=game_icon(part.get('label',''))
+            current=txt(float(part.get('current',0)),1)
+            goal=part.get('goal')
+            remaining=part.get('remaining')
+            self.ach_parts.setItem(i,0,_table_item(part['label'],icon))
+            self.ach_parts.setItem(i,1,_table_item(current+' / '+txt(float(goal),1) if goal is not None else current))
+            self.ach_parts.setItem(i,2,_table_item(
+                '✓' if part.get('complete') else ('—' if remaining is None else txt(float(remaining),1))))
+        self.ach_parts.verticalHeader().setDefaultSectionSize(38)
+
+    def _refresh_restored_pages(self):
+        if not self.store.profile:return
+        self._refresh_progress_center()
+        self._refresh_boss_detail()
+        self._refresh_activity()
+        self._refresh_skills()
+        self._refresh_raw()
+        self._refresh_combat_detail()
+        self._draw_history_restored()
+
+    def _refresh_progress_center(self):
+        if not self.store.profile or not hasattr(self,'focus_table'):return
+        favorites=self.store.favorites()
+        ranked=progress_ranking(self.results, favorites)
+        selected=self.focus_filter.currentText()
+        if selected=="Favoris":ranked=[r for r in ranked if r['key'] in favorites]
+        if selected=="Non commencés":ranked=[r for r in ranked if r['fraction']==0]
+        self.focus_table.blockSignals(True)
+        _fill_table(self.focus_table,[
+            ('★' if r['key'] in favorites else '☆', r['title'],
+             f"{r['percent']:.1f} %",str(r['total_conditions']-r['completed_conditions']))
+            for r in ranked])
+        for idx,r in enumerate(ranked):
+            self.focus_table.item(idx,0).setData(Qt.ItemDataRole.UserRole,r['key'])
+            ico=achievement_icon(r.get('title_en',''))
+            if not ico.isNull():self.focus_table.item(idx,1).setIcon(ico)
+        self.focus_table.blockSignals(False)
+        keys=[r['key'] for r in ranked]
+        if keys:
+            if self.focus_key not in keys:self.focus_key=keys[0]
+            self.focus_table.setCurrentCell(keys.index(self.focus_key),1)
+        else:self.focus_key=''
+        self._focus_selection()
+        report=session_report(self.store.rows(limit=500))
+        if report.get('available'):
+            gains=[f"{name} +{txt(value,1)}" for name,value in report['changes'].items() if value>0]
+            self.focus_session.setText(
+                f"{report['samples']} relevés · {report['game_minutes']:.0f} min observées\n"
+                + (' · '.join(gains) if gains else 'Pas de gains constatés')
+                + ('\nNouveaux objectifs : '+', '.join(report['reached']) if report['reached'] else '')
+                + '\nSession estimée, sans heures de connexion exactes.'
+            )
+        else:self.focus_session.setText(report.get('reason','Aucune donnée.'))
+
+    def _focus_selection(self):
+        if not self.store.profile or not hasattr(self,'focus_table'):return
+        row=self.focus_table.currentRow()
+        if row<0:return
+        cell=self.focus_table.item(row,0)
+        if cell is None:return
+        key=cell.data(Qt.ItemDataRole.UserRole)
+        if not key:return
+        self.focus_key=key
+        target=next((r for r in self.results if r['key']==key),None)
+        if target is None:return
+        self.focus_title.setText(target['title'])
+        self.focus_note.setText(target['description'] + "\n"
+            + f"{target['percent']:.1f} % · {target['completed_conditions']} sur {target['total_conditions']} critères.")
+        self.focus_star.setText("★ Retirer des favoris" if key in self.store.favorites() else "☆ Ajouter aux favoris")
+        remaining=pending_actions(target,limit=len(target['parts']))
+        _fill_table(self.focus_actions,[
+           (p['label'],txt(p['current'],1),txt(p['remaining'],1)) for p in remaining],
+            [game_icon(p.get('label','')) for p in remaining])
+
+    def _toggle_focus_favorite(self):
+        if not self.focus_key:return
+        self.store.toggle_favorite(self.focus_key)
+        self._refresh_progress_center()
+        self.draw_achievements()
+
+    def _open_focus_achievement(self):
+        if not self.focus_key:return
+        self.selected_achievement=self.focus_key
+        self.show_page(1)
+        self.draw_achievements()
+
+    def _refresh_boss_detail(self):
+        if not self.store.profile or not hasattr(self,'boss_table'):return
+        p=self.store.profile
+        groups=('Any','Default','Hard','VeryHard','Hardcore')
+        lines=[]
+        for token,display in BOSSES.items():
+            lines.append(tuple([display]+[txt(p['groups'][g]['enemies'][0].get(token,0)) for g in groups]))
+        _fill_table(self.boss_table,lines,
+             [game_icon(name) for name in BOSSES.values()])
+        done={g:sum(p['groups'][g]['enemies'][0].get(tok,0)>0 for tok in BOSSES) for g in groups}
+        self.boss_info.setText(
+            'Boss distincts validés : '+', '.join(
+                f"{name} {done[key]}/8" for name,key in GROUP_CHOICES if key in done
+            )+'\nLes difficultés sont des ensembles qui se recouvrent : ne les additionne pas.'
+        )
+
+    def _refresh_activity(self):
+        if not self.store.profile or not hasattr(self,'activity_items'):return
+        g=self.activity_difficulty.currentData()
+        field=self.activity_choice.currentData()
+        data=self.store.profile['groups'][g][field]
+        needle=self.activity_search.text().strip().casefold()
+        rows=[]
+        by_family={}
+        for key,count in data.items():
+            if count<=0:continue
+            display=_display_token(key)
+            if needle not in display.casefold() and needle not in key.casefold():continue
+            family=activity_category(key)
+            rows.append((family,display,float(count),key))
+            by_family[family]=by_family.get(family,0)+float(count)
+        rows.sort(key=lambda r:(-r[2],r[1].casefold()))
+        self.activity_summary.setText(
+            f"{len(rows)} types · {txt(sum(r[2] for r in rows))} unités affichées · "
+            f"Catégorie dominante : {max(by_family,key=by_family.get) if by_family else 'aucune'}")
+        self.activity_items.setRowCount(len(rows))
+        for idx,(family,display,count,key) in enumerate(rows):
+            self.activity_items.setItem(idx,0,_table_item(family))
+            self.activity_items.setItem(idx,1,_table_item(display,game_icon(key)))
+            self.activity_items.setItem(idx,2,_table_item(txt(count)))
+        total=sum(by_family.values())
+        _fill_table(self.activity_families,[
+            (name,txt(count),f"{(100*count/total if total else 0):.0f} %")
+            for name,count in sorted(by_family.items(),key=lambda p:-p[1])])
+
+    def _refresh_skills(self):
+        if not self.store.profile or not hasattr(self,'skills_table'):return
+        skills=sorted(self.store.profile['skills'].items(),
+            key=lambda p:-float(p[1].get('level',0)))
+        _fill_table(self.skills_table,[
+            (name,txt(float(d.get('level',0)),2),txt(float(d.get('xp',0)),1),
+             f"{(float(d.get('level',0))%1)*100:.1f} %")
+            for name,d in skills])
+
+    def _refresh_raw(self):
+        if not self.store.profile or not hasattr(self,'raw_table_restored'):return
+        group=self.raw_group.currentData()
+        stats=self.store.profile['groups'][group]['stats']
+        needle=self.raw_search.text().strip().casefold()
+        rows=[]
+        for index,value in enumerate(stats):
+            name=PLAYER_STAT_NAMES[index] if index<len(PLAYER_STAT_NAMES) else f"Inconnu_{index}"
+            if needle not in str(index).casefold() and needle not in name.casefold() and needle not in txt(value).casefold():
+                continue
+            rows.append((str(index),name,txt(float(value),1)))
+        self.raw_count.setText(f"{len(rows)} / {len(stats)} compteurs affichés · {sum(bool(v) for v in stats)} non nuls.")
+        _fill_table(self.raw_table_restored,rows)
+
+    def _refresh_combat_detail(self):
+        if not self.store.profile or not hasattr(self,'combat_details'):return
+        group=self.combat_group.currentData()
+        data=self.store.profile['groups'][group]['enemies']
+        search=self.combat_search_restored.text().casefold().strip()
+        tokens=sorted(data[0], key=lambda tok:-data[0].get(tok,0))
+        rows=[]
+        icons=[]
+        for token in tokens:
+            name=_display_token(token)
+            if search not in name.casefold() and search not in token.casefold():continue
+            rows.append(tuple([name]+[txt(view.get(token,0)) for view in data[:5]]))
+            icons.append(game_icon(token))
+        _fill_table(self.combat_details,rows,icons)
+
+    def _draw_history_restored(self):
+        if not self.store.profile or not hasattr(self,'history_changes_restored'):return
+        records=self.store.rows(limit=5000)
+        group=self.history_group_restored.currentData()
+        measure=self.history_metric.currentData()
+        period=self.history_period.currentData()
+        gains=self.history_changes_restored.currentIndex()==1
+        points=history_points(records,measure,group,changes=gains)
+        if period is not None and points:
+            cutoff=points[-1][0]-period
+            points=[p for p in points if p[0]>=cutoff]
+        self.history_chart.set_data(points,
+            self.history_metric.currentText()+(' • gains' if gains else ' • total'))
+
+    def export_history_csv(self):
+        if not self.store.profile:return
+        path,_=QFileDialog.getSaveFileName(self,'Exporter l’historique','valheim_stats_historique.csv',
+            'Fichier CSV (*.csv)')
+        if not path:return
+        try:
+            rows=self.store.rows(limit=5000)
+            from valheim_reader import metrics
+            with open(path,'w',encoding='utf-8-sig',newline='') as out:
+                writer=csv.writer(out,delimiter=';')
+                writer.writerow(['date','fichier','groupe','créatures tuées','décès','boss',
+                                 'objets fabriqués','constructions','objets ramassés','heures'])
+                for _,ts,filename,p in rows:
+                    for group in ('Any','Default','Hard'):
+                        result=metrics(p,group)
+                        writer.writerow([datetime.fromtimestamp(ts).isoformat(timespec='seconds'),
+                           filename,group]+[result[key] for key in
+                             ('kills','deaths','bosses','crafted','built','picked_up','world_hours')])
+        except (OSError,ValueError) as exc:
+            QMessageBox.critical(self,"Export impossible",str(exc))
+            return
+        QMessageBox.information(self,"Export terminé",str(path))

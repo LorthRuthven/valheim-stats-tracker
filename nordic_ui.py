@@ -8,7 +8,7 @@ from __future__ import annotations
 import math
 import json
 from pathlib import Path
-from PySide6.QtCore import Qt, QByteArray, QRectF, QTimer, Property, QPropertyAnimation, QEasingCurve
+from PySide6.QtCore import Qt, QByteArray, QRectF, QTimer, Property, QPropertyAnimation, QEasingCurve, QObject, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QIcon, QPixmap, QLinearGradient
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -17,6 +17,9 @@ from PySide6.QtWidgets import (
     QGraphicsOpacityEffect, QProgressBar, QCheckBox
 )
 from desktop_v2 import TrackerWindow as BaseTracker, TrendChart, label, panel
+from restored_pages import RestoredPagesMixin
+from real_assets import hero_photo, achievement_icon, game_icon
+from windows_update_ui import UpdatePanel
 from v2_core import VERSION, progress_ranking
 
 BG='#0c1117'; SIDEBAR='#111b22'; PANEL='#17232c'
@@ -146,7 +149,41 @@ class AnimatedRing(QWidget):
         p.drawText(QRectF(9,102,142,26),Qt.AlignmentFlag.AlignCenter,'SUCCÈS ATTEINTS')
         p.end()
 
+class PhotoArtwork(Artwork):
+    def paintEvent(self,event):
+        photo=hero_photo()
+        if photo.isNull():
+            super().paintEvent(event)
+            return
+        p=QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        scale=max(self.width()/max(1,photo.width()),self.height()/max(1,photo.height()))
+        w=self.width()/scale
+        h=self.height()/scale
+        source=QRectF((photo.width()-w)/2,(photo.height()-h)/2,w,h)
+        p.drawPixmap(QRectF(self.rect()),photo,source)
+        p.end()
+
 class Hero(Artwork):
+    def paintEvent(self,event):
+        photo=hero_photo()
+        if photo.isNull():
+            super().paintEvent(event)
+            return
+        painter=QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        scale=max(self.width()/max(1,photo.width()),self.height()/max(1,photo.height()))
+        w=self.width()/scale
+        h=self.height()/scale
+        source=QRectF((photo.width()-w)/2,(photo.height()-h)/2,w,h)
+        painter.drawPixmap(QRectF(self.rect()),photo,source)
+        shade=QLinearGradient(0,0,self.width(),0)
+        shade.setColorAt(0,QColor(6,16,22,235))
+        shade.setColorAt(.54,QColor(6,16,22,195))
+        shade.setColorAt(1,QColor(6,16,22,45))
+        painter.fillRect(QRectF(self.rect()),shade)
+        painter.end()
+
     def __init__(self,parent=None):
         super().__init__(HERO,207,parent)
         lay=QHBoxLayout(self);lay.setContentsMargins(27,19,26,18)
@@ -163,10 +200,22 @@ class Hero(Artwork):
         lay.addLayout(col,1)
         self.ring=AnimatedRing();lay.addWidget(self.ring)
 
-class NordicWindow(BaseTracker):
+class _IconEvents(QObject):
+    finished=Signal(int,str)
+
+class NordicWindow(RestoredPagesMixin,BaseTracker):
+    NAV = BaseTracker.NAV + [
+        ('Centre de progression','Priorités'),
+        ('Boss','Boss'),
+        ('Activités','Objets'),
+        ('Compétences','Compétences'),
+        ('Compteurs bruts','Statistiques'),
+    ]
     def __init__(self,store=None):
         self.motion=True
         self.fade=None
+        self.icon_events=_IconEvents()
+        self.icon_events.finished.connect(self._icons_finished)
         super().__init__(store=store)
         self.setWindowTitle('Valheim Stats Tracker • Chroniques nordiques • '+VERSION)
         self.setStyleSheet(QSS)
@@ -177,9 +226,18 @@ class NordicWindow(BaseTracker):
         root=QWidget();self.setCentralWidget(root)
         row=QHBoxLayout(root);row.setContentsMargins(0,0,0,0);row.setSpacing(0)
         side=QFrame();side.setObjectName('sidebar');side.setFixedWidth(232)
-        menu=QVBoxLayout(side);menu.setContentsMargins(16,20,15,17);menu.setSpacing(10)
+        menu=QVBoxLayout(side);menu.setContentsMargins(13,12,12,12);menu.setSpacing(4)
         mast=QHBoxLayout()
-        logo=Artwork(EMBLEM,61);logo.setFixedSize(61,61)
+        # En priorité le véritable visuel promotionnel fourni par Steam.
+        logo=QLabel()
+        real_logo=QPixmap(str(__import__('real_assets').bundled_assets()/'logo.jpg'))
+        if not real_logo.isNull():
+            logo.setPixmap(real_logo.scaled(100,57,Qt.AspectRatioMode.KeepAspectRatio,
+                                            Qt.TransformationMode.SmoothTransformation))
+        else:
+            logo.setText('V')
+            logo.setStyleSheet('color:#e3ad71;font:bold 34pt Georgia;')
+        logo.setFixedSize(100,57)
         mast.addWidget(logo)
         branding=QVBoxLayout()
         name=QLabel('VALHEIM');name.setStyleSheet('color:#f6ca88;font:bold 17pt Georgia;')
@@ -187,17 +245,17 @@ class NordicWindow(BaseTracker):
         mast.addLayout(branding);menu.addLayout(mast)
         tag=QLabel('  CHRONIQUES NORDIQUES  •  V'+VERSION)
         tag.setStyleSheet('color:#ddae6f;font:9pt Segoe UI;')
-        menu.addWidget(tag);menu.addSpacing(13)
+        menu.addWidget(tag);menu.addSpacing(4)
         menu.addWidget(label('LES CHAPITRES',muted=True))
         self.nav_buttons=[]
         for idx,(name,_) in enumerate(self.NAV):
             btn=QPushButton(name);btn.setObjectName('nav');btn.setCheckable(True)
-            btn.setMinimumHeight(47)
-            btn.setIcon(rune_icon(('home','trophy','skull','history','settings')[idx]))
+            btn.setMinimumHeight(35)
+            btn.setIcon(rune_icon(('home','trophy','skull','history','settings','trophy','skull','axe','tree','settings')[idx]))
             btn.clicked.connect(lambda _=False,i=idx:self.show_page(i))
             menu.addWidget(btn);self.nav_buttons.append(btn)
         menu.addStretch()
-        glimpse=Artwork(HERO,114)
+        glimpse=PhotoArtwork(HERO,72)
         menu.addWidget(glimpse)
         menu.addWidget(label('PERSONNAGE',muted=True))
         self.sidebar_character=label('Aucun personnage',wrap=True)
@@ -224,7 +282,7 @@ class NordicWindow(BaseTracker):
         ml.addWidget(top)
         self.stack=QStackedWidget();ml.addWidget(self.stack,1)
         self._make_dashboard();self._make_achievements();self._make_combat()
-        self._make_history();self._make_settings()
+        self._make_history();self._make_settings();self._make_restored_pages()
         row.addWidget(main,1)
         self.statusBar().showMessage('Sans mod • Lecture seule • Vérification toutes les 5 secondes')
     def _scroll_page(self):
@@ -257,6 +315,45 @@ class NordicWindow(BaseTracker):
             layout.addWidget(self.motion_checkbox)
             layout.addWidget(label('Illustrations vectorielles, pictogrammes et effets discrets.',muted=True,wrap=True))
             inner.layout().insertWidget(0,frame)
+            updates, update_layout=panel('MISES À JOUR WINDOWS',
+                'Vérification GitHub, SHA-256, sauvegarde et redémarrage.')
+            self.update_controller=UpdatePanel(self)
+            update_layout.addWidget(self.update_controller)
+            inner.layout().insertWidget(1,updates)
+            icons, icon_layout=panel('VÉRITABLES ICÔNES VALHEIM',
+                'Extraction locale des sprites depuis ton jeu installé ; aucun mod.')
+            import_button=QPushButton('Importer depuis le dossier de Valheim')
+            import_button.clicked.connect(self._import_game_icons)
+            icon_layout.addWidget(import_button)
+            self.icon_status=label('Sélectionne le dossier contenant valheim.exe.',muted=True,wrap=True)
+            icon_layout.addWidget(self.icon_status)
+            inner.layout().insertWidget(2,icons)
+    def _import_game_icons(self):
+        from PySide6.QtWidgets import QFileDialog
+        from v2_core import app_dir
+        from game_icon_extraction import extract_owned_icons
+        import threading
+        folder=QFileDialog.getExistingDirectory(self,'Dossier de Valheim (valheim.exe)')
+        if not folder:return
+        self.icon_status.setText('Extraction des icônes réelles en cours…')
+        def job():
+            try:
+                count=extract_owned_icons(folder,app_dir()/'game_icons')
+                self.icon_events.finished.emit(count,'')
+            except Exception as exc:
+                self.icon_events.finished.emit(0,str(exc))
+        threading.Thread(target=job,daemon=True).start()
+
+    def _icons_finished(self,count,error):
+        if error:
+            self.icon_status.setText('Extraction indisponible : '+error)
+        else:
+            self.icon_status.setText(f'{count} icônes issues de Valheim enregistrées en local.')
+            from real_assets import _qicon
+            _qicon.cache_clear()
+            self._refresh_restored_pages()
+            self.draw_achievements()
+
     def _load_motion(self):
         path=self.store.directory/'appearance.json'
         try:
@@ -296,6 +393,7 @@ class NordicWindow(BaseTracker):
         self.fade=anim;anim.start()
     def populate(self):
         super().populate()
+        self._refresh_restored_pages()
         profile=self.store.profile
         if profile:
             self.hero.title.setText('LA SAGA DE '+profile['name'].upper())
@@ -326,6 +424,29 @@ class NordicWindow(BaseTracker):
                 animation.start()
     def draw_achievements(self):
         super().draw_achievements()
+        if not self.store.profile:return
+        index={r['key']:r for r in self.results}
+        for i in range(self.ach_tree.topLevelItemCount()):
+            item=self.ach_tree.topLevelItem(i)
+            result=index.get(item.data(0,Qt.ItemDataRole.UserRole),{})
+            ico=achievement_icon(result.get('title_en',''))
+            if not ico.isNull():item.setIcon(0,ico)
+        if hasattr(self,'ach_category'):
+            category=self.ach_category.currentText()
+            origin=self.ach_origin.currentIndex()
+            for i in range(self.ach_tree.topLevelItemCount()):
+                item=self.ach_tree.topLevelItem(i)
+                result=index.get(item.data(0,Qt.ItemDataRole.UserRole),{})
+                visible=category=='Toutes catégories' or result.get('category')==category
+                if origin==1:visible &= result.get('origin')=='Jeu + Steam'
+                if origin==2:visible &= result.get('origin')=='Interne uniquement'
+                item.setHidden(not visible)
+        if hasattr(self,'ach_parts_search'):
+            search=self.ach_parts_search.text().strip().casefold()
+            for i in range(self.ach_parts.rowCount()):
+                cell=self.ach_parts.item(i,0)
+                self.ach_parts.setRowHidden(i,bool(search and cell and search not in cell.text().casefold()))
+
         lookup={a['key']:a for a in self.results}
         for i in range(self.ach_tree.topLevelItemCount()):
             item=self.ach_tree.topLevelItem(i)

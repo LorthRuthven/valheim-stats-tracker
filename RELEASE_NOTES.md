@@ -1,17 +1,28 @@
-# Valheim Stats Tracker V2.1.1 — correctif d'affichage
+# Valheim Stats Tracker V2.2.0 — restauration fonctionnelle et vraies images
 
-Cette version corrige un défaut visuel majeur de la V2.1 : les textes de l'interface avaient un fond sombre opaque, produisant des rectangles noirs autour des titres, valeurs et descriptions.
+## Toutes les fonctions rétablies dans la version Windows Qt
+- Centre de progression complet : classement, favoris, critères restants, plan d'action et rapports.
+- Tableau des huit boss selon les groupes de difficulté.
+- Bestiaire détaillé avec éliminations totales, poings, magie, distance et mêlée.
+- Activités : ressources, fabrication, ramassage, constructions et nourriture, avec recherche et répartition par catégorie.
+- Compétences : niveaux, XP enregistrée et progression.
+- Historique : graphiques par groupe de difficulté, cumuls et gains, export CSV.
+- Explorateur des 205 compteurs bruts.
+- Succès : filtres par catégorie et origine, recherche des critères, **listes de collection non tronquées**.
+- Favoris et historique conservés depuis V1.9.
 
-## Corrections visuelles
-- Les étiquettes Qt sont désormais transparentes sur les cartes et l'illustration.
-- Le style global n'applique plus une couleur de fond à tous les composants indiscriminément.
-- Cartes et panneaux avec un contraste plus harmonieux, bordures moins lourdes et tableaux plus lisibles.
-- En-têtes, valeurs et barres de progression affinés ; navigation et cartes moins volumineuses.
-- Test de régression visant explicitement les anciens rectangles noirs.
-- Les illustrations et animations de « Chroniques nordiques » restent présentes.
+## Ressources visuelles originales du jeu
+- Remplacement de la scène SVG simplifiée par une photographie de Valheim issue du kit presse officiel.
+- Logos de succès authentiques issus de Steam Community quand accessibles.
+- Logo promotionnel original Valheim depuis Steam lorsque disponible.
+- Import facultatif, sans mod, des vrais sprites du jeu à partir de ton installation locale (Réglages → Icônes originales). Aucun fichier de jeu n'est modifié.
+- Les éléments dont l'image n'a pas été vérifiée restent sans icône (pas de faux logo).
+- Attribution des ressources dans assets/ATTRIBUTIONS.txt.
 
-## Données et installation
-- Aucun changement au lecteur de sauvegardes, aux statistiques, aux favoris ou à l'historique SQLite.
-- Test automatique Linux + test de démarrage et de rendu sous Qt sur Windows.
-- **Windows :** installe l'archive `Valheim_Stats_Tracker_v2.1.1_Windows.zip` en remplaçant l'ancien dossier. L'updater Python historique ne met pas à jour directement l'exécutable Qt autonome.
-- Sans mod. Sauvegardes `.fch` en lecture seule.
+## Mise à jour Windows autonome
+- Vérification de la release Windows officielle depuis les réglages et au démarrage.
+- Téléchargement et contrôle SHA-256, validation du ZIP, copie des anciens fichiers, remplacement externe et relance.
+- Ce système ne dépend pas de l'ancien updater Tkinter.
+- **Pour installer cette première version depuis une V2.1, un dernier téléchargement manuel est nécessaire** : les V2.1 ne possèdent pas encore l'updater Windows.
+
+Sans mod, sauvegardes .fch toujours en lecture seule. Les badges Steam ne sont pas prétendus officiellement débloqués.
