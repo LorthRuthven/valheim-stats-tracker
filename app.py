@@ -304,6 +304,7 @@ class TrackerApp(tk.Tk):
         self.achievement_selected = 'lumberjack'
         self.achievement_results = []
         self.achievement_previous = {}
+        self.achievement_detail_limit = 65
         self.activity = tk.StringVar(value='Ressources collectées')
         self.metric = tk.StringVar(value='Créatures tuées')
         self.history_group = tk.StringVar(value='Any')
@@ -508,7 +509,7 @@ class TrackerApp(tk.Tk):
         self.page_var.set(name)
         title_map = {
             'Vue d’ensemble': ('Vue d’ensemble', 'Les statistiques essentielles de ton personnage en un coup d’œil.'),
-            'Succès': ('Succès', '55 entrées du jeu : 53 actives sur Steam et 2 internes non vérifiées. Progrès issus de la sauvegarde.'),
+            'Succès': ('Succès', '55 entrées du jeu : 53 actives et 2 internes non vérifiées ; critères de collection Valheim 1.0.21. Progrès issus de la sauvegarde.'),
             'Boss': ('Boss', 'Progression des 8 boss, filtres par difficulté et éliminations aux poings.'),
             'Combats': ('Combats', 'Bestiaire et types d’éliminations enregistrés par le jeu.'),
             'Activités': ('Activités', 'Ressources, fabrication, construction et vue nettoyée par catégories utiles.'),
@@ -600,7 +601,7 @@ class TrackerApp(tk.Tk):
             small.config(text=hint)
 
         filt_shell, filt = self._panel(tab, 'Succès du jeu et Steam',
-            'Les données internes ne sont pas des déblocages confirmés. Les objectifs non calculables restent séparés.', pad=12)
+            'Objectifs calculés depuis la sauvegarde. Aucune confirmation directe des déblocages Steam.', pad=12)
         filt_shell.pack(fill='x', pady=(0, 10))
         filter_row = tk.Frame(filt, bg=PANEL)
         filter_row.pack(fill='x')
@@ -672,7 +673,12 @@ class TrackerApp(tk.Tk):
         selected = tree.selection()
         if selected:
             self.achievement_selected = selected[0]
+        self.achievement_detail_limit = 65
         self._render_achievement_details()
+
+    def _show_more_achievement_details(self):
+        self.achievement_detail_limit += 65
+        self._render_achievement_details(reset_scroll=False)
 
     def _paint_achievement_progress(self):
         if not hasattr(self, 'achievement_progress'):
@@ -687,7 +693,7 @@ class TrackerApp(tk.Tk):
             c.create_rectangle(0, 0, width * fraction, 14,
                                fill=GREEN if result['complete'] else ACCENT, outline='')
 
-    def _render_achievement_details(self):
+    def _render_achievement_details(self, reset_scroll=True):
         if not hasattr(self, 'achievement_detail_title'):
             return
         result = next((v for v in self.achievement_results if v['key'] == self.achievement_selected), None)
@@ -718,7 +724,13 @@ class TrackerApp(tk.Tk):
                 f'{name} +{fmt(delta)}' if delta > 0 else f'{name} {fmt(delta)}' for name, delta in changes[:3])
         self.achievement_note.config(text=result['description'] +
             ('\n\n' + result['note'] if result['note'] else '') + change_text)
-        for part in result['parts']:
+        all_parts = sorted(result['parts'], key=lambda part: (part['complete'], part['label'].casefold()))
+        shown_parts = all_parts[:self.achievement_detail_limit]
+        if len(all_parts) > 65:
+            lbl(self.achievement_detail_body,
+                f"{len(shown_parts)} / {len(all_parts)} critères affichés • Manquants d'abord",
+                9, ACCENT, True).pack(anchor='w', pady=(0, 8))
+        for part in shown_parts:
             row = tk.Frame(self.achievement_detail_body, bg=PANEL)
             row.pack(fill='x', pady=2)
             lbl(row, '✓' if part['complete'] else '○', 12,
@@ -735,7 +747,12 @@ class TrackerApp(tk.Tk):
                 status_color = GREEN if part['complete'] else MUTED
             lbl(row, status_text, 10, status_color, True,
                 wraplength=175, justify='right').pack(side='right')
-        self.achievement_canvas.yview_moveto(0)
+        if len(shown_parts) < len(all_parts):
+            self._button(self.achievement_detail_body,
+                f"Afficher 65 critères supplémentaires ({len(all_parts)-len(shown_parts)} restants)",
+                self._show_more_achievement_details).pack(fill='x', pady=(12, 8))
+        if reset_scroll:
+            self.achievement_canvas.yview_moveto(0)
 
     def refresh_achievements(self):
         if not self.current or not hasattr(self, 'achievement_table'):

@@ -10,9 +10,8 @@ Application Windows sans mod pour suivre les statistiques de personnages **Valhe
 **Confidentialité :** aucune sauvegarde personnelle ou historique n'est stocké dans ce dépôt. Les fichiers `.fch` sont lus en lecture seule ; l'historique local est conservé dans `%LOCALAPPDATA%\ValheimStatsTracker`.
 
 ## Page Succès
-La page d’accueil répertorie **55 entrées issues des ressources du jeu** : 53 succès actifs sur Steam et deux entrées internes non confirmées (*The Pugilist*, *The Most Worthy*). 43 succès actifs ont une progression calculable à partir des compteurs `Any` et des groupes de difficulté des boss. Dix autres nécessitent des listes de prefabs versionnées ou le statut de jeu qui n'est pas dans les statistiques du `.fch`.
-
-Pour les deux entrées internes, aucune méthode de déblocage n'est confirmée. Les éliminations classées « Poings » sont montrées uniquement comme un diagnostic, pas comme une preuve de combat intégral. **Objectif atteint dans la sauvegarde ne signifie pas succès Steam ou en jeu débloqué.**
+La page d’accueil suit 31 succès chiffrés à partir des compteurs `Any` et des groupes de difficulté des boss.
+Elle affiche la progression, les critères précis et le nombre d’actions restantes. Les données ne sont **pas** une lecture du statut des succès Steam.
 
 ## Suivi de progression
 - **Boss** : huit boss et compteurs par difficulté (`Normal +`, `Difficile +`, etc.) ; les groupes sont imbriqués et ne doivent pas être additionnés.
@@ -31,3 +30,6 @@ La recherche de nouvelles versions est configurée vers ce dépôt. Le programme
 
 ## Limites
 Ce programme ne modifie ni les fichiers du jeu, ni les succès, ni les sauvegardes. Il ne fournit pas les statistiques de combat à la seconde : l'actualisation suit les sauvegardes.
+
+
+V1.7 : suivi des listes exhaustives (Valheim 1.0.21) pour créatures, trophées, armes, recettes, aliments et constructions. Toutes les entrées attendues sont visibles dans la page Succès, avec pagination et critères manquants en priorité.

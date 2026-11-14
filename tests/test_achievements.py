@@ -12,7 +12,7 @@ def synthetic():
     groups = {}
     for name in ('Any', 'Default', 'Hard'):
         stats = [0.0] * 205
-        groups[name] = {'stats': stats, 'enemies': [{}, {}, {}, {}, {}], 'pickables': {}, 'crafted': {}}
+        groups[name] = {'stats': stats, 'enemies': [{}, {}, {}, {}, {}], 'pickables': {}, 'crafted': {}, 'picked_up': {}, 'foods_eaten': {}, 'pieces_built': {}}
     groups['RawStats'] = {'stats': [0.0]*205}
     return {'groups': groups}
 
@@ -139,12 +139,43 @@ class InternalCatalogueTests(unittest.TestCase):
         p['groups']['Any']['stats'][STAT_INDEX['PlayerSpawn']] = 1
         self.assertTrue(evaluate_one(p, next(x for x in SPECS if x.key == 'arrived'))['complete'])
 
-    def test_no_guessing_for_collection_sets(self):
+    def test_exact_collection_criteria(self):
+        from valheim_reader import COLLECTIONS, EXPECTED_COUNTS
         p = synthetic()
-        hunter = evaluate_one(p, next(x for x in SPECS if x.key == 'hunter'))
-        self.assertFalse(hunter['measurable'])
-        self.assertIsNone(hunter['percent'])
-        self.assertFalse(hunter['complete'])
+        for key, tokens in COLLECTIONS.items():
+            r = evaluate_one(p, spec(key))
+            self.assertTrue(r['measurable'])
+            self.assertEqual(r['total_conditions'], EXPECTED_COUNTS[key])
+            self.assertEqual(r['completed_conditions'], 0)
+            self.assertTrue(all(part['key'] in tokens for part in r['parts']))
+        self.assertEqual(len(COLLECTIONS['carpenter']), 394)
+        self.assertEqual(len(COLLECTIONS['artisan']), 414)
+
+    def test_collection_sources_and_difficulty(self):
+        p = synthetic()
+        p['groups']['Any']['enemies'][0]['$enemy_abomination'] = 2
+        p['groups']['Hard']['enemies'][0]['$enemy_abomination'] = 0
+        self.assertEqual(evaluate_one(p, spec('hunter'))['completed_conditions'], 1)
+        self.assertEqual(evaluate_one(p, spec('master_hunter'))['completed_conditions'], 0)
+        p['groups']['Any']['picked_up']['$item_trophy_abomination'] = 1
+        self.assertEqual(evaluate_one(p, spec('trophy_collector'))['completed_conditions'], 1)
+        p['groups']['Any']['crafted']['$item_sword_dyrnwyn'] = 1
+        self.assertEqual(evaluate_one(p, spec('blacksmith'))['completed_conditions'], 1)
+        self.assertEqual(evaluate_one(p, spec('artisan'))['completed_conditions'], 1)
+        p['groups']['Any']['foods_eaten']['$item_blueberries'] = 1
+        self.assertEqual(evaluate_one(p, spec('gourmet'))['completed_conditions'], 1)
+        p['groups']['Any']['pieces_built']['$piece_woodwall'] = 1
+        self.assertEqual(evaluate_one(p, spec('carpenter'))['completed_conditions'], 1)
+
+    def test_meta_prerequisites_are_visible_without_claiming_steam_status(self):
+        p = synthetic()
+        for key, amount in (('kings_queens', 6), ('child_odin', 4)):
+            result = evaluate_one(p, spec(key))
+            self.assertTrue(result['measurable'])
+            self.assertEqual(result['total_conditions'], amount)
+            self.assertFalse(result['complete'])
+            self.assertNotIn('steam_unlocked', result)
+
 
 if __name__ == '__main__':
     unittest.main()

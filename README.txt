@@ -54,3 +54,6 @@ V1.5.0 : nouvel écran Succès. 31 objectifs chiffrés avec progression par crit
 
 Version 1.6.0 : la page Succès répertorie 55 entrées (53 actives sur Steam + 2 internes non vérifiées).
 43 sont mesurables depuis les sauvegardes .fch ; les autres sont signalées non calculables.
+
+
+V1.7 : suivi des listes exhaustives (Valheim 1.0.21) pour créatures, trophées, armes, recettes, aliments et constructions. Toutes les entrées attendues sont visibles dans la page Succès, avec pagination et critères manquants en priorité.

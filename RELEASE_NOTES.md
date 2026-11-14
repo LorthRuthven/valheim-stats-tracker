@@ -1,20 +1,8 @@
-# Valheim Stats Tracker v1.6.0 — catalogue interne et Steam
+# Valheim Stats Tracker V1.7.0 — collections et succès complets
 
-## Catalogue des 55 entrées
-- 53 succès actifs répertoriés sur Steam et dans le jeu ; deux entrées présentes uniquement dans certaines données internes, sans déblocage actif confirmé.
-- Filtres « Jeu + Steam » / « Internes supplémentaires » et état « Non calculable ».
-- Affichage des entrées internes The Pugilist et The Most Worthy sans faux statut de déblocage.
-
-## Progrès supplémentaires fiables
-- Huit succès individuels de boss, vérifiés par le fichier .fch.
-- I Have Arrived! suivi depuis le compteur PlayerSpawn.
-- The Homesteader et The Architect : suivi des catégories de construction, statut indicatif car les conditions locales de construction peuvent différer.
-- The Chosen One : détection de fabrication de Dyrnwyn.
-- 43 succès dont les conditions sont désormais calculables dans la sauvegarde ; 10 autres actifs affichés comme non calculables plutôt que de donner une estimation trompeuse.
-- The Pugilist : détail indicatif des éliminations classées Poings par boss, sans prétendre valider un combat 100 % aux poings.
-- The Most Worthy : indicateur partiel des objectifs mesurables, sans prétendre connaître les déblocages réels.
-
-## Fiabilité
-- Les compteurs sont lus en lecture seule, uniquement après sauvegarde du personnage.
-- Les données ne prouvent pas le déblocage réel du succès dans Steam ou le jeu.
-- Historique SQLite et configuration utilisateur préservés.
+- 8 succès de collection désormais suivis critère par critère, à partir des listes de prefabs Valheim 1.0.21 : The Hunter, The Master Hunter (difficile+), The Trophy Collector, The Blacksmith, The Master Chef, The Artisan, The Gourmet et The Carpenter.
+- 2 succès de maîtrise (Kings and Queens of Valheim / Child of Odin) calculés à partir de leurs prérequis statistiques, sans prétendre lire l'état Steam.
+- Détail des centaines d'objets/ennemis avec les manquants en premier, groupes de 65 lignes pour conserver une interface fluide.
+- Les 55 entrées du catalogue sont conservées (53 jeu + Steam, 2 internes non vérifiées).
+- Source et version des critères : Melichor/ValheimSaveParser, listes de prefabs issues des ressources Valheim 1.0.21.
+- Lecture seule des sauvegardes .fch, données SQLite et paramètres préservés.

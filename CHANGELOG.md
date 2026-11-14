@@ -1,11 +1,7 @@
-# Changelog
-
-## v1.6.0
-- Catalogue complet de 55 entrées, dont 53 succès actifs et 2 entrées internes non vérifiées.
-- Filtres par source et par état de calcul ; distinction stricte entre compteurs calculés et déblocages confirmés.
-- 8 boss individuels, I Have Arrived!, The Homesteader, The Architect et The Chosen One pris en charge.
-- Diagnostics sans validation pour The Pugilist et The Most Worthy.
-- Tests supplémentaires du catalogue, des conditions de boss et des limites de la sauvegarde.
+## V1.7.0
+- Collections exactes Valheim 1.0.21 : créatures, trophées, armes, nourritures et constructions.
+- Deux méta-succès suivis par leurs prérequis.
+- Critères manquants affichés en premier, pagination pour grandes listes.
 
 ## v1.5.0
 - Nouvel onglet Succès (31 objectifs mesurables), suivi complet des critères chiffrés.
