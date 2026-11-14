@@ -1,6 +1,6 @@
 {
-  "version": "1.8.1",
-  "url": "https://github.com/LorthRuthven/valheim-stats-tracker/releases/download/v1.8.1/Valheim_Stats_Tracker_v1.8.1.zip",
-  "sha256": "626c753365bf1db753c109475643a31dbc9c4d94100b1b4c80479d8dec3e93d9",
-  "notes": "# Valheim Stats Tracker 1.8.1 — correctif updater\n\n- Corrige « Fichier non autorisé dans le paquet » depuis la V1.7 ou les versions antérieures.\n- Les 1 763 noms français sont maintenant embarqués dans `valheim_reader.py`.\n- L’archive utilise exclusivement les huit fichiers acceptés par les anciennes versions de l’updater.\n- Aucun changement des sauvegardes ni de l’historique ; sans mod."
+  "version": "1.8.2",
+  "url": "https://github.com/LorthRuthven/valheim-stats-tracker/releases/download/v1.8.2/Valheim_Stats_Tracker_v1.8.2.zip",
+  "sha256": "c0c47a505811e814d47070064218c7405ab7d8c90a5444763032c2c1b9a37816",
+  "notes": "# Valheim Stats Tracker 1.8.2 — succès en français\n\n- Localisation officielle des 55 titres et descriptions de succès (textes français de Valheim).\n- Menus de difficulté traduits : toutes difficultés, normal, difficile, très difficile, etc.\n- Fiche « Maîtrise de la chasse » : affiche séparément les espèces vaincues toutes difficultés confondues et celles vaincues en difficile.\n- Traduction des noms de boss (L'Aîné, Masse-d'Os, Kall Mandefimbul) et des prérequis des succès composés.\n- Les noms anglais restent recherchables, sans toucher aux identifiants de calcul des succès.\n- Archive compatible avec la liste blanche des anciens updaters (huit fichiers historiques) ; historique intact et aucun mod."
 }
