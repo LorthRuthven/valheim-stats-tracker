@@ -1,3 +1,8 @@
+## V2.1.1 — correctif de l'interface
+- Supprime les rectangles noirs créés par l'application du style Qt à tous les QWidget.
+- Améliore lisibilité des cartes et tableaux ; affine les espacements et les bordures.
+- Tests dédiés à la transparence des QLabel et au démarrage Qt Windows.
+
 ## v2.0.0
 - Interface Windows Qt autonome : tableau de bord moderne, graphiques interactifs, succès, boss et rapports.
 - Nouveau moteur indépendant de Tkinter conservant l'historique SQLite et les favoris existants.

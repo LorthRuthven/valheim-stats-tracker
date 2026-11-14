@@ -1,17 +1,17 @@
-# Valheim Stats Tracker V2.1.0 — Chroniques nordiques
+# Valheim Stats Tracker V2.1.1 — correctif d'affichage
 
-L'interface de la V2 reçoit une identité visuelle nettement plus travaillée : **paysage de fjord, maison longue et drakkar en illustration SVG hors ligne**, emblème runique, icônes illustrées de navigation et de catégories, palette ardoise et bronze et nouvelles cartes de progression.
+Cette version corrige un défaut visuel majeur de la V2.1 : les textes de l'interface avaient un fond sombre opaque, produisant des rectangles noirs autour des titres, valeurs et descriptions.
 
-## Expérience
-- Nouvelle page d'accueil illustrée avec le nom du personnage et une **jauge circulaire animée** des objectifs actifs atteints.
-- Transitions douces entre les pages, barres de progression animées dans les objectifs prioritaires, survols des cartes et boutons.
-- Icônes des succès, boss, combats et métriques, navigation revisitée.
-- Les animations peuvent être désactivées dans **Réglages → Ambiance et mouvements**, et le choix est conservé pour les prochaines ouvertures.
-- Les illustrations et le logo sont des créations graphiques originales intégrées à l'application, disponibles **hors connexion**.
+## Corrections visuelles
+- Les étiquettes Qt sont désormais transparentes sur les cartes et l'illustration.
+- Le style global n'applique plus une couleur de fond à tous les composants indiscriminément.
+- Cartes et panneaux avec un contraste plus harmonieux, bordures moins lourdes et tableaux plus lisibles.
+- En-têtes, valeurs et barres de progression affinés ; navigation et cartes moins volumineuses.
+- Test de régression visant explicitement les anciens rectangles noirs.
+- Les illustrations et animations de « Chroniques nordiques » restent présentes.
 
-## Préservation des données
-Le moteur de lecture v2, les 55 entrées suivies, le suivi des sauvegardes, les favoris et l'historique SQLite restent inchangés. L'application ne modifie jamais le fichier .fch et n'affirme pas connaître les déblocages Steam.
-
-**À installer sur Windows 10/11 :** `Valheim_Stats_Tracker_v2.1.0_Windows.zip` → extraire entièrement le dossier → lancer `ValheimStatsTracker.exe` avec son dossier `_internal`.
-
-Le ZIP historique compatible updater V1.x est également publié, mais il conserve l'interface Tkinter ; seule l'archive **Windows** contient l'interface Qt illustrée.
+## Données et installation
+- Aucun changement au lecteur de sauvegardes, aux statistiques, aux favoris ou à l'historique SQLite.
+- Test automatique Linux + test de démarrage et de rendu sous Qt sur Windows.
+- **Windows :** installe l'archive `Valheim_Stats_Tracker_v2.1.1_Windows.zip` en remplaçant l'ancien dossier. L'updater Python historique ne met pas à jour directement l'exécutable Qt autonome.
+- Sans mod. Sauvegardes `.fch` en lecture seule.

@@ -14,6 +14,25 @@ except ImportError:
 
 @unittest.skipIf(QApplication is None,'Qt non installé dans cet environnement')
 class QtWindowTests(unittest.TestCase):
+
+    def test_labels_have_transparent_background(self):
+        # Régression visuelle V2.1 : les QLabel ne doivent pas devenir
+        # des rectangles opaques autour de chaque texte.
+        from nordic_ui import QSS
+        import re
+        self.assertRegex(QSS, r'QLabel\s*\{\s*background:transparent')
+        self.assertNotRegex(QSS, r'QMainWindow\s*,\s*QWidget\s*\{\s*background')
+        app=QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as tmp:
+            window=NordicWindow(TrackerStore(tmp))
+            window.show()
+            app.processEvents()
+            self.assertTrue(window.hero.title.isVisible())
+            self.assertTrue(window.hero.renderer.isValid())
+            self.assertTrue(window.hero.title.parentWidget().isVisible())
+            self.assertFalse(window.grab().isNull())
+            window.close()
+
     def test_navigation_graphics_and_motion(self):
         app=QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as tmp:

@@ -23,6 +23,11 @@ class VectorArtworkTests(unittest.TestCase):
             self.assertEqual(image.tag,'{http://www.w3.org/2000/svg}svg')
             self.assertGreater(len(list(image.iter())),3 if key == 'EMBLEM' else 15)
 
+    def test_no_opaque_label_boxes(self):
+        ui=(ROOT/'nordic_ui.py').read_text(encoding='utf8')
+        self.assertIn('QLabel{{background:transparent',ui)
+        self.assertNotIn("QMainWindow,QWidget{{background:",ui)
+
     def test_no_network_in_new_theme(self):
         text=(ROOT/'nordic_ui.py').read_text(encoding='utf8')
         self.assertNotIn('urllib.request',text)

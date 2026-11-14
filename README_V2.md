@@ -31,3 +31,7 @@ Le workflow GitHub Actions lance les tests Linux, construit l'archive Windows su
 
 ## Chroniques nordiques (V2.1)
 La version Windows Qt utilise un bandeau graphique SVG original, une identité runique et des icônes par catégorie. Les transitions, compteurs circulaires et barres de progression sont animés avec Qt et désactivables dans les réglages (fichier local appearance.json). Les images sont embarquées et ne nécessitent ni connexion ni mod. La lecture .fch et le répertoire des données restent identiques à la V2.0.
+
+
+### V2.1.1 — correctif de style Qt
+Les étiquettes de texte ont un fond transparent pour éviter les rectangles noirs visibles dans la V2.1 sur Windows. Le système de données, le lecteur `.fch` et les favoris sont inchangés. Les utilisateurs de l'exécutable Windows remplacent leur dossier d'application ; l'ancien updater Python ne convertit pas une installation Tkinter en exécutable PySide6.

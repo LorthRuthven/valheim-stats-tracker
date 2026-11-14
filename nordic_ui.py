@@ -73,15 +73,21 @@ HERO="""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 370" preserveA
 <path fill="#08141c" opacity=".60" d="M0 0h715L475 370H0z"/></svg>"""
 
 QSS=f"""
-QMainWindow,QWidget{{background:{BG};color:{FG};font:10pt 'Segoe UI';}}
+/* Un fond sur QWidget colorait aussi les QLabel : bandes noires visibles en V2.1. */
+QMainWindow{{background:{BG};color:{FG};font:10pt 'Segoe UI';}}
+QWidget{{color:{FG};font:10pt 'Segoe UI';}}
+QLabel{{background:transparent;border:none;}}
+QFrame{{background:transparent;border:none;}}
+QStackedWidget,QScrollArea{{background:transparent;border:none;}}
+QScrollArea>QWidget>QWidget{{background:transparent;}}
 QFrame#sidebar{{background:{SIDEBAR};border-right:1px solid #38464a;}}
 QFrame#topbar{{background:#101b23;border-bottom:1px solid #33444b;}}
-QFrame#panel{{background:{PANEL};border:1px solid #344b50;border-radius:14px;}}
-QFrame#metric{{background:#1b2932;border:1px solid #3b5152;border-radius:13px;}}
-QFrame#metric:hover{{background:#24343d;border:1px solid {BRONZE};}}
-QLabel#section{{color:#fff1dd;font:bold 15pt 'Segoe UI';}}
-QLabel#muted{{color:{MUTED};}}
-QLabel#metricValue{{color:#fff1df;font:bold 25pt 'Segoe UI';}}
+QFrame#panel{{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #1e3039,stop:1 #14222c);border:1px solid #385057;border-radius:14px;}}
+QFrame#metric{{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #22343d,stop:1 #17262f);border:1px solid #3e555b;border-radius:13px;}}
+QFrame#metric:hover{{background:#28404a;border:1px solid {BRONZE};}}
+QLabel#section{{color:#fff1dd;background:transparent;font:bold 13pt 'Segoe UI';}}
+QLabel#muted{{background:transparent;color:{MUTED};}}
+QLabel#metricValue{{background:transparent;color:#fff1df;font:bold 23pt 'Segoe UI';}}
 QPushButton{{background:#273842;color:{FG};border:1px solid #46575a;border-radius:9px;padding:10px 13px;font-weight:600;}}
 QPushButton:hover{{background:#34515a;border-color:{BRONZE};}}
 QPushButton#primary{{background:{BRONZE};color:#1c2428;border-color:#f6d79f;}}
@@ -89,13 +95,13 @@ QPushButton#nav{{background:transparent;border:1px solid transparent;text-align:
 QPushButton#nav:hover{{background:#273b43;border-color:#3e565a;}}
 QPushButton#nav:checked{{background:#303b37;color:#ffdbae;border-color:#96774e;font-weight:bold;}}
 QLineEdit,QComboBox{{background:#24343e;border:1px solid #475f61;border-radius:8px;padding:9px;color:{FG};}}
-QTableWidget,QTreeWidget{{background:{PANEL};alternate-background-color:#1e2c35;border:0;color:{FG};selection-background-color:#40564f;outline:none;}}
-QHeaderView::section{{background:#26373e;color:#f2cd9b;border:0;padding:10px;font-weight:bold;}}
+QTableWidget,QTreeWidget{{background:#162630;alternate-background-color:#1c2d37;border:1px solid #344d53;border-radius:8px;color:{FG};selection-background-color:#3c5c53;outline:none;}}
+QHeaderView::section{{background:#23363d;color:#e9c7a1;border:0;border-bottom:1px solid #41575c;padding:10px;font-weight:600;}}
 QTableWidget::item,QTreeWidget::item{{padding:6px;}}
-QScrollArea{{border:0;}}
+QScrollArea{{background:transparent;border:0;}}
 QScrollBar:vertical{{width:10px;background:#15252d;}}
 QScrollBar::handle:vertical{{background:#526b70;border-radius:5px;min-height:30px;}}
-QProgressBar{{background:#12212a;border:1px solid #3d5256;border-radius:6px;color:#f2eadb;text-align:center;height:16px;}}
+QProgressBar{{background:#0e1b24;border:1px solid #40585c;border-radius:7px;color:#f8e8d1;text-align:center;height:17px;}}
 QProgressBar::chunk{{background:#c39557;border-radius:5px;}}
 QToolTip{{background:#1a2b33;border:1px solid {BRONZE};color:#f5e6cf;padding:8px;}}
 """
@@ -170,8 +176,8 @@ class NordicWindow(BaseTracker):
     def _build(self):
         root=QWidget();self.setCentralWidget(root)
         row=QHBoxLayout(root);row.setContentsMargins(0,0,0,0);row.setSpacing(0)
-        side=QFrame();side.setObjectName('sidebar');side.setFixedWidth(251)
-        menu=QVBoxLayout(side);menu.setContentsMargins(19,21,17,19);menu.setSpacing(10)
+        side=QFrame();side.setObjectName('sidebar');side.setFixedWidth(232)
+        menu=QVBoxLayout(side);menu.setContentsMargins(16,20,15,17);menu.setSpacing(10)
         mast=QHBoxLayout()
         logo=Artwork(EMBLEM,61);logo.setFixedSize(61,61)
         mast.addWidget(logo)
@@ -181,7 +187,7 @@ class NordicWindow(BaseTracker):
         mast.addLayout(branding);menu.addLayout(mast)
         tag=QLabel('  CHRONIQUES NORDIQUES  •  V'+VERSION)
         tag.setStyleSheet('color:#ddae6f;font:9pt Segoe UI;')
-        menu.addWidget(tag);menu.addSpacing(22)
+        menu.addWidget(tag);menu.addSpacing(13)
         menu.addWidget(label('LES CHAPITRES',muted=True))
         self.nav_buttons=[]
         for idx,(name,_) in enumerate(self.NAV):
@@ -232,7 +238,7 @@ class NordicWindow(BaseTracker):
         icon={'Créatures tuées':'paw','Boss vaincus':'skull','Décès':'shield','Temps de jeu':'clock'}.get(title,'trophy')
         lab=QLabel();lab.setPixmap(rune_icon(icon,28).pixmap(28,28))
         box.layout().insertWidget(0,lab)
-        box.setMinimumHeight(151)
+        box.setMinimumHeight(128)
         return box,val
     def _make_dashboard(self):
         super()._make_dashboard()
