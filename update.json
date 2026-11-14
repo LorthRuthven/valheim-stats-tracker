@@ -1,6 +1,6 @@
 {
-  "version": "1.8.0",
-  "url": "https://github.com/LorthRuthven/valheim-stats-tracker/releases/download/v1.8.0/Valheim_Stats_Tracker_v1.8.0.zip",
-  "sha256": "04962eaf4ab2cf1762950f23ff03c110b0d8c80e78362a88b5f65addc0c1ff8d",
-  "notes": "# Valheim Stats Tracker v1.8.0 — Noms français\n\n- Affichage des noms français officiels des objets, créatures, trophées, poissons et pièces de construction quand la traduction existe.\n- Noms en français dans les détails des succès, les tableaux de combats et les activités.\n- Recherche dans les critères d’un succès par nom français ou identifiant technique, sans modifier les calculs.\n- Les traductions sont incluses dans le ZIP et utilisables hors connexion.\n- Pour les identifiants récents absents de la source de traduction, un nom de secours reste visible.\n- Les identifiants du fichier .fch restent inchangés ; aucun mod et aucune écriture dans les sauvegardes.\n\nSource des traductions : documentation Jötunn / Valheim-Modding, extraction des chaînes françaises du jeu (base documentaire v1.0.7). Les listes d’objectifs restent celles de Valheim 1.0.21."
+  "version": "1.8.1",
+  "url": "https://github.com/LorthRuthven/valheim-stats-tracker/releases/download/v1.8.1/Valheim_Stats_Tracker_v1.8.1.zip",
+  "sha256": "626c753365bf1db753c109475643a31dbc9c4d94100b1b4c80479d8dec3e93d9",
+  "notes": "# Valheim Stats Tracker 1.8.1 — correctif updater\n\n- Corrige « Fichier non autorisé dans le paquet » depuis la V1.7 ou les versions antérieures.\n- Les 1 763 noms français sont maintenant embarqués dans `valheim_reader.py`.\n- L’archive utilise exclusivement les huit fichiers acceptés par les anciennes versions de l’updater.\n- Aucun changement des sauvegardes ni de l’historique ; sans mod."
 }
