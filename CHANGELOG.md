@@ -1,3 +1,9 @@
+## V2.2.3 — lisibilité et extraction des objets
+- Quatre tailles d’interface, « Grand » par défaut ; modification immédiate et sauvegarde de la préférence.
+- Analyse Sprite et Texture2D, alias entre noms Unity et objets Valheim, compteur de progression.
+- Rapport d'extraction détaillé même en cas d'absence d'icône ; fin des réussites trompeuses « 0 icône ».
+- Tests sous Windows sur jeux de données synthétiques et test de l'exécutable final.
+
 ## V2.2.2 — mise à jour Windows avec contrôle du redémarrage
 - Contrôle du processus réellement relancé, journal d'installation détaillé et restauration de l'ancienne version en cas d'échec.
 - Test Windows du script d'installation : copie, sauvegarde et exécution réelle du programme compilé.

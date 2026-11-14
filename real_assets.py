@@ -58,6 +58,20 @@ def game_icon(prefab):
     from v2_core import app_dir
     variants=[prefab,prefab.removeprefix('$item_'),prefab.removeprefix('$piece_')]
     local=app_dir()/'game_icons'
+    try:
+        local_index=json.loads((local/'index.json').read_text(encoding='utf-8'))
+        if not isinstance(local_index,dict):
+            local_index={}
+        aliases=local_index.get('aliases',{})
+    except (OSError,ValueError):
+        aliases={}
+    if isinstance(aliases,dict):
+        for variant in variants:
+            value=aliases.get(_slug(variant))
+            if isinstance(value,str) and value.endswith('.png') and '/' not in value and '\\' not in value and '..' not in value:
+                matched=_qicon(local/value)
+                if not matched.isNull():
+                    return matched
     for variant in variants:
         safe=_slug(variant)
         if not safe:continue

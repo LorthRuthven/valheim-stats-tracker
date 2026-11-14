@@ -8,18 +8,19 @@ from __future__ import annotations
 import math
 import json
 from pathlib import Path
-from PySide6.QtCore import Qt, QByteArray, QRectF, QTimer, Property, QPropertyAnimation, QEasingCurve, QObject, Signal
-from PySide6.QtGui import QColor, QFont, QPainter, QPen, QIcon, QPixmap, QLinearGradient
+from PySide6.QtCore import Qt, QByteArray, QRectF, QTimer, QUrl, Property, QPropertyAnimation, QEasingCurve, QObject, Signal
+from PySide6.QtGui import QColor, QFont, QPainter, QPen, QIcon, QPixmap, QLinearGradient, QDesktopServices
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QApplication, QFrame, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QStackedWidget, QWidget, QSizePolicy,
-    QGraphicsOpacityEffect, QProgressBar, QCheckBox
+    QGraphicsOpacityEffect, QProgressBar, QCheckBox, QComboBox
 )
 from desktop_v2 import TrackerWindow as BaseTracker, TrendChart, label, panel
 from restored_pages import RestoredPagesMixin
 from real_assets import hero_photo, achievement_icon, game_icon
 from windows_update_ui import UpdatePanel
+from display_scaling import SCALES, DEFAULT_SCALE, update_readability
 from v2_core import VERSION, progress_ranking
 from valheim_reader import BOSSES
 
@@ -203,6 +204,7 @@ class Hero(Artwork):
 
 class _IconEvents(QObject):
     finished=Signal(int,str)
+    progress=Signal(int,int,str)
 
 class NordicWindow(RestoredPagesMixin,BaseTracker):
     NAV = BaseTracker.NAV + [
@@ -217,6 +219,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.fade=None
         self.icon_events=_IconEvents()
         self.icon_events.finished.connect(self._icons_finished)
+        self.icon_events.progress.connect(self._icons_progress)
         super().__init__(store=store)
         self.setWindowTitle('Valheim Stats Tracker • Chroniques nordiques • '+VERSION)
         self.setStyleSheet(QSS)
@@ -327,67 +330,158 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             layout.addWidget(self.motion_checkbox)
             layout.addWidget(label('Illustrations vectorielles, pictogrammes et effets discrets.',muted=True,wrap=True))
             inner.layout().insertWidget(0,frame)
+            display_panel, display_layout=panel(
+                'TAILLE DE L’INTERFACE',
+                'Agrandit tous les textes, menus, filtres et lignes de tableau. '
+                'Le réglage est appliqué immédiatement et mémorisé.'
+            )
+            scale_row=QHBoxLayout()
+            scale_row.addWidget(label('Lisibilité :'))
+            self.display_choice=QComboBox()
+            self.display_choice.addItems(list(SCALES))
+            self.display_choice.setCurrentText(DEFAULT_SCALE)
+            self.display_choice.currentTextChanged.connect(self.set_display_mode)
+            scale_row.addWidget(self.display_choice)
+            scale_row.addStretch()
+            display_layout.addLayout(scale_row)
+            display_layout.addWidget(label(
+                '« Grand » est recommandé sur un écran Full HD ; '
+                '« Très grand » privilégie la lecture au nombre de lignes visibles.',
+                muted=True, wrap=True
+            ))
+            inner.layout().insertWidget(1,display_panel)
             updates, update_layout=panel('MISES À JOUR WINDOWS',
                 'Vérification GitHub, SHA-256, sauvegarde et redémarrage.')
             self.update_controller=UpdatePanel(self)
             update_layout.addWidget(self.update_controller)
-            inner.layout().insertWidget(1,updates)
+            inner.layout().insertWidget(2,updates)
             icons, icon_layout=panel('VÉRITABLES ICÔNES VALHEIM',
                 'Extraction locale des sprites depuis ton jeu installé ; aucun mod.')
-            import_button=QPushButton('Importer depuis le dossier de Valheim')
-            import_button.clicked.connect(self._import_game_icons)
-            icon_layout.addWidget(import_button)
+            self.icon_import_button=QPushButton('Importer depuis le dossier de Valheim')
+            self.icon_import_button.clicked.connect(self._import_game_icons)
+            icon_layout.addWidget(self.icon_import_button)
+            self.icon_progress=QProgressBar()
+            self.icon_progress.setRange(0,100)
+            self.icon_progress.setValue(0)
+            icon_layout.addWidget(self.icon_progress)
+            self.icon_log_button=QPushButton('Ouvrir le rapport de diagnostic')
+            self.icon_log_button.clicked.connect(self._open_icon_report)
+            icon_layout.addWidget(self.icon_log_button)
             self.icon_status=label('Sélectionne le dossier contenant valheim.exe.',muted=True,wrap=True)
             icon_layout.addWidget(self.icon_status)
-            inner.layout().insertWidget(2,icons)
+            inner.layout().insertWidget(3,icons)
+    def _open_icon_report(self):
+        from v2_core import app_dir
+        file=app_dir()/'game_icons'/'extraction-report.json'
+        if not file.exists():
+            self.icon_status.setText('Aucun rapport disponible : lance d’abord une extraction.')
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(file)))
+
     def _import_game_icons(self):
         from PySide6.QtWidgets import QFileDialog
         from v2_core import app_dir
         from game_icon_extraction import extract_owned_icons
         import threading
-        folder=QFileDialog.getExistingDirectory(self,'Dossier de Valheim (valheim.exe)')
+        folder=QFileDialog.getExistingDirectory(self,'Dossier contenant valheim.exe')
         if not folder:return
-        self.icon_status.setText('Extraction des icônes réelles en cours…')
+        self.icon_import_button.setEnabled(False)
+        self.icon_progress.setRange(0,100)
+        self.icon_progress.setValue(0)
+        self.icon_status.setText('Analyse des bundles Unity en cours ; aucun fichier du jeu n’est modifié.')
+        def progress(index,total,name):
+            self.icon_events.progress.emit(index,total,name)
         def job():
             try:
-                count=extract_owned_icons(folder,app_dir()/'game_icons')
+                count=extract_owned_icons(folder,app_dir()/'game_icons',notify=progress)
                 self.icon_events.finished.emit(count,'')
             except Exception as exc:
                 self.icon_events.finished.emit(0,str(exc))
         threading.Thread(target=job,daemon=True).start()
 
+    def _icons_progress(self,index,total,name):
+        if total>0:
+            self.icon_progress.setValue(min(100,round(index/total*100)))
+        self.icon_status.setText(f'Analyse : {index} / {total} fichiers Unity · {name}')
+
     def _icons_finished(self,count,error):
+        self.icon_import_button.setEnabled(True)
+        from v2_core import app_dir
+        report=app_dir()/'game_icons'/'extraction-report.json'
+        details=''
+        try:
+            state=json.loads(report.read_text(encoding='utf-8'))
+            details=(f"{state.get('files_read',0)} fichiers lus, "
+                     f"{state.get('sprites_found',0)} sprites, "
+                     f"{state.get('textures_found',0)} textures ; "
+                     f"{state.get('images_written',0)} nouvelles icônes, "
+                     f"{state.get('images_existing',0)} déjà présentes ; "
+                     f"{state.get('errors_total',0)} erreurs.")
+        except (OSError,ValueError):
+            pass
         if error:
-            self.icon_status.setText('Extraction indisponible : '+error)
+            self.icon_status.setText('Échec d’extraction : '+error+'\n'+details)
         else:
-            self.icon_status.setText(f'{count} icônes issues de Valheim enregistrées en local.')
+            self.icon_progress.setValue(100)
+            self.icon_status.setText(f'{count} vraies icônes disponibles.\n'+details)
             from real_assets import _qicon
             _qicon.cache_clear()
             self._refresh_restored_pages()
             self.draw_achievements()
 
-    def _load_motion(self):
-        path=self.store.directory/'appearance.json'
+    def _appearance_path(self):
+        return self.store.directory/'appearance.json'
+
+    def _write_appearance(self, changes):
+        path=self._appearance_path()
         try:
-            pref=json.loads(path.read_text(encoding='utf8'))
-            enabled=bool(pref.get('animations',True))
-        except (OSError,ValueError,AttributeError,TypeError):
-            enabled=True
-        self.motion=enabled
-        if hasattr(self,'motion_checkbox'):
-            self.motion_checkbox.blockSignals(True)
-            self.motion_checkbox.setChecked(enabled)
-            self.motion_checkbox.blockSignals(False)
-    def set_motion(self,enabled):
-        self.motion=bool(enabled)
-        path=self.store.directory/'appearance.json'
+            current=json.loads(path.read_text(encoding='utf-8'))
+            if not isinstance(current,dict):
+                current={}
+        except (OSError,ValueError,TypeError):
+            current={}
+        current.update(changes)
         try:
             path.parent.mkdir(parents=True,exist_ok=True)
-            temp=path.with_suffix('.tmp')
-            temp.write_text(json.dumps({'animations':self.motion},indent=2),encoding='utf8')
-            temp.replace(path)
+            temporary=path.with_suffix('.tmp')
+            temporary.write_text(json.dumps(current,ensure_ascii=False,indent=2),encoding='utf-8')
+            temporary.replace(path)
         except OSError as exc:
             self.statusBar().showMessage('Réglage non enregistré : '+str(exc))
+
+    def _load_motion(self):
+        try:
+            settings=json.loads(self._appearance_path().read_text(encoding='utf-8'))
+            if not isinstance(settings,dict):
+                settings={}
+        except (OSError,ValueError,TypeError):
+            settings={}
+        self.motion=bool(settings.get('animations',True))
+        if hasattr(self,'motion_checkbox'):
+            self.motion_checkbox.blockSignals(True)
+            self.motion_checkbox.setChecked(self.motion)
+            self.motion_checkbox.blockSignals(False)
+        wanted=settings.get('display_mode',DEFAULT_SCALE)
+        if wanted not in SCALES:
+            wanted=DEFAULT_SCALE
+        if hasattr(self,'display_choice'):
+            self.display_choice.blockSignals(True)
+            self.display_choice.setCurrentText(wanted)
+            self.display_choice.blockSignals(False)
+        update_readability(self,wanted,QSS)
+        self.display_mode=wanted
+
+    def set_motion(self,enabled):
+        self.motion=bool(enabled)
+        self._write_appearance({'animations':self.motion})
+
+    def set_display_mode(self,mode):
+        if mode not in SCALES:
+            return
+        update_readability(self,mode,QSS)
+        self.display_mode=mode
+        self._write_appearance({'display_mode':mode})
+
     def _jump_to_achievement(self,index,column):
         ranked=progress_ranking(self.results,self.store.favorites())[:8]
         if 0<=index<len(ranked):
@@ -489,8 +583,40 @@ def _verify_unitypy_bundle():
         raise RuntimeError('UnityPy.resources est vide après empaquetage')
 
 
+def _verify_icon_extractor():
+    """Test compilé indépendant du jeu : Sprite et Texture2D synthétiques."""
+    from tempfile import TemporaryDirectory
+    from types import SimpleNamespace
+    from PIL import Image
+    from game_icon_extraction import extract_owned_icons
+    with TemporaryDirectory() as base:
+        root=Path(base)/'Valheim'
+        bundles=root/'valheim_Data'/'StreamingAssets'/'SoftRef'/'Bundles'
+        bundles.mkdir(parents=True)
+        (root/'valheim.exe').write_bytes(b'MZ')
+        (bundles/'sample').write_bytes(b'UnityFS')
+        photo=Image.new('RGBA',(32,32),(170,80,35,255))
+        def make(kind,name):
+            return SimpleNamespace(
+                type=SimpleNamespace(name=kind),
+                parse_as_object=lambda:SimpleNamespace(m_Name=name,image=photo))
+        count=extract_owned_icons(root,Path(base)/'icons',
+            unity_loader=lambda _:SimpleNamespace(
+                objects=[make('Sprite','Icon_Wood'),
+                         make('Texture2D','Inventory_Honey')]))
+        if count!=2:
+            raise RuntimeError(f'Extraction de contrôle incomplète : {count}/2')
+
 if __name__=='__main__':
     import sys
+    if '--verify-icon-extractor' in sys.argv:
+        try:
+            _verify_icon_extractor()
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            sys.exit(20)
+        sys.exit(0)
     if '--verify-unitypy-bundle' in sys.argv:
         try:
             _verify_unitypy_bundle()

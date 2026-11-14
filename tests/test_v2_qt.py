@@ -16,6 +16,30 @@ except ImportError:
 class QtWindowTests(unittest.TestCase):
 
 
+    def test_display_modes_enlarge_readability_and_persist(self):
+        app=QApplication.instance() or QApplication([])
+        from PySide6.QtWidgets import QTableWidget, QComboBox
+        from display_scaling import SCALES, DEFAULT_SCALE
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            self.assertEqual(DEFAULT_SCALE,'Grand')
+            self.assertEqual(w.display_mode,'Grand')
+            self.assertIn('TAILLE DE L’INTERFACE',
+                          [x.text() for x in w.findChildren(__import__('PySide6.QtWidgets',fromlist=['QLabel']).QLabel)])
+            self.assertEqual(w.nav_buttons[0].minimumHeight(),SCALES['Grand']['nav'])
+            old_row=w.ach_parts.verticalHeader().defaultSectionSize()
+            w.set_display_mode('Très grand')
+            self.assertEqual(w.nav_buttons[0].minimumHeight(),SCALES['Très grand']['nav'])
+            self.assertGreater(w.ach_parts.verticalHeader().defaultSectionSize(),old_row)
+            w.set_motion(False)
+            w.close()
+            w.store.db.close()
+            w2=NordicWindow(TrackerStore(tmp))
+            self.assertEqual(w2.display_mode,'Très grand')
+            self.assertFalse(w2.motion)
+            w2.close()
+            w2.store.db.close()
+
     def test_settings_no_legacy_update_panel(self):
         app=QApplication.instance() or QApplication([])
         from PySide6.QtWidgets import QLabel

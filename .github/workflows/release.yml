@@ -21,7 +21,7 @@ jobs:
       - name: Tester le moteur, l'historique et l'updater
         run: python3 -m unittest discover -s tests -v
       - name: Vérifier les fichiers Python
-        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_update_ui.py game_icon_extraction.py tools/fetch_game_assets.py
+        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_update_ui.py game_icon_extraction.py display_scaling.py tools/fetch_game_assets.py
 
   windows:
     runs-on: windows-latest
@@ -52,6 +52,10 @@ jobs:
         run: |
           $env:QT_QPA_PLATFORM = 'offscreen'
           python -m unittest discover -s tests -p test_v2_qt.py -v
+      - name: Tester extraction Sprite et Texture2D sans fichiers du jeu
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -p test_icon_extraction.py -v
       - name: Construire l'application Windows autonome
         shell: pwsh
         run: |
@@ -68,6 +72,13 @@ jobs:
           $process = Start-Process -FilePath $exe -ArgumentList '--verify-unitypy-bundle' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "UnityPy/resources absent du programme Windows (code $($process.ExitCode))" }
           Write-Host 'Extraction : ressources UnityPy embarquées et importées dans le programme compilé'
+      - name: Tester l'extracteur dans l'exécutable Windows assemblé
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
+          $check = Start-Process -FilePath $exe -ArgumentList '--verify-icon-extractor' -Wait -PassThru
+          if ($check.ExitCode -ne 0) { throw "Le test d'extraction Sprite/Texture2D compilé a échoué : $($check.ExitCode)" }
+          Write-Host 'Extraction UnityPy / Pillow depuis l’EXE : OK'
       - name: Tester remplacement et redémarrage Windows (installation réelle)
         shell: pwsh
         run: |

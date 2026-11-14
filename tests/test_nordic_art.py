@@ -41,6 +41,16 @@ class VectorArtworkTests(unittest.TestCase):
         self.assertIn('achievement_icon',theme)
         self.assertIn('UpdatePanel',theme)
 
+    def test_responsive_ui_and_icon_diagnostics_sources(self):
+        import ast
+        for module in ('display_scaling.py', 'game_icon_extraction.py'):
+            ast.parse((ROOT/module).read_text(encoding='utf8'), filename=module)
+        src=(ROOT/'nordic_ui.py').read_text(encoding='utf8')
+        self.assertIn('display_choice',src)
+        self.assertIn('update_readability(self',src)
+        self.assertIn('icon_progress',src)
+        self.assertIn('extraction-report.json',src)
+
     def test_no_network_in_new_theme(self):
         text=(ROOT/'nordic_ui.py').read_text(encoding='utf8')
         self.assertNotIn('urllib.request',text)
