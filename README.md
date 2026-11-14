@@ -33,3 +33,8 @@ Ce programme ne modifie ni les fichiers du jeu, ni les succès, ni les sauvegard
 
 
 V1.7 : suivi des listes exhaustives (Valheim 1.0.21) pour créatures, trophées, armes, recettes, aliments et constructions. Toutes les entrées attendues sont visibles dans la page Succès, avec pagination et critères manquants en priorité.
+
+## Localisation française (V1.8)
+Les noms de créatures, objets, trophées, poissons et constructions viennent de la traduction française du jeu publiée dans la documentation [Jötunn / Valheim-Modding](https://github.com/Valheim-Modding/Jotunn/blob/main/JotunnLib/Documentation/data/localization/translations/French.md). La base publiée correspond à une version antérieure du jeu (1.0.7) ; les noms récents qui ne figurent pas dans cette source conservent une étiquette de secours.
+
+Le fichier `fr_names.json` est fourni dans l’archive pour une utilisation hors connexion. Les clés utilisées pour compter la progression des succès ne sont jamais traduites : seul le texte affiché change.

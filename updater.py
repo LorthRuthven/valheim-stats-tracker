@@ -20,7 +20,7 @@ import zipfile
 from pathlib import Path
 from urllib.parse import urlparse
 
-VERSION = '1.7.0'
+VERSION = '1.8.0'
 DEFAULT_MANIFEST_URL = 'https://raw.githubusercontent.com/LorthRuthven/valheim-stats-tracker/main/update.json'
 MAX_ZIP_SIZE = 80 * 1024 * 1024
 MAX_UNPACKED_SIZE = 120 * 1024 * 1024
@@ -29,6 +29,7 @@ MAX_ENTRIES = 100
 FILES = frozenset({
     'app.py', 'valheim_reader.py', 'updater.py', 'update_worker.py',
     'Lancer_Tracker.bat', 'README.txt', 'version.json', 'manifest.example.json',
+    'localization_fr.py', 'fr_names.json',
 })
 
 

@@ -1,8 +1,10 @@
-# Valheim Stats Tracker V1.7.0 — collections et succès complets
+# Valheim Stats Tracker v1.8.0 — Noms français
 
-- 8 succès de collection désormais suivis critère par critère, à partir des listes de prefabs Valheim 1.0.21 : The Hunter, The Master Hunter (difficile+), The Trophy Collector, The Blacksmith, The Master Chef, The Artisan, The Gourmet et The Carpenter.
-- 2 succès de maîtrise (Kings and Queens of Valheim / Child of Odin) calculés à partir de leurs prérequis statistiques, sans prétendre lire l'état Steam.
-- Détail des centaines d'objets/ennemis avec les manquants en premier, groupes de 65 lignes pour conserver une interface fluide.
-- Les 55 entrées du catalogue sont conservées (53 jeu + Steam, 2 internes non vérifiées).
-- Source et version des critères : Melichor/ValheimSaveParser, listes de prefabs issues des ressources Valheim 1.0.21.
-- Lecture seule des sauvegardes .fch, données SQLite et paramètres préservés.
+- Affichage des noms français officiels des objets, créatures, trophées, poissons et pièces de construction quand la traduction existe.
+- Noms en français dans les détails des succès, les tableaux de combats et les activités.
+- Recherche dans les critères d’un succès par nom français ou identifiant technique, sans modifier les calculs.
+- Les traductions sont incluses dans le ZIP et utilisables hors connexion.
+- Pour les identifiants récents absents de la source de traduction, un nom de secours reste visible.
+- Les identifiants du fichier .fch restent inchangés ; aucun mod et aucune écriture dans les sauvegardes.
+
+Source des traductions : documentation Jötunn / Valheim-Modding, extraction des chaînes françaises du jeu (base documentaire v1.0.7). Les listes d’objectifs restent celles de Valheim 1.0.21.

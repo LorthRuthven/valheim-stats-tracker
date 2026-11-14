@@ -9,7 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = ('app.py', 'updater.py', 'update_worker.py', 'valheim_reader.py',
-         'Lancer_Tracker.bat', 'README.txt', 'version.json', 'manifest.example.json')
+         'Lancer_Tracker.bat', 'README.txt', 'version.json', 'manifest.example.json',
+         'localization_fr.py', 'fr_names.json')
 
 
 def build(tag, repo, output):

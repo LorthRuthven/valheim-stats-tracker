@@ -23,3 +23,8 @@
 
 ## v1.3.0
 - Suivi détaillé des boss et de l'historique.
+
+## v1.8.0 — Noms français
+- Localisation française des objets, ennemis, trophées, poissons et constructions.
+- Recherche dans les critères des succès par nom français et identifiant.
+- Dictionnaire embarqué pour consultation hors ligne.

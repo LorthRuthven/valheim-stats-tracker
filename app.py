@@ -15,6 +15,7 @@ from tkinter import filedialog, messagebox, ttk
 import tkinter as tk
 
 import updater
+from localization_fr import localized_name
 
 from valheim_reader import (BOSSES, DEATH_KINDS, GROUPS, SaveError,
                             PLAYER_STAT_NAMES, SPECS, evaluate_all, evaluate_one, progress_delta,
@@ -220,7 +221,7 @@ def clean_name(token):
     }
     for old, new in replacements.items():
         name = name.replace(old, new)
-    return ' '.join(name.split())
+    return localized_name(token, ' '.join(name.split()))
 
 
 
@@ -298,6 +299,7 @@ class TrackerApp(tk.Tk):
         self.search_activity = tk.StringVar()
         self.search_raw = tk.StringVar()
         self.achievement_search = tk.StringVar()
+        self.achievement_detail_search = tk.StringVar()
         self.achievement_filter = tk.StringVar(value='Tous')
         self.achievement_category = tk.StringVar(value='Toutes les catégories')
         self.achievement_origin = tk.StringVar(value='Jeu + Steam + internes')
@@ -335,6 +337,7 @@ class TrackerApp(tk.Tk):
         self.boss_difficulty.trace_add('write', lambda *a: self.refresh_bosses())
         for var in (self.achievement_search, self.achievement_filter, self.achievement_category, self.achievement_origin):
             var.trace_add('write', lambda *a: self.refresh_achievements())
+        self.achievement_detail_search.trace_add('write', lambda *a: self._render_achievement_details())
         config = app_dir() / 'config.json'
         try:
             saved = json.loads(config.read_text(encoding='utf-8')).get('path', '')
@@ -655,6 +658,8 @@ class TrackerApp(tk.Tk):
         self.achievement_progress.bind('<Configure>', lambda e: self._paint_achievement_progress())
         self.achievement_note = lbl(details, '', 10, MUTED, wraplength=360, justify='left', anchor='w')
         self.achievement_note.pack(anchor='w', pady=(0, 8))
+        lbl(details, 'Rechercher un objet ou une créature :', 9, MUTED).pack(anchor='w', pady=(2, 4))
+        ttk.Entry(details, textvariable=self.achievement_detail_search).pack(fill='x', pady=(0, 8))
 
         scroll_area = tk.Frame(details, bg=PANEL)
         scroll_area.pack(fill='both', expand=True)
@@ -674,7 +679,10 @@ class TrackerApp(tk.Tk):
         if selected:
             self.achievement_selected = selected[0]
         self.achievement_detail_limit = 65
-        self._render_achievement_details()
+        if self.achievement_detail_search.get():
+            self.achievement_detail_search.set('')
+        else:
+            self._render_achievement_details()
 
     def _show_more_achievement_details(self):
         self.achievement_detail_limit += 65
@@ -725,7 +733,12 @@ class TrackerApp(tk.Tk):
         self.achievement_note.config(text=result['description'] +
             ('\n\n' + result['note'] if result['note'] else '') + change_text)
         all_parts = sorted(result['parts'], key=lambda part: (part['complete'], part['label'].casefold()))
+        term = self.achievement_detail_search.get().strip().casefold()
+        if term:
+            all_parts = [part for part in all_parts if term in part['label'].casefold() or term in str(part['key']).casefold()]
         shown_parts = all_parts[:self.achievement_detail_limit]
+        if not all_parts:
+            lbl(self.achievement_detail_body, 'Aucun critère correspondant à cette recherche.', 10, MUTED).pack(anchor='w', pady=8)
         if len(all_parts) > 65:
             lbl(self.achievement_detail_body,
                 f"{len(shown_parts)} / {len(all_parts)} critères affichés • Manquants d'abord",

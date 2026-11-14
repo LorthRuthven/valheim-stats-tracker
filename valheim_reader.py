@@ -356,6 +356,9 @@ for _key, _tokens in COLLECTIONS.items():
     assert len(set(_tokens)) == len(_tokens), 'Token en double : ' + _key
 
 
+from localization_fr import localized_name
+
+
 def prefab_label(token: str) -> str:
     """Nom humain lisible, sans code $item_/$piece_ ni identifiant brut."""
     import re
@@ -369,7 +372,8 @@ def prefab_label(token: str) -> str:
     words = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?![a-z])|[0-9]+(?:x[0-9]+)?', name)
     if words:
         name = ' '.join(words)
-    return name[:1].upper() + name[1:] if name else token
+    fallback = name[:1].upper() + name[1:] if name else token
+    return localized_name(token, fallback)
 
 
 
@@ -867,6 +871,8 @@ def evaluate_one(profile, spec: AchievementSpec):
     parts = []
     fractions = []
     for label, key, goal in criteria:
+        if isinstance(key, str) and key.startswith('$'):
+            label = localized_name(key, label)
         value = max(0, float(get_value(key)))
         filled = min(goal, value)
         fractions.append(filled / goal)
