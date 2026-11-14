@@ -1,15 +1,11 @@
-# Valheim Stats Tracker V2.2.1 — correctif d'import des vraies icônes
+# Valheim Stats Tracker V2.2.2 — fiabilisation des mises à jour Windows
 
-## Correctif prioritaire
-- Corrige `No module named 'UnityPy.resources'` dans l'application Windows compilée.
-- Le paquet inclut désormais les sous-modules, ressources et fichiers de données de UnityPy via PyInstaller `--collect-all UnityPy`.
-- Un test de l'**exécutable Windows final** charge `UnityPy.resources`, vérifie ses ressources et `UnityPy.load`. La publication échoue si ce test échoue.
-- Le bouton `Importer depuis le dossier de Valheim` conserve le même fonctionnement : le dossier sélectionné doit contenir `valheim.exe` et `valheim_Data`.
-- Les icônes récupérées restent dans `%LOCALAPPDATA%\\ValheimStatsTracker\\game_icons`.
+- Correction du redémarrage après installation : le script vérifie que l'application relancée ne se ferme pas immédiatement.
+- Journal détaillé dans `%LOCALAPPDATA%\\ValheimStatsTracker\\updates\\install.log` avec étapes `BACKUP_OK`, `COPY_OK`, `RELAUNCH_OK` et erreurs.
+- Attente bornée de la fermeture de l'ancien tracker, sans blocage infini.
+- Sauvegarde avant remplacement et restauration automatique en cas d'échec de copie ou de lancement.
+- Test Windows **de bout en bout** : copie des fichiers de la nouvelle version, sauvegarde de l'ancienne, lancement du véritable exécutable PyInstaller et contrôle du résultat avant publication.
+- Correction UnityPy de la V2.2.1 conservée.
+- Aucun changement à la lecture des sauvegardes Valheim, au SQLite, aux succès ou aux favoris.
 
-## Interface
-- Supprime le panneau obsolète « Mises à jour » qui indiquait encore une installation manuelle.
-- Conserve uniquement le panneau « Mises à jour Windows » avec téléchargement et installation intégrés.
-- Aucun changement des sauvegardes, du suivi des succès, de l'historique ou des favoris.
-
-La mise à jour V2.2.1 peut être installée depuis **Réglages → Mises à jour Windows** dans la V2.2.0.
+**Si une ancienne version s'est déjà fermée sans redémarrer :** vérifier `updates\\install.log` et lancer manuellement `ValheimStatsTracker.exe`. Si les fichiers sont endommagés, installer le ZIP Windows complet V2.2.2 dans un nouveau dossier. Les données sont conservées dans `%LOCALAPPDATA%\\ValheimStatsTracker`.

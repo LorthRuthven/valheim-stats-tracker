@@ -99,34 +99,103 @@ param(
  [Parameter(Mandatory=$true)][string]$Source,
  [Parameter(Mandatory=$true)][string]$Target,
  [Parameter(Mandatory=$true)][string]$Backup,
- [Parameter(Mandatory=$true)][string]$Log
+ [Parameter(Mandatory=$true)][string]$Log,
+ [switch]$SmokeTest
 )
-$ErrorActionPreference='Stop'
-try { Wait-Process -Id $ParentPid -ErrorAction SilentlyContinue } catch {}
-Start-Sleep -Milliseconds 700
-try {
- if (!(Test-Path (Join-Path $Source 'ValheimStatsTracker.exe'))) {throw 'Fichier Windows absent.'}
- New-Item -ItemType Directory -Force -Path $Backup | Out-Null
- Get-ChildItem -LiteralPath $Target -Force | Copy-Item -Destination $Backup -Recurse -Force
- $copied=$false
- for($i=0;$i -lt 12;$i++) {
-   try {
-     Get-ChildItem -LiteralPath $Source -Force | Copy-Item -Destination $Target -Recurse -Force
-     $copied=$true
-     break
-   } catch {Start-Sleep -Seconds 1}
- }
- if(-not $copied) {throw 'Fichiers verrouillés : mise à jour impossible.'}
- Add-Content -Path $Log -Value "$(Get-Date -Format o) OK"
- Start-Process -FilePath (Join-Path $Target 'ValheimStatsTracker.exe') -WorkingDirectory $Target
-} catch {
- Add-Content -Path $Log -Value "$(Get-Date -Format o) ÉCHEC $($_.Exception.Message)"
- try {
-   Get-ChildItem -LiteralPath $Backup -Force | Copy-Item -Destination $Target -Recurse -Force
-   Start-Process -FilePath (Join-Path $Target 'ValheimStatsTracker.exe') -WorkingDirectory $Target
- } catch { Add-Content -Path $Log -Value "$(Get-Date -Format o) RESTAURATION ÉCHOUÉE $($_.Exception.Message)" }
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+$backupReady = $false
+$updateApplied = $false
+
+function Write-Journal([string]$Message) {
+  $timestamp = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fff'
+  try {
+    $logFolder = Split-Path -Parent $Log
+    if ($logFolder -and !(Test-Path -LiteralPath $logFolder)) {
+      New-Item -ItemType Directory -Force -Path $logFolder | Out-Null
+    }
+    Add-Content -LiteralPath $Log -Encoding UTF8 -Value "$timestamp $Message"
+  } catch {}
 }
-"""
+Write-Journal "START parent=$ParentPid smoke=$SmokeTest target=$Target source=$Source"
+try {
+  if (!(Test-Path -LiteralPath (Join-Path $Source 'ValheimStatsTracker.exe') -PathType Leaf)) {
+    throw "Le nouvel exécutable Windows est absent du dossier préparé."
+  }
+  if (!(Test-Path -LiteralPath (Join-Path $Target 'ValheimStatsTracker.exe') -PathType Leaf)) {
+    throw "L'ancien exécutable Windows est introuvable."
+  }
+  if (([IO.Path]::GetFullPath($Source).TrimEnd('\')) -eq ([IO.Path]::GetFullPath($Target).TrimEnd('\'))) {
+    throw 'Le dossier source et le dossier cible sont identiques.'
+  }
+  if (Get-Process -Id $ParentPid -ErrorAction SilentlyContinue) {
+    Write-Journal 'WAIT_PARENT'
+    try { Wait-Process -Id $ParentPid -Timeout 65 -ErrorAction Stop } catch {
+      if (Get-Process -Id $ParentPid -ErrorAction SilentlyContinue) {
+        throw 'Le tracker ne se ferme pas : installation annulée sans modification.'
+      }
+    }
+  }
+  Start-Sleep -Milliseconds 450
+  New-Item -ItemType Directory -Force -Path $Backup | Out-Null
+  Write-Journal 'BACKUP_START'
+  Get-ChildItem -LiteralPath $Target -Force | Copy-Item -Destination $Backup -Recurse -Force -ErrorAction Stop
+  $backupReady = $true
+  Write-Journal 'BACKUP_OK'
+  Write-Journal 'COPY_START'
+  $copied = $false
+  for ($attempt=1; $attempt -le 15; $attempt++) {
+    try {
+      Get-ChildItem -LiteralPath $Source -Force | Copy-Item -Destination $Target -Recurse -Force -ErrorAction Stop
+      $copied = $true
+      break
+    } catch {
+      Write-Journal "COPY_RETRY $attempt $($_.Exception.Message)"
+      Start-Sleep -Seconds 1
+    }
+  }
+  if (!$copied) { throw 'Fichiers Windows verrouillés : remplacement impossible.' }
+  $updateApplied = $true
+  Write-Journal 'COPY_OK'
+  $exe = Join-Path $Target 'ValheimStatsTracker.exe'
+  Write-Journal 'RELAUNCH_START'
+  if ($SmokeTest) {
+    $process = Start-Process -FilePath $exe -ArgumentList '--verify-unitypy-bundle' -WorkingDirectory $Target -Wait -PassThru -ErrorAction Stop
+    if ($process.ExitCode -ne 0) {
+      throw "L'exécutable de vérification a échoué (code $($process.ExitCode))."
+    }
+    Write-Journal 'RELAUNCH_TEST_OK'
+  } else {
+    $process = Start-Process -FilePath $exe -WorkingDirectory $Target -PassThru -ErrorAction Stop
+    Start-Sleep -Seconds 4
+    $process.Refresh()
+    if ($process.HasExited) {
+      throw "Le nouveau tracker se ferme immédiatement (code $($process.ExitCode))."
+    }
+    Write-Journal "RELAUNCH_OK pid=$($process.Id)"
+  }
+  Write-Journal 'INSTALL_OK'
+  exit 0
+} catch {
+  Write-Journal "INSTALL_ERROR $($_.Exception.Message)"
+  if ($backupReady) {
+    Write-Journal 'ROLLBACK_START'
+    try {
+      Get-ChildItem -LiteralPath $Backup -Force | Copy-Item -Destination $Target -Recurse -Force -ErrorAction Stop
+      Write-Journal 'ROLLBACK_OK'
+    } catch { Write-Journal "ROLLBACK_ERROR $($_.Exception.Message)" }
+  }
+  if (!$SmokeTest) {
+    try {
+      $fallback = Join-Path $Target 'ValheimStatsTracker.exe'
+      if (Test-Path -LiteralPath $fallback -PathType Leaf) {
+        Start-Process -FilePath $fallback -WorkingDirectory $Target -ErrorAction Stop
+        Write-Journal 'OLD_VERSION_RELAUNCH_ATTEMPTED'
+      }
+    } catch { Write-Journal "OLD_VERSION_RELAUNCH_ERROR $($_.Exception.Message)" }
+  }
+  exit 1
+}
 
 def install_and_restart(staged, directory):
     if os.name!='nt' or not getattr(sys,'frozen',False):

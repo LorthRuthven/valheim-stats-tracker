@@ -1,3 +1,8 @@
+## V2.2.2 — mise à jour Windows avec contrôle du redémarrage
+- Contrôle du processus réellement relancé, journal d'installation détaillé et restauration de l'ancienne version en cas d'échec.
+- Test Windows du script d'installation : copie, sauvegarde et exécution réelle du programme compilé.
+- Les fichiers .fch, l'historique et les favoris restent inchangés.
+
 ## V2.2.1 — correction extraction de sprites et réglages
 - Embarque l'ensemble des modules et ressources UnityPy dans l'archive Windows.
 - Vérifie l'import `UnityPy.resources` et ses données depuis l'exécutable final.

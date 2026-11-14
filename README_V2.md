@@ -49,3 +49,7 @@ La V2.2 restaure les pages Centre de progression, Boss, Activités, Compétences
 
 ### V2.2.1 — correctif des sprites Windows
 Les versions antérieures à la V2.2.1 pouvaient afficher « No module named UnityPy.resources ». Le paquet Windows embarque maintenant les ressources de UnityPy et vérifie leur présence en exécutant le programme compilé. L'écran de réglages ne conserve qu'un seul panneau de mise à jour Windows.
+
+
+### V2.2.2 — Redémarrage après mise à jour
+Le programme Windows fait maintenant contrôler son propre installateur sur un runner Windows avant publication : lancement de l'exécutable compilé après remplacement, sauvegarde précédente et journal de diagnostic. Si une mise à jour antérieure s'est arrêtée sans redémarrer, consulter `%LOCALAPPDATA%\\ValheimStatsTracker\\updates\\install.log`, relancer l'exécutable présent ou réinstaller manuellement dans un dossier propre.
