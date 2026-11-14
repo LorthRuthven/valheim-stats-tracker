@@ -55,12 +55,19 @@ jobs:
       - name: Construire l'application Windows autonome
         shell: pwsh
         run: |
-          python -m PyInstaller --noconfirm --clean --windowed --onedir --name ValheimStatsTracker --add-data 'fr_names.json;.' --add-data 'assets;assets' --hidden-import localization_fr --hidden-import UnityPy --hidden-import PySide6.QtSvg nordic_ui.py
+          python -m PyInstaller --noconfirm --clean --windowed --onedir --name ValheimStatsTracker --add-data 'fr_names.json;.' --add-data 'assets;assets' --hidden-import localization_fr --collect-all UnityPy --hidden-import PySide6.QtSvg nordic_ui.py
           $version = (Get-Content version.json | ConvertFrom-Json).version
           $archive = "dist/Valheim_Stats_Tracker_v${version}_Windows.zip"
           Compress-Archive -Path dist/ValheimStatsTracker -DestinationPath $archive -CompressionLevel Optimal
           if (-not (Test-Path $archive)) { throw "ZIP Windows introuvable" }
           Write-Host "Archive Windows : $archive"
+      - name: Tester UnityPy.resources dans l'exécutable compilé
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
+          $process = Start-Process -FilePath $exe -ArgumentList '--verify-unitypy-bundle' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "UnityPy/resources absent du programme Windows (code $($process.ExitCode))" }
+          Write-Host 'Extraction : ressources UnityPy embarquées et importées dans le programme compilé'
       - name: Transmettre l'archive Windows à la publication
         uses: actions/upload-artifact@v4
         with:

@@ -308,6 +308,16 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         area=self.stack.widget(4)
         inner=area.widget() if hasattr(area,'widget') else None
         if inner is not None:
+            # Retirer le panneau hérité de la V2.0, qui proposait uniquement
+            # une mise à jour manuelle (désormais remplacée ci-dessous).
+            old_item=inner.layout().itemAt(1)
+            old_panel=old_item.widget() if old_item is not None else None
+            if old_panel is not None and any(
+                isinstance(x,QLabel) and x.text()=='MISES À JOUR'
+                for x in old_panel.findChildren(QLabel)
+            ):
+                inner.layout().removeWidget(old_panel)
+                old_panel.deleteLater()
             frame, layout=panel('AMBIANCE ET MOUVEMENTS',
                 'Illustrations locales : aucune connexion n’est nécessaire.')
             self.motion_checkbox=QCheckBox('Activer les animations de navigation et de progression')
@@ -463,6 +473,29 @@ def main():
     window=NordicWindow();window.show()
     return app.exec()
 
+def _verify_unitypy_bundle():
+    """Teste l'exécutable réellement compilé : régression UnityPy.resources."""
+    import importlib
+    import importlib.resources
+    for name in ('UnityPy', 'UnityPy.resources', 'PIL.Image'):
+        importlib.import_module(name)
+    import UnityPy
+    if not callable(UnityPy.load):
+        raise RuntimeError('UnityPy.load absent du paquet')
+    # Les fichiers de métadonnées Unity sont indispensables au lecteur de sprites.
+    contents=list(importlib.resources.files('UnityPy.resources').iterdir())
+    if not contents:
+        raise RuntimeError('UnityPy.resources est vide après empaquetage')
+
+
 if __name__=='__main__':
     import sys
+    if '--verify-unitypy-bundle' in sys.argv:
+        try:
+            _verify_unitypy_bundle()
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            sys.exit(19)
+        sys.exit(0)
     sys.exit(main())

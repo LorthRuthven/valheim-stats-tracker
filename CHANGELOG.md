@@ -1,3 +1,9 @@
+## V2.2.1 — correction extraction de sprites et réglages
+- Embarque l'ensemble des modules et ressources UnityPy dans l'archive Windows.
+- Vérifie l'import `UnityPy.resources` et ses données depuis l'exécutable final.
+- Supprime l'ancien panneau « Mises à jour » redondant.
+- Corrige une régression constatée dans la V2.2.0 sur l'extraction des icônes.
+
 ## V2.2.0 — restauration et ressources réelles
 - Restaure les cinq pages supprimées et complète les pages Boss, Combat, Historique et Succès.
 - Rétablit toutes les listes de critères, filtres, export CSV, compteur bruts et XP des compétences.

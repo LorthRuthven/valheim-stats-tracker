@@ -8,6 +8,14 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 
 class RestoredFeatureTests(unittest.TestCase):
+    def test_unitypy_resources_are_collected_in_windows_release(self):
+        workflow=(ROOT/'.github/workflows/release.yml').read_text(encoding='utf8')
+        self.assertIn('--collect-all UnityPy',workflow)
+        self.assertIn('--verify-unitypy-bundle',workflow)
+        source=(ROOT/'nordic_ui.py').read_text(encoding='utf8')
+        self.assertIn("importlib.import_module(name)",source)
+        self.assertIn("'UnityPy.resources'",source)
+
     def test_legacy_features_present(self):
         src=(ROOT/'restored_pages.py').read_text(encoding='utf8')
         tree=ast.parse(src)

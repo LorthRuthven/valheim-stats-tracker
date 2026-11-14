@@ -16,6 +16,18 @@ except ImportError:
 class QtWindowTests(unittest.TestCase):
 
 
+    def test_settings_no_legacy_update_panel(self):
+        app=QApplication.instance() or QApplication([])
+        from PySide6.QtWidgets import QLabel
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            settings=w.stack.widget(4)
+            labels=[x.text() for x in settings.findChildren(QLabel)]
+            self.assertEqual(labels.count('MISES À JOUR WINDOWS'),1)
+            self.assertEqual(labels.count('MISES À JOUR'),0)
+            self.assertIn('VÉRITABLES ICÔNES VALHEIM',labels)
+            w.close()
+
     def test_all_restored_pages_and_windows_updater(self):
         app=QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as tmp:

@@ -46,3 +46,6 @@ La V2.2 restaure les pages Centre de progression, Boss, Activités, Compétences
 **Mises à jour :** à partir de V2.2, les versions Windows autonomes ont leur propre updater avec SHA-256, sauvegarde et redémarrage. Les utilisateurs de V2.0/V2.1 doivent installer manuellement V2.2 une dernière fois.
 
 **Données :** toujours dans %LOCALAPPDATA%\ValheimStatsTracker ; jamais de réinitialisation des historiques ou favoris.
+
+### V2.2.1 — correctif des sprites Windows
+Les versions antérieures à la V2.2.1 pouvaient afficher « No module named UnityPy.resources ». Le paquet Windows embarque maintenant les ressources de UnityPy et vérifie leur présence en exécutant le programme compilé. L'écran de réglages ne conserve qu'un seul panneau de mise à jour Windows.
