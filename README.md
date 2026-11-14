@@ -10,7 +10,7 @@ Application Windows sans mod pour suivre les statistiques de personnages **Valhe
 **Confidentialité :** aucune sauvegarde personnelle ou historique n'est stocké dans ce dépôt. Les fichiers `.fch` sont lus en lecture seule ; l'historique local est conservé dans `%LOCALAPPDATA%\ValheimStatsTracker`.
 
 ## Page Succès
-La page d’accueil suit 31 succès chiffrés à partir des compteurs `Any` et des groupes de difficulté des boss.
+La page Succès suit 53 succès actifs et présente 2 entrées internes non vérifiées à partir des compteurs `Any` et des groupes de difficulté des boss.
 Elle affiche la progression, les critères précis et le nombre d’actions restantes. Les données ne sont **pas** une lecture du statut des succès Steam.
 
 ## Suivi de progression
@@ -37,9 +37,13 @@ V1.7 : suivi des listes exhaustives (Valheim 1.0.21) pour créatures, trophées,
 ## Localisation française (V1.8)
 Les noms de créatures, objets, trophées, poissons et constructions viennent de la traduction française du jeu publiée dans la documentation [Jötunn / Valheim-Modding](https://github.com/Valheim-Modding/Jotunn/blob/main/JotunnLib/Documentation/data/localization/translations/French.md). La base publiée correspond à une version antérieure du jeu (1.0.7) ; les noms récents qui ne figurent pas dans cette source conservent une étiquette de secours.
 
-Le fichier `fr_names.json` est fourni dans l’archive pour une utilisation hors connexion. Les clés utilisées pour compter la progression des succès ne sont jamais traduites : seul le texte affiché change.
+Le dictionnaire français est intégré dans le lecteur fourni dans l’archive pour une utilisation hors connexion. Les clés utilisées pour compter la progression des succès ne sont jamais traduites : seul le texte affiché change.
 
 
 ### Localisation française de la V1.8.3
 
 Le tracker conserve les clés d'origine de la sauvegarde et traduit uniquement leur affichage. Par exemple, la récolte `Raspberry` est reliée au nom officiel `$item_raspberries` (« Framboises »). Les sept libellés d'éléments récents absents de la localisation publiée sont descriptifs, non garantis comme noms officiels. Le ZIP reste compatible avec les anciens updaters : aucun mod ni fichier additionnel requis.
+
+
+## Centre de progression V1.9
+L'écran d'accueil classe les objectifs mesurables à terminer par pourcentage accompli. Tu peux enregistrer des favoris propres à chaque personnage (stockés dans `%LOCALAPPDATA%\ValheimStatsTracker\favoris.json`), consulter les critères restants et ouvrir la fiche complète d’un succès. Le rapport de session compare des relevés séparés d'au plus 90 min. Ce n'est pas un suivi temps réel ni un relevé exact des connexions.

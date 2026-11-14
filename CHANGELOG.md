@@ -1,3 +1,8 @@
+## v1.9.0
+- Centre de progression : classement des succès mesurables, critères restants, favoris persistants par personnage.
+- Rapports des sessions estimées avec comparaisons de sauvegardes, compétences et nouveaux objectifs.
+- Tests des filtres, favoris, périodes et compteurs remis à zéro.
+
 ## v1.8.4
 - Bouton « Actualiser maintenant » avec confirmation horodatée et erreurs visibles.
 - Détection explicite de sauvegarde inchangée ; actualisation des succès si nouvelle sauvegarde.

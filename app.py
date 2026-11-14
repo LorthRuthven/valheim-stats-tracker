@@ -16,7 +16,7 @@ import tkinter as tk
 
 import updater
 
-from valheim_reader import (localized_name, BOSSES, DEATH_KINDS, GROUPS, SaveError,
+from valheim_reader import (localized_name, BOSSES, DEATH_KINDS, GROUPS, STAT_INDEX, SaveError,
                             PLAYER_STAT_NAMES, SPECS, evaluate_all, evaluate_one, progress_delta,
                             defeated_bosses, decode, metrics, pretty_key,
                             total_kills)
@@ -81,7 +81,7 @@ CHART_PERIODS = {
     '90 derniers jours': 90,
 }
 NAV_ITEMS = [
-    'Vue d’ensemble', 'Succès', 'Boss', 'Combats', 'Activités', 'Compétences', 'Historique', 'Compteurs bruts'
+    'Centre de progression', 'Vue d’ensemble', 'Succès', 'Boss', 'Combats', 'Activités', 'Compétences', 'Historique', 'Compteurs bruts'
 ]
 
 CATEGORY_RULES = [
@@ -198,6 +198,153 @@ def fmt(v):
 
 
 
+
+# V1.9 — fonctions de progression indépendantes de l'interface graphique.
+# Les validations sont des estimations issues du fichier .fch, jamais des badges Steam.
+
+def pending_actions(result, limit=5):
+    """Critères manquants prioritaires, en conservant les noms français."""
+    if not result.get('measurable') or result.get('complete'):
+        return []
+    pending = [part for part in result.get('parts', ())
+               if not part.get('complete') and part.get('goal') is not None]
+    pending.sort(key=lambda part: (
+        max(0.0, float(part.get('remaining', 0))) / max(1.0, float(part['goal'])),
+        str(part.get('label', '')).casefold()))
+    return [
+        {'label': part['label'], 'remaining': max(0, float(part.get('remaining', 0))),
+         'goal': float(part['goal']), 'current': float(part.get('current', 0))}
+        for part in pending[:max(0, int(limit))]
+    ]
+
+
+def progress_ranking(results, favorites=(), limit=None):
+    """Priorise l'avancement réel, sans déclarer terminés les succès internes."""
+    favorite_set = set(favorites)
+    ranked = [row for row in results if row.get('measurable') and not row.get('complete')
+              and row.get('fraction') is not None]
+    ranked.sort(key=lambda row: (
+        -float(row.get('fraction', 0)),
+        -int(row.get('completed_conditions', 0)),
+        row.get('title', '').casefold()))
+    if limit is not None:
+        ranked = ranked[:max(0, int(limit))]
+    return [{**row, 'favorite': row['key'] in favorite_set} for row in ranked]
+
+
+def load_favorites(character, directory=None):
+    """Favoris par personnage dans %LOCALAPPDATA%, sans toucher à .fch ni SQLite."""
+    path = (Path(directory) if directory is not None else app_dir()) / 'favoris.json'
+    try:
+        data = json.loads(path.read_text(encoding='utf-8'))
+        saved = data.get('characters', {}).get(character, [])
+        if isinstance(saved, list):
+            valid = {spec.key for spec in SPECS}
+            return {x for x in saved if isinstance(x, str) and x in valid}
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return set()
+
+
+def save_favorites(character, selected, directory=None):
+    root = Path(directory) if directory is not None else app_dir()
+    root.mkdir(parents=True, exist_ok=True)
+    path = root / 'favoris.json'
+    try:
+        obj = json.loads(path.read_text(encoding='utf-8'))
+        if not isinstance(obj, dict):
+            obj = {}
+    except (OSError, ValueError, TypeError):
+        obj = {}
+    characters = obj.get('characters')
+    if not isinstance(characters, dict):
+        characters = {}
+    known = {spec.key for spec in SPECS}
+    characters[str(character)] = sorted(x for x in selected if x in known)
+    obj['characters'] = characters
+    temp = path.with_suffix('.tmp')
+    temp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding='utf-8')
+    temp.replace(path)
+
+
+SESSION_METRICS = (
+    ('Ennemis vaincus', 'kills'),
+    ('Décès', 'deaths'),
+    ('Fabrications', 'crafted'),
+    ('Constructions', 'built'),
+    ('Objets ramassés', 'picked_up'),
+    ('Arbres abattus', 'Tree'),
+    ('Récoltes cultivées', 'HarvestCrop'),
+    ('Miel récolté', 'BeesHarvested'),
+)
+
+
+def _saved_counter(profile, key):
+    if key in ('kills', 'deaths', 'crafted', 'built', 'picked_up'):
+        return float(metrics(profile, 'Any')[key])
+    idx = STAT_INDEX.get(key)
+    if idx is None:
+        return None
+    return float(profile['groups']['Any']['stats'][idx])
+
+
+def estimate_last_session(rows, gap_minutes=90):
+    """Bilan entre relevés d'une séquence présumée ; aucune heure de connexion inventée.
+
+    rows est la sortie sample_rows() : (id, timestamp, nom_fichier, données).
+    Un seul relevé de la séquence ne prouve aucun gain pendant cette session.
+    """
+    if not rows:
+        return {'available': False, 'reason': 'Aucun relevé enregistré.'}
+    ordered = sorted(rows, key=lambda item: (item[1], item[0]))
+    end = len(ordered) - 1
+    start = end
+    while start and ordered[start][1] - ordered[start - 1][1] <= gap_minutes * 60:
+        start -= 1
+    segment = ordered[start:]
+    if len(segment) < 2:
+        return {
+            'available': False,
+            'reason': 'Un seul relevé dans la session estimée : il faut au moins deux sauvegardes.',
+            'start': segment[0][1], 'end': segment[-1][1], 'samples': len(segment),
+        }
+    first, last = segment[0], segment[-1]
+    delta = {}
+    resets = []
+    for label, key in SESSION_METRICS:
+        left, right = _saved_counter(first[3], key), _saved_counter(last[3], key)
+        if left is None or right is None:
+            continue
+        diff = right - left
+        if diff < -0.001:
+            resets.append(label)
+            continue
+        delta[label] = max(0, diff)
+    skills = []
+    for label, now in last[3].get('skills', {}).items():
+        prior = first[3].get('skills', {}).get(label)
+        if prior:
+            gain = float(now['level']) - float(prior['level'])
+            if gain > .0001:
+                skills.append((label, gain))
+    skills.sort(key=lambda pair: (-pair[1], pair[0]))
+    before = {a['key']: a for a in evaluate_all(first[3]) if a['measurable']}
+    after = [a for a in evaluate_all(last[3]) if a['measurable']]
+    unlocked = [a['title'] for a in after if a['complete'] and
+                a['key'] in before and not before[a['key']]['complete']]
+    time_start = sum(first[3]['groups']['RawStats']['worlds'].values())
+    time_end = sum(last[3]['groups']['RawStats']['worlds'].values())
+    return {
+        'available': True,
+        'start': first[1], 'end': last[1], 'samples': len(segment),
+        'minutes_played': max(0, (time_end - time_start) / 60),
+        'changes': delta, 'skills': skills[:5],
+        'new_goals': unlocked, 'resets': resets,
+        'note': 'Session estimée par un écart maximal de %s min entre sauvegardes. '
+                'Les heures de connexion exactes ne sont pas connues.' % gap_minutes,
+    }
+
+
 def lbl(parent, text, size=11, color=FG, bold=False, **kw):
     return tk.Label(parent, text=text, fg=color, bg=parent.cget('bg'), font=('Segoe UI', size, 'bold' if bold else 'normal'), **kw)
 
@@ -292,7 +439,7 @@ class TrackerApp(tk.Tk):
         self.current_digest = ''
         self.file_stamp = None
         self.old = None
-        self.page_var = tk.StringVar(value='Vue d’ensemble')
+        self.page_var = tk.StringVar(value='Centre de progression')
         self.group = tk.StringVar(value='Any')
         self.group_display = tk.StringVar(value=GROUP_FR['Any'])
         self.search_combat = tk.StringVar()
@@ -305,6 +452,9 @@ class TrackerApp(tk.Tk):
         self.achievement_origin = tk.StringVar(value='Jeu + Steam + internes')
         self.achievement_selected = 'lumberjack'
         self.achievement_results = []
+        self.progress_filter = tk.StringVar(value='Plus proches')
+        self.progress_selected = ''
+        self.progress_favorites = set()
         self.achievement_previous = {}
         self.achievement_detail_limit = 65
         self.activity = tk.StringVar(value='Ressources collectées')
@@ -344,6 +494,7 @@ class TrackerApp(tk.Tk):
         for var in (self.achievement_search, self.achievement_filter, self.achievement_category, self.achievement_origin):
             var.trace_add('write', lambda *a: self.refresh_achievements())
         self.achievement_detail_search.trace_add('write', lambda *a: self._render_achievement_details())
+        self.progress_filter.trace_add('write', lambda *a: self.refresh_progress())
         config = app_dir() / 'config.json'
         try:
             saved = json.loads(config.read_text(encoding='utf-8')).get('path', '')
@@ -451,7 +602,7 @@ class TrackerApp(tk.Tk):
 
         self._build_sidebar()
         self._build_content()
-        self.show_page('Succès')
+        self.show_page('Centre de progression')
 
     def _build_sidebar(self):
         top = tk.Frame(self.sidebar, bg=SIDEBAR, padx=18, pady=18)
@@ -516,6 +667,7 @@ class TrackerApp(tk.Tk):
 
         self._dashboard_ui()
         self._achievements_ui()
+        self._progress_ui()
         self._boss_ui()
         self._combat_ui()
         self._activity_ui()
@@ -526,6 +678,7 @@ class TrackerApp(tk.Tk):
     def show_page(self, name):
         self.page_var.set(name)
         title_map = {
+            'Centre de progression': ('Centre de progression', 'Objectifs prioritaires, favoris et bilan de session issu des sauvegardes.'),
             'Vue d’ensemble': ('Vue d’ensemble', 'Les statistiques essentielles de ton personnage en un coup d’œil.'),
             'Succès': ('Succès', '55 entrées du jeu : 53 actives et 2 internes non vérifiées ; critères de collection Valheim 1.0.21. Progrès issus de la sauvegarde.'),
             'Boss': ('Boss', 'Progression des 8 boss, filtres par difficulté et éliminations aux poings.'),
@@ -546,6 +699,223 @@ class TrackerApp(tk.Tk):
                              fg=FG if active else MUTED,
                              activebackground=PANEL_STRONG if active else PANEL_SOFT)
         self.pages[name].pack(fill='both', expand=True)
+
+
+    def _progress_ui(self):
+        tab = self.pages['Centre de progression']
+        cards = tk.Frame(tab, bg=BG)
+        cards.pack(fill='x', pady=(0, 10))
+        self.progress_cards = {}
+        for idx, (key, name, hint) in enumerate((
+            ('pending', 'Restants', 'Objectifs calculables'),
+            ('active', 'En cours', 'Déjà commencés'),
+            ('favorite', 'Favoris', 'Priorités personnelles'),
+            ('done', 'Atteints', 'Selon le fichier .fch'),
+        )):
+            shell, value, small = self._metric_card(cards, name, accent=ACCENT2)
+            shell.grid(row=0, column=idx, padx=5, sticky='nsew')
+            cards.grid_columnconfigure(idx, weight=1, uniform='progress')
+            small.config(text=hint)
+            self.progress_cards[key] = value
+
+        body = tk.Frame(tab, bg=BG)
+        body.pack(fill='both', expand=True)
+        body.grid_columnconfigure(0, weight=5)
+        body.grid_columnconfigure(1, weight=4)
+        body.grid_rowconfigure(0, weight=5)
+        body.grid_rowconfigure(1, weight=3)
+
+        ranking_shell, ranking = self._panel(body, 'Objectifs les plus proches',
+            'Classement par pourcentage restant ; ce n’est pas une estimation de difficulté.', pad=12)
+        ranking_shell.grid(row=0, column=0, sticky='nsew', padx=(0, 6), pady=(0, 10))
+        filter_row = tk.Frame(ranking, bg=PANEL)
+        filter_row.pack(fill='x', pady=(0, 8))
+        lbl(filter_row, 'Afficher :', 9, MUTED).pack(side='left', padx=(0, 8))
+        ttk.Combobox(filter_row, textvariable=self.progress_filter,
+                     values=('Plus proches', 'Favoris', 'Non commencés'),
+                     state='readonly', width=20).pack(side='left')
+        area, self.progress_table = self._mk_table(ranking,
+            ('Favori', 'Succès', 'Progression', 'Critères restants'),
+            {'Favori': 57, 'Succès': 205, 'Progression': 105, 'Critères restants': 113})
+        area.pack(fill='both', expand=True)
+        self.progress_table.column('Favori', anchor='center')
+        self.progress_table.bind('<<TreeviewSelect>>', self._progress_select)
+        self.progress_empty = lbl(ranking, '', 9, MUTED)
+        self.progress_empty.pack(anchor='w', pady=(6, 0))
+
+        actions_shell, actions = self._panel(body, 'Plan d’action',
+            'Choisis un succès : les critères encore manquants s’affichent en priorité.', pad=12)
+        actions_shell.grid(row=0, column=1, sticky='nsew', padx=(6, 0), pady=(0, 10))
+        self.progress_title = lbl(actions, 'Sélectionne un objectif', 14, FG, True, wraplength=360, justify='left')
+        self.progress_title.pack(anchor='w', pady=(0, 7))
+        self.progress_description = lbl(actions, '', 10, MUTED, wraplength=380, justify='left')
+        self.progress_description.pack(anchor='w')
+        actionbar = tk.Frame(actions, bg=PANEL)
+        actionbar.pack(fill='x', pady=(12, 10))
+        self.progress_favorite_button = self._button(actionbar, '☆ Ajouter aux favoris', self.toggle_progress_favorite)
+        self.progress_favorite_button.pack(side='left', padx=(0, 8))
+        self._button(actionbar, 'Voir les critères', self.open_progress_achievement).pack(side='left')
+        self.progress_action_text = tk.Text(actions, bg=PANEL_SOFT, fg=FG, wrap='word',
+            font=('Segoe UI', 10), height=10, relief='flat', padx=12, pady=9,
+            highlightthickness=1, highlightbackground=BORDER, state='disabled')
+        self.progress_action_text.pack(fill='both', expand=True)
+
+        session_shell, session = self._panel(body, 'Bilan de la dernière session estimée',
+            'Différences entre sauvegardes rapprochées ; pas de données en temps réel.', pad=12)
+        session_shell.grid(row=1, column=0, columnspan=2, sticky='nsew')
+        self.progress_session_status = lbl(session, '', 10, ACCENT, True, wraplength=880, justify='left')
+        self.progress_session_status.pack(anchor='w', pady=(0, 9))
+        area, self.progress_session_table = self._mk_table(session, ('Statistique', 'Gain constaté'),
+                                                           {'Statistique': 290, 'Gain constaté': 155})
+        area.pack(fill='both', expand=True)
+        self.progress_session_extra = lbl(session, '', 9, MUTED, wraplength=940, justify='left')
+        self.progress_session_extra.pack(anchor='w', pady=(9, 0))
+
+    def _progress_select(self, event=None):
+        selected = self.progress_table.selection()
+        if selected:
+            self.progress_selected = selected[0]
+        self._render_progress_actions()
+
+    def _progress_write_text(self, content):
+        self.progress_action_text.configure(state='normal')
+        self.progress_action_text.delete('1.0', 'end')
+        self.progress_action_text.insert('1.0', content)
+        self.progress_action_text.configure(state='disabled')
+
+    def _render_progress_actions(self):
+        result = next((a for a in self.achievement_results if a['key'] == self.progress_selected), None)
+        if not result:
+            self.progress_title.config(text='Sélectionne un objectif')
+            self.progress_description.config(text='Aucun objectif correspondant à ce filtre.')
+            self.progress_favorite_button.config(state='disabled')
+            self._progress_write_text('Les succès déjà atteints sont consultables dans la page Succès.')
+            return
+        self.progress_favorite_button.config(state='normal')
+        favorite = result['key'] in self.progress_favorites
+        self.progress_favorite_button.config(text='★ Retirer des favoris' if favorite else '☆ Ajouter aux favoris')
+        self.progress_title.config(text=result['title'])
+        self.progress_description.config(text=(
+            result.get('description', '') + '\n'
+            + f"{float(result['percent'] or 0):.1f} % accomplis · "
+            + f"{result['completed_conditions']} / {result['total_conditions']} critères."
+        ))
+        missing = pending_actions(result, 9)
+        if not missing:
+            content = 'Aucun critère mesurable restant.'
+        else:
+            content = '\n\n'.join(
+                f"{i}. {part['label']}\n"
+                f"    Encore {fmt(part['remaining'])} · "
+                f"{fmt(part['current'])} / {fmt(part['goal'])}"
+                for i, part in enumerate(missing, 1))
+            remaining_total = sum(not p['complete'] for p in result['parts'])
+            if remaining_total > len(missing):
+                content += f"\n\n… et {remaining_total - len(missing)} autres critères non remplis."
+        self._progress_write_text(content)
+
+    def toggle_progress_favorite(self):
+        if not self.current or not self.progress_selected:
+            return
+        key = self.progress_selected
+        if key in self.progress_favorites:
+            self.progress_favorites.remove(key)
+        else:
+            self.progress_favorites.add(key)
+        try:
+            save_favorites(self.current['name'], self.progress_favorites)
+        except OSError as exc:
+            # Ne pas afficher un succès sauvegardé si le disque est en erreur.
+            if key in self.progress_favorites:
+                self.progress_favorites.remove(key)
+            else:
+                self.progress_favorites.add(key)
+            messagebox.showerror(APP_NAME, f'Impossible de sauvegarder les favoris : {exc}')
+            return
+        self.refresh_progress()
+
+    def open_progress_achievement(self):
+        if not self.progress_selected:
+            return
+        key = self.progress_selected
+        self.achievement_selected = key
+        self.achievement_filter.set('Tous')
+        self.achievement_origin.set('Jeu + Steam + internes')
+        self.achievement_category.set('Toutes les catégories')
+        self.achievement_search.set('')
+        self.show_page('Succès')
+        self.refresh_achievements()
+        if self.achievement_table.exists(key):
+            self.achievement_table.selection_set(key)
+            self.achievement_table.see(key)
+            self._render_achievement_details()
+
+    def refresh_progress(self):
+        if not self.current or not hasattr(self, 'progress_table'):
+            return
+        name = self.current['name']
+        self.progress_favorites = load_favorites(name)
+        results = self.achievement_results
+        all_pending = progress_ranking(results, self.progress_favorites)
+        complete = sum(a['complete'] for a in results if a['measurable'])
+        active = sum(a['fraction'] > 0 for a in all_pending)
+        for key, value in (('pending', len(all_pending)), ('active', active),
+                           ('favorite', len(self.progress_favorites)), ('done', complete)):
+            self.progress_cards[key].config(text=fmt(value))
+        shown = all_pending
+        chosen = self.progress_filter.get()
+        if chosen == 'Favoris':
+            shown = [r for r in all_pending if r['favorite']]
+        elif chosen == 'Non commencés':
+            shown = [r for r in all_pending if not r['fraction']]
+        self.progress_table.delete(*self.progress_table.get_children())
+        for row in shown:
+            remain = row['total_conditions'] - row['completed_conditions']
+            self.progress_table.insert('', 'end', iid=row['key'], values=(
+                '★' if row['favorite'] else '☆', row['title'],
+                f"{row['percent']:.1f} %", f"{remain} / {row['total_conditions']}"
+            ))
+        if self.progress_table.exists(self.progress_selected):
+            self.progress_table.selection_set(self.progress_selected)
+        elif shown:
+            self.progress_selected = shown[0]['key']
+            self.progress_table.selection_set(self.progress_selected)
+        else:
+            self.progress_selected = ''
+        self.progress_empty.config(text=(
+            f'{len(shown)} objectif(s) affiché(s) · {len(all_pending)} calculables à terminer'
+            if shown else 'Aucun succès à afficher avec ce filtre.'
+        ))
+        self._render_progress_actions()
+        self._render_progress_session()
+
+    def _render_progress_session(self):
+        rows = sample_rows(self.db, self.current['name'])
+        report = estimate_last_session(rows)
+        if not report['available']:
+            self.progress_session_status.config(text=report['reason'])
+            self._put(self.progress_session_table, [])
+            self.progress_session_extra.config(text=(
+                'Le tracker doit observer au moins deux sauvegardes rapprochées pour calculer des gains.'
+            ))
+            return
+        start = datetime.fromtimestamp(report['start']).strftime('%d/%m %H:%M')
+        end = datetime.fromtimestamp(report['end']).strftime('%d/%m %H:%M')
+        self.progress_session_status.config(text=(
+            f"{start} → {end} · {report['samples']} relevés · "
+            f"{report['minutes_played']:.0f} min de jeu enregistrées"
+        ))
+        self._put(self.progress_session_table, [
+            (label, '+' + fmt(value)) for label, value in report['changes'].items()
+        ])
+        skills = ', '.join(f'{name} +{gain:.2f}' for name, gain in report['skills'][:4]) or 'aucun gain visible'
+        reached = ', '.join(report['new_goals'][:5]) or 'aucun nouvel objectif atteint détecté'
+        resets = '\nCompteurs diminués/retour en arrière : ' + ', '.join(report['resets']) if report['resets'] else ''
+        self.progress_session_extra.config(text=(
+            'Compétences : ' + skills + '\n'
+            + 'Objectifs atteints sur cet intervalle : ' + reached + '\n'
+            + report['note'] + resets
+        ))
 
     def _dashboard_ui(self):
         tab = self.pages['Vue d’ensemble']
@@ -862,6 +1232,7 @@ class TrackerApp(tk.Tk):
         else:
             self.achievement_selected = ''
         self._render_achievement_details()
+        self.refresh_progress()
 
     def _boss_ui(self):
         tab = self.pages['Boss']
