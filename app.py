@@ -17,6 +17,7 @@ import tkinter as tk
 import updater
 
 from valheim_reader import (BOSSES, DEATH_KINDS, GROUPS, SaveError,
+                            PLAYER_STAT_NAMES, SPECS, evaluate_all, evaluate_one, progress_delta,
                             defeated_bosses, decode, metrics, pretty_key,
                             total_kills)
 
@@ -80,7 +81,7 @@ CHART_PERIODS = {
     '90 derniers jours': 90,
 }
 NAV_ITEMS = [
-    'Vue d’ensemble', 'Boss', 'Combats', 'Activités', 'Compétences', 'Historique', 'Compteurs bruts'
+    'Vue d’ensemble', 'Succès', 'Boss', 'Combats', 'Activités', 'Compétences', 'Historique', 'Compteurs bruts'
 ]
 
 CATEGORY_RULES = [
@@ -296,6 +297,12 @@ class TrackerApp(tk.Tk):
         self.search_combat = tk.StringVar()
         self.search_activity = tk.StringVar()
         self.search_raw = tk.StringVar()
+        self.achievement_search = tk.StringVar()
+        self.achievement_filter = tk.StringVar(value='Tous')
+        self.achievement_category = tk.StringVar(value='Toutes les catégories')
+        self.achievement_selected = 'lumberjack'
+        self.achievement_results = []
+        self.achievement_previous = {}
         self.activity = tk.StringVar(value='Ressources collectées')
         self.metric = tk.StringVar(value='Créatures tuées')
         self.history_group = tk.StringVar(value='Any')
@@ -324,6 +331,8 @@ class TrackerApp(tk.Tk):
         self.history_period.trace_add('write', lambda *a: self.draw_history())
         self.history_mode.trace_add('write', lambda *a: self.draw_history())
         self.boss_difficulty.trace_add('write', lambda *a: self.refresh_bosses())
+        for var in (self.achievement_search, self.achievement_filter, self.achievement_category):
+            var.trace_add('write', lambda *a: self.refresh_achievements())
         config = app_dir() / 'config.json'
         try:
             saved = json.loads(config.read_text(encoding='utf-8')).get('path', '')
@@ -424,7 +433,7 @@ class TrackerApp(tk.Tk):
 
         self._build_sidebar()
         self._build_content()
-        self.show_page('Vue d’ensemble')
+        self.show_page('Succès')
 
     def _build_sidebar(self):
         top = tk.Frame(self.sidebar, bg=SIDEBAR, padx=18, pady=18)
@@ -486,6 +495,7 @@ class TrackerApp(tk.Tk):
             self.pages[name] = frame
 
         self._dashboard_ui()
+        self._achievements_ui()
         self._boss_ui()
         self._combat_ui()
         self._activity_ui()
@@ -497,6 +507,7 @@ class TrackerApp(tk.Tk):
         self.page_var.set(name)
         title_map = {
             'Vue d’ensemble': ('Vue d’ensemble', 'Les statistiques essentielles de ton personnage en un coup d’œil.'),
+            'Succès': ('Succès', 'Suivi précis des objectifs chiffrés à partir de la sauvegarde Valheim.'),
             'Boss': ('Boss', 'Progression des 8 boss, filtres par difficulté et éliminations aux poings.'),
             'Combats': ('Combats', 'Bestiaire et types d’éliminations enregistrés par le jeu.'),
             'Activités': ('Activités', 'Ressources, fabrication, construction et vue nettoyée par catégories utiles.'),
@@ -568,6 +579,197 @@ class TrackerApp(tk.Tk):
         self.summary_text.pack(fill='x')
         self.previous_text = lbl(right, '', 10, ACCENT, False, justify='left', anchor='w', wraplength=560)
         self.previous_text.pack(anchor='w', pady=(16, 0))
+
+    def _achievements_ui(self):
+        tab = self.pages['Succès']
+        summary = tk.Frame(tab, bg=BG)
+        summary.pack(fill='x', pady=(0, 10))
+        self.achievement_cards = {}
+        for i, (key, name, hint) in enumerate((
+            ('complete', 'Objectifs atteints', 'Selon la sauvegarde'),
+            ('ongoing', 'En progression', 'Au moins un critère commencé'),
+            ('remaining', 'Non commencés', 'Aucun critère validé'),
+            ('total', 'Succès suivis', 'Conditions statistiques fiables'),
+        )):
+            card, value, small = self._metric_card(summary, name, accent=GREEN)
+            card.grid(row=0, column=i, sticky='nsew', padx=5)
+            summary.grid_columnconfigure(i, weight=1, uniform='achievements')
+            self.achievement_cards[key] = value
+            small.config(text=hint)
+
+        filt_shell, filt = self._panel(tab, 'Suivi des succès',
+            'Mesuré dans les groupes de succès Any, Normal+ ou Hard ; jamais à partir des seuls totaux bruts.', pad=12)
+        filt_shell.pack(fill='x', pady=(0, 10))
+        filter_row = tk.Frame(filt, bg=PANEL)
+        filter_row.pack(fill='x')
+        lbl(filter_row, 'Chercher :', 10, MUTED).pack(side='left', padx=(0, 8))
+        ttk.Entry(filter_row, textvariable=self.achievement_search, width=23).pack(side='left')
+        lbl(filter_row, 'Catégorie :', 10, MUTED).pack(side='left', padx=(16, 8))
+        ttk.Combobox(filter_row, textvariable=self.achievement_category,
+                     values=['Toutes les catégories'] + sorted({x.category for x in SPECS}),
+                     width=18, state='readonly').pack(side='left')
+        lbl(filter_row, 'État :', 10, MUTED).pack(side='left', padx=(16, 8))
+        ttk.Combobox(filter_row, textvariable=self.achievement_filter,
+                     values=['Tous', 'À terminer', 'Objectif atteint', 'En progression', 'Non commencé'],
+                     width=18, state='readonly').pack(side='left')
+
+        body = tk.Frame(tab, bg=BG)
+        body.pack(fill='both', expand=True)
+        body.grid_columnconfigure(0, weight=6)
+        body.grid_columnconfigure(1, weight=5)
+        body.grid_rowconfigure(0, weight=1)
+
+        listing_shell, listing = self._panel(body, 'Liste des objectifs',
+            'Choisis un succès pour afficher ses critères.', pad=12)
+        listing_shell.grid(row=0, column=0, sticky='nsew', padx=(0, 6))
+        area, self.achievement_table = self._mk_table(listing,
+            ('Succès', 'Progression', 'État'),
+            {'Succès': 280, 'Progression': 125, 'État': 136})
+        area.pack(fill='both', expand=True)
+        self.achievement_table.tag_configure('ach-done', background='#13332d', foreground=GREEN)
+        self.achievement_table.tag_configure('ach-active', background=PANEL, foreground=FG)
+        self.achievement_table.tag_configure('ach-idle', background='#172841', foreground=MUTED)
+        self.achievement_table.bind('<<TreeviewSelect>>', self._achievement_select)
+
+        details_shell, details = self._panel(body, 'Détail du succès',
+            'Objectif atteint selon la sauvegarde ≠ succès Steam débloqué.', pad=12)
+        details_shell.grid(row=0, column=1, sticky='nsew', padx=(6, 0))
+        title = tk.Frame(details, bg=PANEL)
+        title.pack(fill='x', pady=(0, 10))
+        self.achievement_detail_title = lbl(title, 'Choisis un succès', 13, FG, True, wraplength=330, justify='left')
+        self.achievement_detail_title.pack(anchor='w')
+        self.achievement_detail_status = lbl(title, '', 10, ACCENT, True)
+        self.achievement_detail_status.pack(anchor='w', pady=(5, 0))
+        self.achievement_progress = tk.Canvas(details, bg=PANEL_SOFT, height=14, highlightthickness=0)
+        self.achievement_progress.pack(fill='x', pady=(0, 9))
+        self.achievement_progress.bind('<Configure>', lambda e: self._paint_achievement_progress())
+        self.achievement_note = lbl(details, '', 10, MUTED, wraplength=360, justify='left', anchor='w')
+        self.achievement_note.pack(anchor='w', pady=(0, 8))
+
+        scroll_area = tk.Frame(details, bg=PANEL)
+        scroll_area.pack(fill='both', expand=True)
+        self.achievement_canvas = tk.Canvas(scroll_area, bg=PANEL, highlightthickness=0, height=170)
+        ach_scroll = ttk.Scrollbar(scroll_area, orient='vertical', command=self.achievement_canvas.yview)
+        self.achievement_canvas.configure(yscrollcommand=ach_scroll.set)
+        self.achievement_canvas.pack(side='left', fill='both', expand=True)
+        ach_scroll.pack(side='right', fill='y')
+        self.achievement_detail_body = tk.Frame(self.achievement_canvas, bg=PANEL)
+        self.achievement_canvas.create_window((0, 0), anchor='nw', window=self.achievement_detail_body, tags='ach-window')
+        self.achievement_detail_body.bind('<Configure>', lambda e: self.achievement_canvas.configure(scrollregion=self.achievement_canvas.bbox('all')))
+        self.achievement_canvas.bind('<Configure>', lambda e: self.achievement_canvas.itemconfigure('ach-window', width=e.width))
+
+    def _achievement_select(self, event=None):
+        tree = self.achievement_table
+        selected = tree.selection()
+        if selected:
+            self.achievement_selected = selected[0]
+        self._render_achievement_details()
+
+    def _paint_achievement_progress(self):
+        if not hasattr(self, 'achievement_progress'):
+            return
+        c = self.achievement_progress
+        c.delete('all')
+        width = max(100, c.winfo_width())
+        result = next((v for v in self.achievement_results if v['key'] == self.achievement_selected), None)
+        fraction = result['fraction'] if result else 0
+        c.create_rectangle(0, 0, width, 14, fill=PANEL_SOFT, outline='')
+        if fraction > 0:
+            c.create_rectangle(0, 0, width * fraction, 14,
+                               fill=GREEN if result['complete'] else ACCENT, outline='')
+
+    def _render_achievement_details(self):
+        if not hasattr(self, 'achievement_detail_title'):
+            return
+        result = next((v for v in self.achievement_results if v['key'] == self.achievement_selected), None)
+        for widget in self.achievement_detail_body.winfo_children():
+            widget.destroy()
+        if result is None:
+            self.achievement_detail_title.config(text='Choisis un succès')
+            self.achievement_detail_status.config(text='')
+            self.achievement_note.config(text='')
+            self._paint_achievement_progress()
+            return
+        self.achievement_detail_title.config(text=result['title'])
+        self.achievement_detail_status.config(text=f"{result['percent']:.0f} % · " +
+            ('Objectif atteint' if result['complete'] else f"{result['completed_conditions']}/{result['total_conditions']} critères"),
+            fg=GREEN if result['complete'] else ACCENT)
+        self._paint_achievement_progress()
+        older = self.achievement_previous.get(result['key'])
+        changes = progress_delta(result, older)
+        change_text = ''
+        if changes:
+            change_text = ' · Depuis le relevé précédent : ' + ', '.join(
+                f'{name} +{fmt(delta)}' if delta > 0 else f'{name} {fmt(delta)}' for name, delta in changes[:3])
+        self.achievement_note.config(text=result['description'] + change_text)
+        for part in result['parts']:
+            row = tk.Frame(self.achievement_detail_body, bg=PANEL)
+            row.pack(fill='x', pady=2)
+            lbl(row, '✓' if part['complete'] else '○', 12,
+                GREEN if part['complete'] else MUTED, True).pack(side='left', padx=(0, 8))
+            lbl(row, part['label'], 10, FG, False, wraplength=185, justify='left').pack(side='left')
+            current = fmt(part['current'])
+            target = fmt(part['goal'])
+            remain = 'atteint' if part['complete'] else f"reste {fmt(part['remaining'])}"
+            lbl(row, f'{current} / {target} · {remain}', 10,
+                GREEN if part['complete'] else MUTED, True, wraplength=150, justify='right').pack(side='right')
+        self.achievement_canvas.yview_moveto(0)
+
+    def refresh_achievements(self):
+        if not self.current or not hasattr(self, 'achievement_table'):
+            return
+        self.achievement_results = evaluate_all(self.current)
+        recent = sample_rows(self.db, self.current['name'])
+        self.achievement_previous = {}
+        if len(recent) >= 2:
+            previous = evaluate_all(recent[-2][3])
+            self.achievement_previous = {x['key']: x for x in previous}
+        completed = sum(r['complete'] for r in self.achievement_results)
+        active = sum(0 < r['fraction'] < 1 for r in self.achievement_results)
+        idle = len(self.achievement_results) - completed - active
+        for key, value in [('complete', completed), ('ongoing', active),
+                           ('remaining', idle), ('total', len(self.achievement_results))]:
+            self.achievement_cards[key].config(text=fmt(value))
+        needle = self.achievement_search.get().strip().lower()
+        category = self.achievement_category.get()
+        status = self.achievement_filter.get()
+        visible = []
+        for row in self.achievement_results:
+            if needle and needle not in row['title'].lower() and needle not in row['description'].lower() and needle not in row['category'].lower():
+                continue
+            if category != 'Toutes les catégories' and row['category'] != category:
+                continue
+            if status == 'À terminer' and row['complete']:
+                continue
+            if status == 'Objectif atteint' and not row['complete']:
+                continue
+            if status == 'En progression' and not (0 < row['fraction'] < 1):
+                continue
+            if status == 'Non commencé' and row['fraction'] != 0:
+                continue
+            visible.append(row)
+        tree = self.achievement_table
+        tree.delete(*tree.get_children())
+        for row in visible:
+            if row['total_conditions'] == 1:
+                p = row['parts'][0]
+                progress = f"{fmt(p['current'])} / {fmt(p['goal'])}"
+                rest = '—' if p['complete'] else fmt(p['remaining'])
+            else:
+                progress = f"{row['completed_conditions']} / {row['total_conditions']} critères"
+                rest = '—' if row['complete'] else f"{row['total_conditions'] - row['completed_conditions']} critères"
+            state = 'Objectif atteint' if row['complete'] else ('En cours' if row['fraction'] else 'Non commencé')
+            tag = 'ach-done' if row['complete'] else ('ach-active' if row['fraction'] else 'ach-idle')
+            tree.insert('', 'end', iid=row['key'],
+                        values=(row['title'], progress, state), tags=(tag,))
+        if tree.exists(self.achievement_selected):
+            tree.selection_set(self.achievement_selected)
+        elif visible:
+            self.achievement_selected = visible[0]['key']
+            tree.selection_set(self.achievement_selected)
+        else:
+            self.achievement_selected = ''
+        self._render_achievement_details()
 
     def _boss_ui(self):
         tab = self.pages['Boss']
@@ -1119,7 +1321,7 @@ class TrackerApp(tk.Tk):
         rows = []
         non_zero = 0
         for index, val in enumerate(p['groups'][g]['stats']):
-            nm = 'Décès' if index == 0 else DEATH_KINDS.get(index, f'Compteur #{index:03d} (non identifié)')
+            nm = ('Décès · Deaths' if index == 0 else (DEATH_KINDS.get(index, '') + ' · ' if index in DEATH_KINDS else '') + PLAYER_STAT_NAMES[index])
             if val:
                 non_zero += 1
             if search and search not in nm.lower() and search not in str(index):
@@ -1129,6 +1331,7 @@ class TrackerApp(tk.Tk):
         self.raw_summary.config(text=f'{non_zero} compteur(s) non nuls sur 205 dans la vue « {GROUP_FR.get(g, g)} ». Utilise la recherche pour retrouver rapidement un index précis.')
 
         self.refresh_bosses()
+        self.refresh_achievements()
         self.draw_history()
 
     def refresh_bosses(self):

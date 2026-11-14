@@ -47,3 +47,6 @@ Mise à jour : le manifeste est lu via raw.githubusercontent.com/LorthRuthven/va
 
 
 Nouveautés V1.4.0 : grosse refonte graphique et vue Activités beaucoup plus lisible.
+
+
+V1.5.0 : nouvel écran Succès. 31 objectifs chiffrés avec progression par critère, objectifs restants et filtres.

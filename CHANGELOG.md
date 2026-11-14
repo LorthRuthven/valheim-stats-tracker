@@ -1,3 +1,8 @@
+## v1.5.0
+- Nouvel onglet Succès (31 objectifs mesurables), suivi complet des critères chiffrés.
+- Statistiques liées aux succès mappées sur les 205 indices PlayerStatType, avec tests de régression.
+- Visualisation des conditions manquantes et gains entre sauvegardes.
+
 # Changelog
 
 ## v1.4.0

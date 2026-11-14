@@ -301,3 +301,399 @@ def metrics(parsed, group='Any'):
         'picked_up': activity_total(parsed,'picked_up',group),
         'world_hours': time_hours(seconds),
     }
+
+
+# -- Suivi des succès (compteurs de sauvegarde Valheim 1.0.21) --
+"""Règles de progression des succès Valheim 1.0.21 liées aux statistiques.
+
+Ces règles reflètent les compteurs de sauvegarde et NE constituent PAS une lecture
+technique de l'état des succès Steam. Les valeurs dans RawStats ne comptent pas :
+seul le groupe Any (ou Default/Hard pour les boss) sert aux succès.
+
+Table des PlayerStatType dans l'ordre Valheim 1.0.21 / profils v46-v47.
+Références documentaires :
+- https://github.com/lanchelms/fch-decoder/blob/main/valheim/names.go
+- https://github.com/Melichor/ValheimSaveParser/blob/main/achi_hunter.py
+- https://valheim.gamevault.in/achievements/
+"""
+
+from dataclasses import dataclass
+
+# Il faut garder les 205 entrées : le format .fch contient un tableau indexé.
+PLAYER_STAT_NAMES = tuple("""
+Deaths
+CraftsOrUpgrades
+Builds
+Jumps
+Cheats
+EnemyHits
+EnemyKills
+EnemyKillsLastHits
+PlayerHits
+PlayerKills
+HitsTakenEnemies
+HitsTakenPlayers
+ItemsPickedUp
+Crafts
+Upgrades
+PortalsUsed
+DistanceTraveled
+DistanceWalk
+DistanceRun
+DistanceSail
+DistanceAir
+TimeInBase
+TimeOutOfBase
+Sleep
+ItemStandUses
+ArmorStandUses
+WorldLoads
+TreeChops
+Tree
+TreeTier0
+TreeTier1
+TreeTier2
+TreeTier3
+TreeTier4
+TreeTier5
+LogChops
+Logs
+MineHits
+Mines
+MineTier0
+MineTier1
+MineTier2
+MineTier3
+MineTier4
+MineTier5
+RavenHits
+RavenTalk
+RavenAppear
+CreatureTamed
+FoodEaten
+SkeletonSummons
+ArrowsShot
+TombstonesOpenedOwn
+TombstonesOpenedOther
+TombstonesFit
+DeathByUndefined
+DeathByEnemyHit
+DeathByPlayerHit
+DeathByFall
+DeathByDrowning
+DeathByBurning
+DeathByFreezing
+DeathByPoisoned
+DeathBySmoke
+DeathByWater
+DeathByEdgeOfWorld
+DeathByImpact
+DeathByCart
+DeathByTree
+DeathBySelf
+DeathByStructural
+DeathByTurret
+DeathByBoat
+DeathByStalagtite
+DoorsOpened
+DoorsClosed
+BeesHarvested
+SapHarvested
+TurretAmmoAdded
+TurretTrophySet
+TrapArmed
+TrapTriggered
+PlaceStacks
+PortalDungeonIn
+PortalDungeonOut
+BossKills
+BossLastHits
+SetGuardianPower
+SetPowerEikthyr
+SetPowerElder
+SetPowerBonemass
+SetPowerModer
+SetPowerYagluth
+SetPowerQueen
+SetPowerAshlands
+SetPowerDeepNorth
+UseGuardianPower
+UsePowerEikthyr
+UsePowerElder
+UsePowerBonemass
+UsePowerModer
+UsePowerYagluth
+UsePowerQueen
+UsePowerAshlands
+UsePowerDeepNorth
+DeathByCatapult
+DeathByCinderFire
+DeathByAshlandsOcean
+DeathByIncinerator
+CraftFood
+CraftFoodBonus
+CraftGrill
+CraftGrillBurnt
+CraftGrillBonus
+CraftWeapon
+CraftArmor
+CraftTrinket
+CraftAmmo
+CraftMaterial
+CraftTool
+CraftTorch
+CraftBait
+CraftOther
+HarvestCrop
+HarvestBerry
+HarvestMushroom
+HarvestVine
+HarvestBonus
+ConsecutiveDaysSurvived
+ConsecutiveDaysSurvivedMax
+MaxBuildingHeight
+MaxBuildingHeightWorld
+MaxComfort
+TreasureBuriedFound
+TreasureDungeonFound
+TreasureLocationFound
+LeviathanSink
+LavaLeviathanSink
+ExploreNorth
+ExploreSouth
+ExploreEast
+ExploreWest
+ExploreNorthNoMap
+ExploreSouthNoMap
+ExploreEastNoMap
+ExploreWestNoMap
+BossKillMultiplayer
+BossKillSolo
+VillagePointsMax
+DeepestDungeon
+DistanceSailHelm
+PlayerSpawn
+DeathByTreeTier0
+DeathByTreeTier1
+DeathByTreeTier2
+DeathByTreeTier3
+DeathByTreeTier4
+DeathByTreeTier5
+FishHooked
+FishLost
+FishCaught
+FishCaughtTier0
+FishCaughtTier1
+FishCaughtTier2
+FishCaughtTier3
+FishCaughtTier4
+FishCaughtTier5
+FishCaughtTier6
+BuiltPieces
+BuiltPiecesNoDebt
+BuildPiecesRemoved
+BuildClusterMisc
+BuildClusterCrafting
+BuildClusterBuilding
+BuildClusterFloor
+BuildClusterWall
+BuildClusterRoof
+BuildClusterArchitecture
+BuildClusterFurniture
+BuildClusterLighting
+BuildClusterDecor
+BuildClusterStorage
+BuildClusterTransport
+BuildClusterFood
+BuildClusterMeads
+BuildClusterFeasts
+BuildClusterDefense
+BuildClusterStacks
+BuildClusterStairs
+BuildClusterDoors
+BuildClusterSeasonal
+TamedPetting
+TamedCommand
+TreeFir
+TreeOak
+TreePine
+TreeAshlands
+TreeYggdrasilShoot
+TreeSwamp
+TreeBeech
+TreeBirch
+TreeSnowFir
+TreeSnowPine
+DeathByDrawBridge
+DeathByAshlandsLava
+""".strip().splitlines())
+STAT_INDEX = {name: index for index, name in enumerate(PLAYER_STAT_NAMES)}
+assert len(PLAYER_STAT_NAMES) == 205 and STAT_INDEX['Tree'] == 28 and STAT_INDEX['DeathByTree'] == 68 and STAT_INDEX['TreeFir'] == 193
+
+# Description et règle : (nom lisible, compteur PlayerStatType, seuil).
+DEATH_CRITERIA = (
+    ('Touché par un ennemi', 'DeathByEnemyHit', 1),
+    ('Chute', 'DeathByFall', 1),
+    ('Noyade', 'DeathByDrowning', 1),
+    ('Brûlure', 'DeathByBurning', 1),
+    ('Gel', 'DeathByFreezing', 1),
+    ('Poison', 'DeathByPoisoned', 1),
+    ('Fumée', 'DeathBySmoke', 1),
+    ('Bord du monde', 'DeathByEdgeOfWorld', 1),
+    ('Arbre', 'DeathByTree', 1),
+    ('Tourelle', 'DeathByTurret', 1),
+    ('Stalactite', 'DeathByStalagtite', 1),
+    ('Catapulte', 'DeathByCatapult', 1),
+    ('Océan des Ashlands', 'DeathByAshlandsOcean', 1),
+    ('Incinérateur', 'DeathByIncinerator', 1),
+    ('Pont-levis', 'DeathByDrawBridge', 1),
+    ('Lave des Ashlands', 'DeathByAshlandsLava', 1),
+)
+TREE_DEATH_CRITERIA = (
+    ('Sapin', 'TreeFir', 1), ('Chêne', 'TreeOak', 1),
+    ('Pin', 'TreePine', 1), ('Arbre des Ashlands', 'TreeAshlands', 1),
+    ('Pousse d’Yggdrasil', 'TreeYggdrasilShoot', 1),
+    ('Arbre des marais', 'TreeSwamp', 1),
+    ('Hêtre', 'TreeBeech', 1), ('Bouleau', 'TreeBirch', 1),
+    ('Sapin enneigé', 'TreeSnowFir', 1),
+    ('Pin enneigé', 'TreeSnowPine', 1),
+)
+
+@dataclass(frozen=True)
+class AchievementSpec:
+    key: str
+    title: str
+    category: str
+    description: str
+    criteria: tuple[tuple[str, str, int], ...]
+    kind: str = 'stat'          # stat / boss / fish / miniboss
+    difficulty: str = 'Any'    # Any / Default / Hard
+    secret: bool = False
+
+
+def one(key, title, category, desc, stat, goal, *, secret=False):
+    return AchievementSpec(key, title, category, desc, ((desc, stat, goal),), secret=secret)
+
+SPECS = (
+    one('lumberjack', 'The Lumberjack', 'Récolte', 'Arbres abattus', 'Tree', 500),
+    one('builder', 'The Builder', 'Construction', 'Pièces construites comptabilisées', 'BuiltPiecesNoDebt', 500),
+    one('farmer', 'The Farmer', 'Récolte', 'Récoltes cultivées', 'HarvestCrop', 500),
+    one('beekeeper', 'The Beekeeper', 'Récolte', 'Miel récolté', 'BeesHarvested', 500),
+    AchievementSpec('forager', 'The Forager', 'Récolte', 'Récolter 250 baies et 250 champignons', (
+        ('Baies', 'HarvestBerry', 250), ('Champignons', 'HarvestMushroom', 250),
+    )),
+    one('cook', 'The Cook', 'Cuisine', 'Plats préparés', 'CraftFood', 100),
+    one('stomach', 'No Adventuring On an Empty Stomach', 'Cuisine', 'Aliments consommés', 'FoodEaten', 500),
+    one('sailor', 'The Sailor', 'Exploration', 'Distance totale à la voile (m)', 'DistanceSail', 131946),
+    one('captain', 'The Captain', 'Exploration', 'Distance à la barre (m)', 'DistanceSailHelm', 65973),
+    AchievementSpec('explorer', 'The Explorer', 'Exploration', 'Atteindre les quatre extrémités cardinales', (
+        ('Nord', 'ExploreNorth', 1), ('Sud', 'ExploreSouth', 1),
+        ('Est', 'ExploreEast', 1), ('Ouest', 'ExploreWest', 1),
+    )),
+    AchievementSpec('pathfinder', 'The Pathfinder', 'Exploration', 'Atteindre les extrémités sans carte', (
+        ('Nord sans carte', 'ExploreNorthNoMap', 1), ('Sud sans carte', 'ExploreSouthNoMap', 1),
+        ('Est sans carte', 'ExploreEastNoMap', 1), ('Ouest sans carte', 'ExploreWestNoMap', 1),
+    )),
+    one('survivor', 'The Survivor', 'Survie', 'Jours consécutifs survécus (record)', 'ConsecutiveDaysSurvivedMax', 30),
+    one('comfort', 'Comfort is King', 'Construction', 'Niveau de confort maximal', 'MaxComfort', 20),
+    one('mighty', 'Mighty Halls', 'Construction', 'Hauteur maximale d’une construction', 'MaxBuildingHeight', 49),
+    one('top', 'Top of the World', 'Construction', 'Hauteur de construction dans le monde', 'MaxBuildingHeightWorld', 432),
+    one('fish4', 'A Catch Worthy of Njord', 'Exploration', 'Poisson de niveau 4 pêché', 'FishCaughtTier4', 1),
+    one('solo', 'Lone Wolf', 'Combat', 'Boss vaincu seul', 'BossKillSolo', 1),
+    one('coop', 'Stronger Together', 'Combat', 'Boss vaincu à plusieurs', 'BossKillMultiplayer', 1),
+    one('firstdeath', 'The First of Many', 'Survie', 'Premier décès', 'Deaths', 1, secret=True),
+    one('accident', 'Accidents Happen', 'Survie', 'Décès provoqué par un arbre', 'DeathByTree', 1, secret=True),
+    AchievementSpec('treesall', 'That Can’t Be an Accident', 'Survie', 'Mourir à cause des dix variétés d’arbres', TREE_DEATH_CRITERIA, secret=True),
+    AchievementSpec('deathall', 'Are You Alright?', 'Survie', 'Mourir des seize manières possibles', DEATH_CRITERIA),
+    one('obliterated', 'Obliterated', 'Survie', 'Mort par incinérateur', 'DeathByIncinerator', 1, secret=True),
+    one('legend', 'The Legends Are True', 'Survie', 'Mort au bord du monde', 'DeathByEdgeOfWorld', 1, secret=True),
+    one('treasure', 'The Treasure Hunter', 'Exploration', 'Trésors enterrés découverts', 'TreasureBuriedFound', 10, secret=True),
+    one('leviathan', 'No Time For Snoozing', 'Exploration', 'Léviathan réveillé', 'LeviathanSink', 1, secret=True),
+    AchievementSpec('fisherman', 'The Fisherman', 'Exploration', 'Pêcher les douze espèces différentes', tuple(), kind='fish'),
+    AchievementSpec('miniboss', 'Odin is Pleased', 'Combat', 'Vaincre les cinq mini-boss requis', tuple(), kind='miniboss'),
+    AchievementSpec('viking', 'The Viking', 'Boss', 'Vaincre les huit boss', tuple(), kind='boss', difficulty='Any'),
+    AchievementSpec('tough', 'The Tough Viking', 'Boss', 'Vaincre les huit boss en normal ou plus', tuple(), kind='boss', difficulty='Default'),
+    AchievementSpec('toughest', 'The Toughest Viking', 'Boss', 'Vaincre les huit boss en difficile ou plus', tuple(), kind='boss', difficulty='Hard'),
+)
+
+# L'ordre de l'énumération est également documenté dans valheim_reader.py.
+BOSS_CRITERIA = (
+    ('Eikthyr', '$enemy_eikthyr', 1),
+    ('L’Ancien', '$enemy_gdking', 1),
+    ('Masse d’os', '$enemy_bonemass', 1),
+    ('Moder', '$enemy_dragon', 1),
+    ('Yagluth', '$enemy_goblinking', 1),
+    ('La Reine', '$enemy_seekerqueen', 1),
+    ('Fader', '$enemy_fader', 1),
+    ('Kall Fimbulbringer', '$enemy_frozenking_p3', 1),
+)
+
+FISH_CRITERIA = tuple((label, f'$animal_fish{i}', 1) for i, label in enumerate((
+    'Perche', 'Brochet', 'Thon', 'Tétra', 'Poisson-troll',
+    'Hareng géant', 'Mérou', 'Morue corail', 'Poisson-pêcheur',
+    'Saumon du Nord', 'Poisson magma', 'Poisson-globe',
+), start=1))
+
+MINIBOSS_CRITERIA = (
+    ('Geirrhafa', '$enemy_fenringcultist_hildir', 1),
+    ('Brenna', '$enemy_skeletonfire', 1),
+    ('Lord Reto', '$enemy_charred_melee_Dyrnwyn', 1),
+    ('Zil & Thungr', '$enemy_goblinbrute_hildircombined', 1),
+    ('Zil', '$enemy_goblin_hildir', 1),
+)
+
+
+def evaluate_one(profile, spec: AchievementSpec):
+    """L'évaluation lit exclusivement les groupes utilisés par les succès.
+
+    Le statut calculé n'affirme pas que Steam a débloqué un succès.
+    """
+    group = profile['groups'][spec.difficulty]
+    if spec.kind in ('boss','miniboss'):
+        criteria = BOSS_CRITERIA if spec.kind == 'boss' else MINIBOSS_CRITERIA
+        saved = group['enemies'][0]
+        get_value = lambda key: saved.get(key, 0)
+    elif spec.kind == 'fish':
+        criteria = FISH_CRITERIA
+        saved = group['pickables']
+        get_value = lambda key: saved.get(key, 0)
+    else:
+        criteria = spec.criteria
+        stats = group['stats']
+        get_value = lambda key: stats[STAT_INDEX[key]]
+    parts = []
+    fractions = []
+    for label, key, goal in criteria:
+        value = max(0, float(get_value(key)))
+        filled = min(goal, value)
+        fractions.append(filled / goal)
+        parts.append({
+            'label': label, 'key': key, 'current': value, 'goal': goal,
+            'remaining': max(0, goal - value), 'complete': value >= goal,
+        })
+    fraction = sum(fractions) / len(fractions) if fractions else 0
+    complete = all(p['complete'] for p in parts) and bool(parts)
+    return {
+        'key': spec.key, 'title': spec.title, 'category': spec.category,
+        'description': spec.description, 'difficulty': spec.difficulty,
+        'secret': spec.secret, 'fraction': fraction, 'percent': round(fraction * 100, 1),
+        'completed_conditions': sum(p['complete'] for p in parts),
+        'total_conditions': len(parts), 'complete': complete,
+        'parts': parts,
+    }
+
+
+def evaluate_all(profile):
+    return [evaluate_one(profile, spec) for spec in SPECS]
+
+
+def progress_delta(current_result, prior_result):
+    if not prior_result:
+        return None
+    old = {p['key']: p['current'] for p in prior_result['parts']}
+    deltas = []
+    for part in current_result['parts']:
+        delta = part['current'] - old.get(part['key'], part['current'])
+        if abs(delta) > 1e-5:
+            deltas.append((part['label'], delta))
+    return deltas

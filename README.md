@@ -9,6 +9,10 @@ Application Windows sans mod pour suivre les statistiques de personnages **Valhe
 
 **Confidentialité :** aucune sauvegarde personnelle ou historique n'est stocké dans ce dépôt. Les fichiers `.fch` sont lus en lecture seule ; l'historique local est conservé dans `%LOCALAPPDATA%\ValheimStatsTracker`.
 
+## Page Succès
+La page d’accueil suit 31 succès chiffrés à partir des compteurs `Any` et des groupes de difficulté des boss.
+Elle affiche la progression, les critères précis et le nombre d’actions restantes. Les données ne sont **pas** une lecture du statut des succès Steam.
+
 ## Suivi de progression
 - **Boss** : huit boss et compteurs par difficulté (`Normal +`, `Difficile +`, etc.) ; les groupes sont imbriqués et ne doivent pas être additionnés.
 - **Poings** : catégorie de l’élimination enregistrée par la sauvegarde ; elle ne certifie pas un combat entier sans arme.
