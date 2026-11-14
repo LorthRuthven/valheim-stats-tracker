@@ -41,7 +41,7 @@ def icon_aliases(name):
     stripped = raw
     for _ in range(3):
         old = stripped
-        stripped = re.sub(r'^(?:icon|icons|sprite|sprites|texture|tex|item|ui)[_\s.-]+', '', stripped, flags=re.I)
+        stripped = re.sub(r'^(?:icon|icons|inventory|sprite|sprites|texture|tex|item|ui)[_\s.-]+', '', stripped, flags=re.I)
         if stripped == old:
             break
         variants.add(icon_key(stripped))
