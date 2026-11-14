@@ -21,6 +21,7 @@ from restored_pages import RestoredPagesMixin
 from real_assets import hero_photo, achievement_icon, game_icon
 from windows_update_ui import UpdatePanel
 from v2_core import VERSION, progress_ranking
+from valheim_reader import BOSSES
 
 BG='#0c1117'; SIDEBAR='#111b22'; PANEL='#17232c'
 BRONZE='#e9b77b'; FG='#f1eee8'; MUTED='#afc0bd'
@@ -447,19 +448,14 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
                 cell=self.ach_parts.item(i,0)
                 self.ach_parts.setRowHidden(i,bool(search and cell and search not in cell.text().casefold()))
 
-        lookup={a['key']:a for a in self.results}
-        for i in range(self.ach_tree.topLevelItemCount()):
-            item=self.ach_tree.topLevelItem(i)
-            a=lookup.get(item.data(0,Qt.ItemDataRole.UserRole),{})
-            category=a.get('category','')
-            icon='skull' if category=='Boss' else 'paw' if category=='Combat' else 'axe' if category=='Construction' else 'compass' if category=='Exploration' else 'trophy'
-            item.setIcon(0,rune_icon(icon,23))
     def draw_combat(self):
         super().draw_combat()
-        icons=('shield','tree','skull','flame','trophy','paw','flame','compass')
-        for i in range(self.combat_bosses.rowCount()):
+        # Une vraie icône de trophée uniquement si elle a été vérifiée.
+        for i,(token,name) in enumerate(BOSSES.items()):
             cell=self.combat_bosses.item(i,0)
-            if cell:cell.setIcon(rune_icon(icons[i%len(icons)],24))
+            icon=game_icon(token)
+            if cell is not None and not icon.isNull():cell.setIcon(icon)
+
 
 def main():
     import sys
