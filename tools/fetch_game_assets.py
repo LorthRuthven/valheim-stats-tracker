@@ -57,7 +57,8 @@ def find_achievements(html):
 
 def valid_steam(url):
     host=urllib.parse.urlsplit(url).hostname or ''
-    return host.endswith('steamstatic.com') or host.endswith('steamcommunity.com')
+    return (host.endswith('steamstatic.com') or host.endswith('steamcommunity.com')
+            or host.endswith('akamaihd.net') or host=='valheim.fans')
 
 def download_assets():
     from valheim_reader import SPECS
@@ -71,6 +72,7 @@ def download_assets():
             content=get(url,max_size=3_500_000).decode('utf8',errors='replace')
             entries=find_achievements(content)
             print('SOURCE',url,'pictogrammes',len(entries),flush=True)
+            print('EXEMPLES',list(entries.items())[:3],flush=True)
             for key,value in entries.items():
                 if key in required and key not in found and valid_steam(value):
                     found[key]=value
@@ -81,11 +83,13 @@ def download_assets():
     for key,url in found.items():
         try:
             content=get(url,max_size=400_000)
-            if not (content[:3]==b'\xff\xd8\xff' or content[:8]==b'\x89PNG\r\n\x1a\n'):
+            from PIL import Image
+            from io import BytesIO
+            image=Image.open(BytesIO(content))
+            if image.width<32 or image.height<32 or image.width>2000 or image.height>2000:
                 continue
-            ext='.png' if content.startswith(b'\x89PNG') else '.jpg'
-            name=key+ext
-            (BASE/'achievements'/name).write_bytes(content)
+            name=key+'.png'
+            image.convert('RGBA').save(BASE/'achievements'/name,format='PNG',optimize=True)
             catalog['achievements'][key]=name
         except Exception as exc:
             print('ICON FAILED',key,str(exc)[:95],flush=True)
@@ -119,10 +123,12 @@ def download_assets():
         url='https://valheim.fandom.com/wiki/Special:Redirect/file/'+urllib.parse.quote(filename)
         try:
             content=get(url,max_size=300_000)
-            if not (content.startswith(b'\x89PNG') or content.startswith(b'\xff\xd8\xff')):continue
-            ext='.png' if content.startswith(b'\x89PNG') else '.jpg'
-            name=slug(keys[0])+ext
-            (BASE/'items'/name).write_bytes(content)
+            from PIL import Image
+            from io import BytesIO
+            image=Image.open(BytesIO(content))
+            if image.width<24 or image.height<24 or image.width>3000:continue
+            name=slug(keys[0])+'.png'
+            image.convert('RGBA').save(BASE/'items'/name,format='PNG',optimize=True)
             for key in keys:catalog['items'][slug(key)]=name
         except Exception:
             continue
