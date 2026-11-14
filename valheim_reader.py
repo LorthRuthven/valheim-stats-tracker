@@ -366,7 +366,16 @@ _FR_NAMES_SOURCE = '{\n  "$animal_fish": "Poisson",\n  "$animal_fish1": "Perche"
 def french_names():
     result = {}
     for key, value in _fr_json.loads(_FR_NAMES_SOURCE).items():
-        if isinstance(key, str) and key.startswith('
+        if isinstance(key, str) and key.startswith(chr(36)) and isinstance(value, str):
+            cleaned = _fr_html.unescape(_fr_re.sub(r'</?(?:color|b|i|size)(?:=[^>]*)?>', '', value, flags=_fr_re.I)).replace(chr(160), ' ').strip()
+            if cleaned and not cleaned.startswith(chr(36)) and len(cleaned) <= 140:
+                result[key.casefold()] = cleaned
+    return result
+
+def localized_name(token, fallback=None):
+    if not isinstance(token, str):
+        return fallback or str(token)
+    return french_names().get(token.casefold(), fallback if fallback is not None else token)
 
 
 def prefab_label(token: str) -> str:
