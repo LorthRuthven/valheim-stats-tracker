@@ -317,6 +317,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
                 for x in old_panel.findChildren(QLabel)
             ):
                 inner.layout().removeWidget(old_panel)
+                old_panel.setParent(None)  # retire immédiatement des enfants Qt
                 old_panel.deleteLater()
             frame, layout=panel('AMBIANCE ET MOUVEMENTS',
                 'Illustrations locales : aucune connexion n’est nécessaire.')
