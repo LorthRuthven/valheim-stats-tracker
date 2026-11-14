@@ -196,6 +196,7 @@ try {
   }
   exit 1
 }
+"""
 
 def install_and_restart(staged, directory):
     if os.name!='nt' or not getattr(sys,'frozen',False):
