@@ -79,7 +79,7 @@ class IconExtractionTests(unittest.TestCase):
             second=json.loads((dest/'extraction-report.json').read_text(encoding='utf-8'))
             self.assertEqual(second['images_existing'],2)
 
-    @unittest.skipIf(Image is None,'Pillow nécessaire pour contrôler l'extraction à zéro')
+    @unittest.skipIf(Image is None,"Pillow nécessaire pour contrôler l’extraction à zéro")
     def test_empty_extraction_is_error_and_report_exists(self):
         with tempfile.TemporaryDirectory() as temp:
             root=game_folder(temp)
@@ -92,7 +92,7 @@ class IconExtractionTests(unittest.TestCase):
             self.assertEqual(report['textures_found'],0)
             self.assertEqual(report['images_written'],0)
 
-    @unittest.skipIf(Image is None,'Pillow nécessaire pour contrôler le journal des erreurs')
+    @unittest.skipIf(Image is None,"Pillow nécessaire pour contrôler le journal des erreurs")
     def test_loader_errors_preserved_in_diagnostics(self):
         with tempfile.TemporaryDirectory() as temp:
             root=game_folder(temp)
