@@ -18,9 +18,10 @@ class UpdaterTests(unittest.TestCase):
 
     def test_package_and_manifest(self):
         with tempfile.TemporaryDirectory() as tmp:
-            archive,manifest_path=build('v1.3.1','exemple/valheim-stats-tracker',Path(tmp))
+            current=updater.current_version()
+            archive,manifest_path=build(f'v{current}','exemple/valheim-stats-tracker',Path(tmp))
             version,members=updater.verify_zip(archive,minimum_version='1.1.0')
-            self.assertEqual(version,'1.3.1')
+            self.assertEqual(version,current)
             self.assertIn('app.py',members)
             manifest=json.loads(manifest_path.read_text(encoding='utf8'))
             self.assertEqual(manifest['sha256'],updater.sha256_file(archive))

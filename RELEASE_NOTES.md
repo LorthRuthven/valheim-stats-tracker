@@ -1,7 +1,20 @@
-## Valheim Stats Tracker V1.3.1 — correction des mises à jour
+# Valheim Stats Tracker v1.4.0
 
-- Corrige l'erreur « Manifeste trop volumineux » : le manifeste est servi depuis `raw.githubusercontent.com` au lieu d'un lien GitHub Releases indirect.
-- Convertit automatiquement l'ancienne URL enregistrée par les V1.2 et V1.3 en nouvelle adresse (sans effacer la configuration ni l'historique).
-- Affiche une erreur explicite si une page HTML est renvoyée à la place du JSON.
-- La publication GitHub synchronise désormais `update.json` à la racine du dépôt pour les futures versions.
-- Aucun changement à la sauvegarde Valheim ou à la base de statistiques.
+## Refonte graphique majeure
+- Nouvelle interface sombre plus moderne avec barre latérale et pages dédiées.
+- Cartes de synthèse plus lisibles pour les statistiques clés.
+- Présentation plus claire des boss, combats, activités, compétences et historique.
+
+## Activités plus propres et lisibles
+- Nouvelle vue des activités avec regroupement par grandes familles utiles : bois / arbres, métaux, nourriture, construction, etc.
+- Cartes de synthèse pour voir rapidement la quantité totale, le nombre de types, la ressource dominante et la famille dominante.
+- Tableau de répartition par famille pour repérer d'un coup d'œil les ressources les plus farmées.
+
+## Lisibilité générale
+- Réorganisation du tableau de bord et des résumés du personnage.
+- Historique et infobulles plus clairs.
+- Explorateur des compteurs bruts plus propre.
+
+## Technique
+- Application toujours 100 % lecture seule sur les fichiers `.fch`.
+- Compatible avec l'installation par ZIP local et avec l'updater.

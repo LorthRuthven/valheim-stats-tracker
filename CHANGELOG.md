@@ -1,24 +1,15 @@
-## v1.3.1 (2026-11-14)
-- Réparation de la source des mises à jour (manifeste JSON direct sur GitHub Raw).
-- Migration automatique des anciennes URL et diagnostic HTML.
-- Synchronisation automatique du manifeste à chaque release.
+# Changelog
 
-## v1.3.0 (2026-11-14)
-- Nouvel onglet Boss et statistiques par difficulté.
-- Graphiques améliorés : dates réelles, filtres de période, deltas et survol.
-- Suivi historique des niveaux de compétences.
+## v1.4.0
+- Refonte graphique majeure de l'application.
+- Nouvelle navigation latérale et cartes statistiques modernisées.
+- Réécriture de l'onglet Activités pour rendre les données plus propres et lisibles.
+- Ajout d'un regroupement des activités par grandes familles (bois, métaux, nourriture, construction, etc.).
+- Amélioration de la lisibilité générale des tableaux et résumés.
 
-# Historique des versions
+## v1.3.1
+- Correction de l'URL de manifeste de mise à jour.
+- Migration automatique de l'ancien lien GitHub release vers le manifeste direct.
 
-## 1.2.0 — Intégration GitHub Releases
-- Configuration d’un dépôt GitHub directement dans l’interface.
-- Vérification de `update.json` depuis la dernière GitHub Release publique.
-- Projet prêt à publier : packaging, manifeste SHA-256 et workflow GitHub Actions.
-- Suppression des références à des personnages et mondes spécifiques.
-
-## 1.1.0
-- Installation de mises à jour via URL HTTPS ou ZIP local.
-- Sauvegarde des anciennes versions, vérification SHA-256.
-
-## 1.0.0
-- Statistiques, historique, graphiques et lecture des sauvegardes Valheim.
+## v1.3.0
+- Suivi détaillé des boss et de l'historique.
