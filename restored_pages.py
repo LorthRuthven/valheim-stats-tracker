@@ -107,6 +107,32 @@ def history_points(rows, key, group, changes=False):
 class RestoredPagesMixin:
     """Ajoute les écrans V1.9 perdus, sans toucher à la sauvegarde du personnage."""
 
+    def _make_dashboard(self):
+        """Conserve le tableau de bord V2 et le résumé du monde de la V1.9."""
+        super()._make_dashboard()
+        area=self.stack.widget(0)
+        interior=area.widget() if hasattr(area,'widget') else None
+        if interior is None:return
+        p,layout=panel("MONDES ET ACTIVITÉS",
+            "Compléments du tableau de bord V1.9, cumulés sur le personnage.")
+        self.world_summary=label("Charge une sauvegarde pour consulter les mondes.",muted=True,wrap=True)
+        layout.addWidget(self.world_summary)
+        interior.layout().addWidget(p)
+
+    def _refresh_dashboard_extra(self):
+        if not self.store.profile or not hasattr(self,'world_summary'):return
+        p=self.store.profile
+        stats=metrics(p,'Any')
+        worlds=p['groups']['RawStats']['worlds']
+        details=', '.join(f"{name} {seconds/3600:.1f} h" for name,seconds
+                          in sorted(worlds.items(),key=lambda x:-x[1])[:8])
+        self.world_summary.setText(
+           f"Fabriqués : {txt(stats['crafted'])}   •   Constructions : {txt(stats['built'])}"
+           f"   •   Objets ramassés : {txt(stats['picked_up'])}\n"
+           f"Version de la sauvegarde : {p.get('version','?')}\n"
+           f"Mondes visités : {details or 'aucun connu'}"
+        )
+
     def _make_restored_pages(self):
         self._make_progress_center()
         self._make_boss_detail()
@@ -333,6 +359,7 @@ class RestoredPagesMixin:
 
     def _refresh_restored_pages(self):
         if not self.store.profile:return
+        self._refresh_dashboard_extra()
         self._refresh_progress_center()
         self._refresh_boss_detail()
         self._refresh_activity()
