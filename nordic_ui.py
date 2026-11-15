@@ -572,8 +572,21 @@ def _verify_unitypy_bundle():
     """Teste l'exécutable réellement compilé : régression UnityPy.resources."""
     import importlib
     import importlib.resources
-    for name in ('UnityPy', 'UnityPy.resources', 'PIL.Image'):
+    for name in ('UnityPy', 'UnityPy.resources', 'PIL.Image', 'fmod_toolkit'):
         importlib.import_module(name)
+    # Les tests synthetiques seuls ne chargeaient jamais les DLL natives.
+    # Cette verification reproduit la dependance reelle des sprites Valheim.
+    import ctypes
+    import os
+    import sys
+    from pathlib import Path
+    if os.name == 'nt' and getattr(sys, 'frozen', False):
+        from game_icon_extraction import verify_fmod_runtime
+        dll = verify_fmod_runtime(Path(sys._MEIPASS))
+        try:
+            ctypes.WinDLL(str(dll))
+        except OSError as exc:
+            raise RuntimeError(f'fmod.dll presente mais impossible a charger : {dll} : {exc}') from exc
     import UnityPy
     if not callable(UnityPy.load):
         raise RuntimeError('UnityPy.load absent du paquet')
