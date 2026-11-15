@@ -6,7 +6,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from windows_update import (
     UpdateError, asset_filename, check_release, launch_verified_installer,
@@ -97,13 +97,14 @@ class WindowsInstallerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             location=Path(directory)/asset_filename(VERSION,"installer")
             location.write_bytes(data)
-            with patch("windows_update.os.name","nt"),patch("os.startfile",create=True) as start:
+            fake_os = type("FakeWindowsOS", (), {"name": "nt", "startfile": Mock()})()
+            with patch("windows_update.os",fake_os):
                 launch_verified_installer(metadata,location)
-                start.assert_called_once_with(str(location))
+                fake_os.startfile.assert_called_once_with(str(location))
                 location.write_bytes(data[:-1]+b"\x01")
                 with self.assertRaisesRegex(UpdateError,"changé"):
                     launch_verified_installer(metadata,location)
-                self.assertEqual(start.call_count,1)
+                self.assertEqual(fake_os.startfile.call_count,1)
             with self.assertRaisesRegex(UpdateError,"officiel"):
                 launch_verified_installer({**metadata,"kind":"zip"},location)
 
