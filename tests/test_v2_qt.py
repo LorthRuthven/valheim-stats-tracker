@@ -56,7 +56,7 @@ class QtWindowTests(unittest.TestCase):
         app=QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as tmp:
             w=NordicWindow(TrackerStore(tmp))
-            self.assertEqual(w.stack.count(),11)
+            self.assertEqual(w.stack.count(),12)
             self.assertTrue(hasattr(w,'activity_items'))
             self.assertTrue(hasattr(w,'skills_table'))
             self.assertTrue(hasattr(w,'raw_table_restored'))
@@ -66,8 +66,10 @@ class QtWindowTests(unittest.TestCase):
             self.assertTrue(hasattr(w,'combat_details'))
             self.assertTrue(hasattr(w,'update_controller'))
             self.assertTrue(hasattr(w,'collection_page'))
-            self.assertEqual(w.NAV[-1][0],'Encyclopédie')
+            self.assertEqual(w.NAV[10][0],'Encyclopédie')
             self.assertIs(w.stack.widget(10),w.collection_page)
+            self.assertEqual(w.NAV[11][0],'Statistiques du Viking')
+            self.assertIs(w.stack.widget(11),w.viking_stats_page)
             w.close()
 
     def test_collection_filters_and_achievement_image_panel(self):
@@ -159,6 +161,52 @@ class QtWindowTests(unittest.TestCase):
                 w.close()
                 reset_icon_cache()
 
+    def test_viking_stats_cards_search_categories_and_favorites(self):
+        from valheim_reader import PLAYER_STAT_NAMES, STAT_INDEX
+        from viking_stats import STATS, favorites
+        app=QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            stats=w.viking_stats_page
+            self.assertGreaterEqual(len(stats.cards),35)
+            self.assertIn("trees",stats.cards)
+            self.assertIn("walk",stats.cards)
+            self.assertIn("sail",stats.cards)
+            self.assertGreaterEqual(len(stats.favorite_cards), 6)
+            self.assertFalse(stats.cards["walk"].picture.pixmap().isNull())
+            self.assertFalse(stats.cards["sail"].picture.pixmap().isNull())
+            self.assertEqual(w.stack.count(),12)
+            self.assertIs(w.stack.widget(11),stats)
+            arr=[0.0]*len(PLAYER_STAT_NAMES)
+            arr[STAT_INDEX["Tree"]]=1284
+            arr[STAT_INDEX["DistanceWalk"]]=342700
+            arr[STAT_INDEX["Builds"]]=98
+            profile={"name":"Ruthvenson","groups":{
+                "Any":{"stats":arr},
+                "RawStats":{"stats":arr.copy(),"worlds":{"Fiskeby":7200}},
+            }}
+            stats.refresh(profile)
+            self.assertEqual(stats.cards["trees"].amount.text(),"1 284")
+            self.assertEqual(stats.cards["walk"].amount.text(),"342,7 km")
+            self.assertIn("walk",stats.visible_stat_keys)
+            stats.search.setText("arbres")
+            app.processEvents()
+            self.assertIn("trees",stats.visible_stat_keys)
+            self.assertNotIn("walk",stats.visible_stat_keys)
+            stats.search.clear()
+            stats.category.setCurrentText("Favoris")
+            app.processEvents()
+            self.assertEqual(set(stats.visible_stat_keys),favorites("Ruthvenson",tmp))
+            stats.toggle_favorite("trees")
+            self.assertNotIn("trees",favorites("Ruthvenson",tmp))
+            stats.refresh(profile)
+            self.assertNotIn("trees",stats.visible_stat_keys)
+            self.assertTrue(stats.cards["walk"].star.text()=="★")
+            w.show_page(11)
+            app.processEvents()
+            self.assertFalse(w.grab().isNull())
+            w.close()
+
     def test_labels_have_transparent_background(self):
         # Régression visuelle V2.1 : les QLabel ne doivent pas devenir
         # des rectangles opaques autour de chaque texte.
@@ -183,13 +231,13 @@ class QtWindowTests(unittest.TestCase):
             w=NordicWindow(TrackerStore(tmp))
             w.show()
             app.processEvents()
-            self.assertEqual(w.stack.count(),11)
+            self.assertEqual(w.stack.count(),12)
             self.assertTrue(w.hero.renderer.isValid())
             self.assertFalse(rune_icon('trophy').pixmap(28,28).isNull())
             self.assertFalse(w.grab().isNull())
             w.hero.ring.move_to(48,animated=False)
             self.assertAlmostEqual(w.hero.ring.get_value(),48)
-            for i in range(11):
+            for i in range(12):
                 w.show_page(i)
                 self.assertEqual(w.stack.currentIndex(),i)
                 self.assertTrue(w.nav_buttons[i].isChecked())

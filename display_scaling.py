@@ -42,6 +42,10 @@ def update_readability(window, mode, base_qss):
     if side is not None:
         side.setFixedWidth(dimensions['sidebar'])
     for button in window.findChildren(QPushButton):
+        if button.objectName()=='statStar':
+            size=max(35, round(dimensions['control']*.8))
+            button.setFixedSize(size,size)
+            continue
         is_nav=button.objectName()=='nav'
         button.setMinimumHeight(dimensions['nav'] if is_nav else dimensions['control'])
         if is_nav:

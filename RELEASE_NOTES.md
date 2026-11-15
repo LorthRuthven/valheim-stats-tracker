@@ -1,20 +1,28 @@
-# Valheim Stats Tracker V2.3.1 — Images Valheim Wiki
+# Valheim Stats Tracker V2.4.0 — Statistiques du Viking
 
-## Ce qui change
-- **Images de complément depuis Valheim Wiki** pour les entrées dont aucune icône authentique locale n'a été associée. Le wiki indépendant de la communauté utilise `valheim.wiki` (miroir `valheim.weirdgloop.org`), et non l'ancien Fandom.
-- **Ordre de priorité préservé** : 1. vrai sprite extrait du jeu, 2. ressource officielle intégrée, 3. image du wiki téléchargée dans le cache utilisateur.
-- La **grande image de droite** est téléchargée automatiquement quand on sélectionne une entrée manquante sur la page Encyclopédie. La miniature de gauche se met ensuite à jour sans redémarrer le programme.
-- Bouton **« Compléter 20 images via Valheim Wiki »** : télécharge au plus 20 illustrations manquantes parmi les entrées visibles, à un rythme limité et sans bloquer l'interface.
-- Bouton **« Vider les images wiki »** : efface uniquement le cache wiki, jamais les images extraites de Valheim ni les données personnelles.
-- Accès supplémentaire depuis **Réglages → Images du wiki Valheim**.
-- Correspondances wiki à partir du **prefab anglais**, avec dictionnaire d'exceptions contrôlées. Aucune recherche approximative FR→image : une page inexistante reste sans image plutôt que d'afficher la mauvaise créature.
-- **Attribution et contrôle** : chaque image enregistrée conserve la page exacte du wiki et l'URL de provenance ; bouton **« Voir l'image sur le wiki »**. Les conditions de réutilisation des médias se vérifient depuis leur page source.
+## Nouvelle page « Statistiques du Viking »
+La **12ᵉ page** du tracker s'inspire des statistiques de Minecraft, avec **47 cartes** lisibles, des valeurs importantes en grand et une identité visuelle Valheim.
 
-## Fiabilité, réseau et données
-- Utilise exclusivement les pages exactes de l'API MediaWiki des domaines autorisés, en HTTPS. Aucune recherche auprès d'autres services, aucun code externe téléchargé.
-- Cache local sous `%LOCALAPPDATA%\\ValheimStatsTracker\\wiki_cache` ; une image déjà enregistrée reste accessible hors connexion.
-- Limite de taille et validation du format d'image avant écriture, cache des échecs temporaires pour limiter les requêtes répétées ; erreurs non bloquantes.
-- Tests : URL/titres exacts, cache, attribution, refus des mauvais noms, rendu Qt grande image et vignette, chargement Pillow dans l'EXE, récupération d'une vraie image du wiki en CI.
-- Conserve les **11 pages**, la lecture seule des sauvegardes `.fch`, les favoris, graphiques, réglages et l'updater Windows.
+### Les cinq rubriques
+- **Déplacements** : distance totale, marche, course, navigation, distance passée à la barre, distance aérienne, sauts, portails.
+- **Survie** : morts, record de jours consécutifs sans décès, nuits dormies, repas, confort, causes de décès, temps à la base et hors de la base.
+- **Récolte & construction** : arbres abattus (à ne pas confondre avec les coups de hache), troncs, minerai, récoltes, objets fabriqués, améliorations, bâtiments placés ou retirés, hauteur maximale.
+- **Combat** : créatures éliminées, coups donnés, coups reçus, flèches, boss vaincus, boss en solo et en coopération.
+- **Exploration** : poissons pêchés/perdus, trésors enfouis, temps en jeu et les quatre directions du succès Exploration.
 
-**Important :** une image wiki n'est pas un sprite officiel extrait du jeu ; elle est indiquée explicitement comme image communautaire et n'est pas redistribuée dans l'archive Windows.
+### Présentation
+- **47 cartes illustrées** avec les vraies icônes du jeu lorsqu'un prefab exact convient ; sinon, pictogrammes vectoriels d'interface (jamais présentés comme des images officielles).
+- **Favoris en haut de page**, possibilité d'épingler ou retirer chaque statistique par l'étoile ★.
+- **Favoris par personnage** dans le nouveau fichier `stats_favorites.json`, séparé de `favoris.json` (succès) et des autres données.
+- **Recherche instantanée**, filtrage par catégorie ou favoris uniquement.
+- **Difficulté sélectionnable** : « toutes », « normal ou + », « difficile ou + », « très difficile ou + » et « extrême ». Ces groupes se recouvrent et ne doivent pas être additionnés.
+- **Gains entre les deux derniers relevés** lorsqu'ils sont disponibles et que le compteur ne diminue pas.
+- Cartes responsive : 1, 2 ou 3 colonnes selon la largeur.
+
+### Transparence des données
+Chaque statistique correspond à un **vrai compteur indexé parmi les 205 PlayerStatType** de Valheim, ou au temps des mondes déjà lu par le tracker. Les distances sont converties automatiquement de mètres en kilomètres. Le compteur de nage distinct n'existe pas dans les sauvegardes actuellement prises en charge : aucune distance de nage fictive n'est affichée.
+
+### Compatibilité
+Les **11 pages précédentes restent aux indices 0 à 10**, y compris l'Encyclopédie avec les images du wiki. Aucun changement du moteur des succès, des historiques SQLite, des sauvegardes `.fch`, de l'extracteur d'images, du cache wiki ni de l'updater Windows.
+
+Tests ajoutés : identité exacte des compteurs, distances et unités, records, indicateurs de progression, resets de sauvegarde, favoris par personnage, interaction Qt, navigation à 12 pages, rendus SVG.

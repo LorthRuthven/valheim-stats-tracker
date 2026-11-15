@@ -20,6 +20,7 @@ from desktop_v2 import TrackerWindow as BaseTracker, TrendChart, label, panel
 from restored_pages import RestoredPagesMixin
 from real_assets import hero_photo, achievement_icon, game_icon, reset_icon_cache
 from collection_page import CollectionPage
+from viking_stats_page import VikingStatsPage
 from windows_update_ui import UpdatePanel
 from display_scaling import SCALES, DEFAULT_SCALE, update_readability
 from v2_core import VERSION, progress_ranking
@@ -225,6 +226,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         ('Compétences','Compétences'),
         ('Compteurs bruts','Statistiques'),
         ('Encyclopédie','Collection'),
+        ('Statistiques du Viking','Statistiques'),
     ]
     def __init__(self,store=None):
         self.motion=True
@@ -233,7 +235,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.icon_events.finished.connect(self._icons_finished)
         self.icon_events.progress.connect(self._icons_progress)
         super().__init__(store=store)
-        self.setWindowTitle('Valheim Stats Tracker • Collections & progression • '+VERSION)
+        self.setWindowTitle('Valheim Stats Tracker • Statistiques du Viking • '+VERSION)
         self.setStyleSheet(QSS)
         self.setMinimumSize(1100,740)
         self.resize(1580,940)
@@ -263,7 +265,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         tag.setStyleSheet('color:#ddae6f;font:9pt Segoe UI;')
         menu.addWidget(tag);menu.addSpacing(4)
         menu.addWidget(label('LES CHAPITRES',muted=True))
-        # La navigation reste accessible sur les petits ecrans, meme avec 11 pages.
+        # La navigation reste accessible sur les petits ecrans, meme avec 12 pages.
         nav_scroller=QScrollArea()
         nav_scroller.setWidgetResizable(True)
         nav_scroller.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -274,7 +276,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         nav_layout.setSpacing(4)
         self.nav_buttons=[]
         nav_icons=('home','trophy','skull','history','settings',
-                   'trophy','skull','axe','tree','settings','compass')
+                   'trophy','skull','axe','tree','settings','compass','tree')
         for idx,(name,_) in enumerate(self.NAV):
             btn=QPushButton(name);btn.setObjectName('nav');btn.setCheckable(True)
             btn.setMinimumHeight(35)
@@ -313,6 +315,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self._make_dashboard();self._make_achievements();self._make_combat()
         self._make_history();self._make_settings();self._make_restored_pages()
         self._make_collection_page()
+        self._make_viking_stats_page()
         row.addWidget(main,1)
         self.statusBar().showMessage('Sans mod • Lecture seule • Vérification toutes les 5 secondes')
     def _scroll_page(self):
@@ -335,6 +338,10 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
     def _make_collection_page(self):
         self.collection_page=CollectionPage(self)
         self.stack.addWidget(self.collection_page)
+
+    def _make_viking_stats_page(self):
+        self.viking_stats_page=VikingStatsPage(self.store.directory, self)
+        self.stack.addWidget(self.viking_stats_page)
 
     def _make_achievements(self):
         super()._make_achievements()
@@ -604,6 +611,9 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self._refresh_restored_pages()
         profile=self.store.profile
         self.collection_page.refresh(profile)
+        rows=self.store.rows(limit=2) if profile else []
+        previous=rows[-2][3] if len(rows)>=2 else None
+        self.viking_stats_page.refresh(profile,previous)
         if profile:
             self.hero.title.setText('LA SAGA DE '+profile['name'].upper())
             active=[a for a in self.results if a.get('origin')=='Jeu + Steam']
