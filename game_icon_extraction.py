@@ -116,6 +116,26 @@ def verify_fmod_runtime(root=None):
     return dll
 
 
+def verify_archspec_runtime(root=None):
+    """Valide les donnees CPU de archspec utilisees durant le decodage Unity.
+
+    Un chemin fourni permet les tests sans dependance Windows. L'application
+    Python non compilee utilise les ressources de son environnement.
+    """
+    if root is None:
+        if os.name != 'nt' or not getattr(sys, 'frozen', False):
+            return None
+        root = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
+    resource = Path(root) / 'archspec' / 'json' / 'cpu' / 'microarchitectures.json'
+    if not resource.is_file():
+        raise IconExtractionError(
+            'Ressource archspec microarchitectures.json absente de ce programme Windows : '
+            f'{resource}. Installe le dossier Windows complet de la derniere version, '
+            'pas uniquement ValheimStatsTracker.exe.'
+        )
+    return resource
+
+
 def extract_owned_icons(game_directory, target_directory,
                         notify=lambda n, total, name: None,
                         maximum=MAX_IMAGES, unity_loader=None):
@@ -132,6 +152,7 @@ def extract_owned_icons(game_directory, target_directory,
         unity_loader = UnityPy.load
     # Evite de relire 802 bundles en cas de paquet Windows incomplet.
     verify_fmod_runtime()
+    verify_archspec_runtime()
     from PIL import Image
 
     paths = bundle_paths(game_directory)
