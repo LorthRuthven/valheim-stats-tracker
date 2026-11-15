@@ -5,23 +5,37 @@ présenté comme manquant dans le jeu ou non découvert.
 """
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QColor
+from PySide6.QtCore import Qt, QSize, QTimer, Signal, QUrl
+from PySide6.QtGui import QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QAbstractItemView, QComboBox, QHBoxLayout, QLabel, QLineEdit,
-    QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
+    QMessageBox, QPushButton, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
+import threading
+import time
 
 from collection_catalog import CATEGORIES, catalogue
 from desktop_v2 import label, panel
-from real_assets import game_icon
+from real_assets import game_icon, collection_icon, reset_icon_cache
+from wiki_images import WikiImageCache, wiki_title
 
 MAX_VISIBLE = 350
 
 
 class CollectionPage(QWidget):
+    wiki_item_done = Signal(str)
+    wiki_batch_done = Signal(int, int)
+
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._wiki_active = False
+        self._wiki_busy = False
+        self.wiki_cache = WikiImageCache()
+        self.wiki_item_done.connect(self._wiki_received)
+        self.wiki_batch_done.connect(self._wiki_finished)
+        self.wiki_timer = QTimer(self)
+        self.wiki_timer.setSingleShot(True)
+        self.wiki_timer.timeout.connect(self._fetch_selected)
         self.entries = []
         self.visible_entries = []
         outer = QVBoxLayout(self)
@@ -36,6 +50,20 @@ class CollectionPage(QWidget):
         self.summary = label("Chargement du catalogue…", muted=True, wrap=True)
         self.summary.setObjectName("collectionSummary")
         summary_layout.addWidget(self.summary)
+        wiki_controls=QHBoxLayout()
+        self.wiki_button=QPushButton("Compléter 20 images via Valheim Wiki")
+        self.wiki_button.setObjectName("wikiImportButton")
+        self.wiki_button.setToolTip("Télécharge uniquement les images manquantes des éléments affichés, au maximum 20 par action.")
+        self.wiki_button.clicked.connect(self._fetch_missing)
+        wiki_controls.addWidget(self.wiki_button)
+        self.wiki_clear=QPushButton("Vider les images wiki")
+        self.wiki_clear.clicked.connect(self._clear_wiki_cache)
+        wiki_controls.addWidget(self.wiki_clear)
+        wiki_controls.addStretch(1)
+        summary_layout.addLayout(wiki_controls)
+        self.wiki_status=label("Le téléchargement wiki est facultatif ; images enregistrées dans un cache privé.",muted=True,wrap=True)
+        self.wiki_status.setObjectName("wikiStatus")
+        summary_layout.addWidget(self.wiki_status)
         outer.addWidget(overview)
 
         filters = QHBoxLayout()
@@ -98,6 +126,12 @@ class CollectionPage(QWidget):
         detail_layout.addWidget(self.detail_status)
         self.detail_evidence = label("", muted=True, wrap=True)
         detail_layout.addWidget(self.detail_evidence)
+        self.image_source=label("",muted=True,wrap=True)
+        detail_layout.addWidget(self.image_source)
+        self.image_link=QPushButton("Voir l'image sur le wiki")
+        self.image_link.setEnabled(False)
+        self.image_link.clicked.connect(self._open_image_source)
+        detail_layout.addWidget(self.image_link)
         detail_layout.addStretch(1)
         split.addWidget(details)
         split.setStretchFactor(0, 3)
@@ -150,7 +184,7 @@ class CollectionPage(QWidget):
             for index, entry in enumerate(shown):
                 name = QTableWidgetItem(entry["name"])
                 name.setData(Qt.ItemDataRole.UserRole, entry["token"])
-                picture = game_icon(entry["token"])
+                picture = collection_icon(entry["token"])
                 if not picture.isNull():
                     name.setIcon(picture)
                 self.table.setItem(index, 0, name)
@@ -189,10 +223,133 @@ class CollectionPage(QWidget):
             "Aucune preuve individuelle disponible dans les compteurs de cette sauvegarde. "
             "Cela ne signifie pas que l'objet est absent ou jamais découvert."
         )
-        visual = game_icon(entry["token"])
+        visual = collection_icon(entry["token"])
+        source=self.wiki_cache.source(entry["token"])
         if visual.isNull():
             self.preview.clear()
-            self.preview.setText("Icône authentique non associée")
+            self.preview.setText("Image manquante\nRecherche possible sur Valheim Wiki")
         else:
             self.preview.setText("")
-            self.preview.setPixmap(visual.pixmap(QSize(142, 142)))
+            self.preview.setPixmap(visual.pixmap(QSize(155, 155)))
+        if source and game_icon(entry["token"]).isNull():
+            self.image_source.setText(
+                "Image : Valheim Wiki (cache local)\n"
+                "Source : " + source.get("wiki_title","") +
+                "\nDroits et attribution : consulter la page source."
+            )
+            self.image_link.setEnabled(True)
+        else:
+            self.image_source.setText(
+                "Icône provenant des fichiers du jeu." if not visual.isNull()
+                else "Aucune image confirmée pour ce prefab."
+            )
+            self.image_link.setEnabled(False)
+        if self._wiki_active and visual.isNull() and not self._wiki_busy:
+            self.wiki_timer.start(380)
+
+
+    def activate(self):
+        """Démarre la recherche uniquement lors de la visite de cette page."""
+        self._wiki_active=True
+        self.show_selected()
+
+    def _fetch_selected(self):
+        if self._wiki_busy or not self._wiki_active:
+            return
+        token=self._selected_token()
+        if not token or wiki_title(token) is None or not game_icon(token).isNull():
+            return
+        if self.wiki_cache.cached_image(token) is not None:
+            self.show_selected()
+            return
+        self._start_wiki_download([token])
+
+    def _fetch_missing(self):
+        if self._wiki_busy:
+            return
+        targets=[
+            entry["token"] for entry in self.visible_entries
+            if (wiki_title(entry["token"]) is not None
+                and game_icon(entry["token"]).isNull()
+                and self.wiki_cache.cached_image(entry["token"]) is None)
+        ][:20]
+        if not targets:
+            self.wiki_status.setText("Aucune image wiki manquante exploitable parmi les entrées affichées.")
+            return
+        self._start_wiki_download(targets)
+
+    def _start_wiki_download(self,tokens):
+        if self._wiki_busy or not tokens:
+            return
+        self._wiki_busy=True
+        self.wiki_timer.stop()
+        self.wiki_button.setEnabled(False)
+        self.wiki_clear.setEnabled(False)
+        self.wiki_status.setText(
+            f"Valheim Wiki : recherche de {len(tokens)} image(s) manquante(s)…"
+        )
+        def worker():
+            found=0
+            for pos,token in enumerate(tokens):
+                try:
+                    if self.wiki_cache.fetch(token) is not None:
+                        found+=1
+                except Exception:
+                    # La lecture du wiki est facultative et ne bloque jamais la progression.
+                    pass
+                try:
+                    self.wiki_item_done.emit(token)
+                except RuntimeError:
+                    return
+                if pos+1<len(tokens):
+                    time.sleep(0.6)
+            try:
+                self.wiki_batch_done.emit(found,len(tokens))
+            except RuntimeError:
+                pass
+        threading.Thread(target=worker,daemon=True,name="ValheimWikiCache").start()
+
+    def _wiki_received(self,token):
+        # Une image ajoutée doit apparaître dans la ligne et la fiche sans recharger tout.
+        reset_icon_cache()
+        visual=collection_icon(token)
+        if not visual.isNull():
+            for index,entry in enumerate(self.visible_entries):
+                if entry["token"]==token:
+                    item=self.table.item(index,0)
+                    if item is not None:
+                        item.setIcon(visual)
+        if token==self._selected_token():
+            self.show_selected()
+
+    def _wiki_finished(self,found,total):
+        self._wiki_busy=False
+        self.wiki_button.setEnabled(True)
+        self.wiki_clear.setEnabled(True)
+        self.wiki_status.setText(
+            f"Valheim Wiki : {found} nouvelle(s) image(s) sur {total} tentative(s). "
+            "Les pages sans correspondance exacte restent sans illustration. "
+            f"Cache : {self.wiki_cache.count()} image(s)."
+        )
+
+    def _clear_wiki_cache(self):
+        if self._wiki_busy:
+            return
+        answer=QMessageBox.question(
+            self,"Images wiki","Vider seulement les images téléchargées depuis le wiki ? "
+            "Les véritables icônes extraites du jeu seront conservées."
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        removed=self.wiki_cache.clear()
+        reset_icon_cache()
+        self.wiki_status.setText(f"Cache wiki vidé ({removed} fichier(s)). Icônes du jeu conservées.")
+        self.render()
+
+    def _open_image_source(self):
+        token=self._selected_token()
+        source=self.wiki_cache.source(token) if token else None
+        if source:
+            link=source.get("page_url","")
+            if link.startswith(("https://valheim.wiki/","https://valheim.weirdgloop.org/")):
+                QDesktopServices.openUrl(QUrl(link))
