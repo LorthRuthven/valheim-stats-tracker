@@ -117,9 +117,14 @@ def collection_icon(prefab):
     icon=game_icon(prefab)
     if not icon.isNull():
         return icon
-    from wiki_images import WikiImageCache
-    image=WikiImageCache().cached_image(prefab)
+    image=_wiki_cache().cached_image(prefab)
     return _qicon(image) if image is not None else QIcon()
+
+
+@lru_cache(maxsize=1)
+def _wiki_cache():
+    from wiki_images import WikiImageCache
+    return WikiImageCache()
 
 
 def reset_icon_cache():
