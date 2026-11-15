@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 
 from desktop_v2 import label, panel
 from real_assets import game_icon
+from stat_pictograms import pictogram
 from viking_stats import (
     CATEGORIES, STATS, change, favorites, pretty, save_favorites, value,
 )
@@ -46,8 +47,8 @@ class StatCard(QFrame):
         if image is not None and not image.isNull():
             self.picture.setPixmap(image.pixmap(QSize(53, 53)))
         else:
-            self.picture.setText(stat.glyph)
-            self.picture.setStyleSheet("color:#e5bf85;font:bold 26pt Georgia;")
+            # Pictogramme vectoriel d'interface : jamais présenté comme un item Valheim.
+            self.picture.setPixmap(pictogram(stat.key,53).pixmap(QSize(53,53)))
         top.addWidget(self.picture)
         name = label(stat.title, wrap=True)
         name.setStyleSheet("color:#f4e8d7;font:bold 10pt 'Segoe UI';")
