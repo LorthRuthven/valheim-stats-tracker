@@ -773,28 +773,25 @@ def _verify_wiki_cache():
             raise RuntimeError('Le decodeur Pillow ImageOps ne fonctionne pas')
 
 
-def _verify_updater_bootstrap():
-    """Test reel du lanceur PowerShell depuis l'EXE Windows PyInstaller."""
-    import tempfile
+def _verify_safe_updater():
+    """Vérifie l'archive sans exécution ni extraction dans l'EXE PyInstaller."""
+    from tempfile import TemporaryDirectory
     from pathlib import Path
-    from windows_update import launch_powershell
-    with tempfile.TemporaryDirectory() as temporary:
-        root=Path(temporary)
-        marker=root/'child-started.txt'
-        script=root/'child-check.ps1'
-        script.write_text(
-            "param([string]$Marker)\n"
-            "Set-Content -LiteralPath $Marker -Value 'PowerShell demarre' -Encoding UTF8\n",
-            encoding='utf-8-sig')
-        child=launch_powershell(script,['-Marker',str(marker)],root)
-        result=child.wait(timeout=30)
-        if result!=0 or not marker.is_file():
-            log=(root/'updates'/'powershell-output.log')
-            output=log.read_text(encoding='utf-8',errors='replace') if log.exists() else ''
-            raise RuntimeError(
-                f'Lancement automatique de PowerShell impossible (code {result}). {output}')
-        if 'PowerShell demarre' not in marker.read_text(encoding='utf-8-sig'):
-            raise RuntimeError('Le processus PowerShell a termine sans executer le script.')
+    from zipfile import ZipFile
+    from windows_update import validate_archive, UpdateError
+    with TemporaryDirectory() as directory:
+        archive=Path(directory)/'windows.zip'
+        with ZipFile(archive,'w') as package:
+            package.writestr('ValheimStatsTracker/ValheimStatsTracker.exe',b'MZ')
+        validate_archive(archive)
+        archive.write_bytes(b'not a zip')
+        try:
+            validate_archive(archive)
+        except UpdateError:
+            pass
+        else:
+            raise RuntimeError('Archive corrompue acceptée par le vérificateur')
+
 
 
 if __name__=='__main__':
@@ -807,9 +804,9 @@ if __name__=='__main__':
             traceback.print_exc()
             sys.exit(23)
         sys.exit(0)
-    if '--verify-updater-bootstrap' in sys.argv:
+    if '--verify-safe-updater' in sys.argv:
         try:
-            _verify_updater_bootstrap()
+            _verify_safe_updater()
         except Exception:
             import traceback
             traceback.print_exc()
