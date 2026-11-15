@@ -10,7 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace as NS
 
 from game_icon_extraction import (
-    IconExtractionError, bundle_paths, extract_owned_icons, icon_aliases
+    IconExtractionError, bundle_paths, extract_owned_icons, icon_aliases, verify_fmod_runtime
 )
 
 try:
@@ -36,6 +36,16 @@ def object_of(kind, name, image=None, fail=False):
 
 
 class IconExtractionTests(unittest.TestCase):
+    def test_fmod_native_library_is_required_in_windows_package(self):
+        # Test du controle sans installer Windows ni redistribuer de DLL.
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(IconExtractionError, 'fmod.dll'):
+                verify_fmod_runtime(Path(temp))
+            dll = Path(temp)/'fmod_toolkit'/'libfmod'/'Windows'/'x64'/'fmod.dll'
+            dll.parent.mkdir(parents=True)
+            dll.write_bytes(b'exemple de test, ce n est pas une DLL')
+            self.assertEqual(verify_fmod_runtime(Path(temp)), dll)
+
     def test_invalid_directory_explains_valheim_exe(self):
         with tempfile.TemporaryDirectory() as temp:
             with self.assertRaisesRegex(ValueError,'valheim.exe'):

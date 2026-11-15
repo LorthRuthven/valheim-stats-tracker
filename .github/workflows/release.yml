@@ -59,19 +59,29 @@ jobs:
       - name: Construire l'application Windows autonome
         shell: pwsh
         run: |
-          python -m PyInstaller --noconfirm --clean --windowed --onedir --name ValheimStatsTracker --add-data 'fr_names.json;.' --add-data 'assets;assets' --hidden-import localization_fr --collect-all UnityPy --hidden-import PySide6.QtSvg nordic_ui.py
+          # UnityPy utilise fmod_toolkit, dont la DLL native n'est pas embarquee par --collect-all UnityPy.
+          # Verifier explicitement la dependance a la construction avant de produire le ZIP.
+          $fmodDll = & python -c 'from pathlib import Path; from importlib.util import find_spec; spec=find_spec("fmod_toolkit"); assert spec and spec.submodule_search_locations, "fmod_toolkit non installe"; path=Path(next(iter(spec.submodule_search_locations)))/"libfmod"/"Windows"/"x64"/"fmod.dll"; assert path.is_file(), f"DLL FMOD absente du package : {path}"; print(path)'
+          if ($LASTEXITCODE -ne 0) { throw 'Dependance FMOD absente avant construction.' }
+          python -m PyInstaller --noconfirm --clean --windowed --onedir --name ValheimStatsTracker --add-data 'fr_names.json;.' --add-data 'assets;assets' --hidden-import localization_fr --collect-all UnityPy --collect-all fmod_toolkit --add-binary "$fmodDll;fmod_toolkit/libfmod/Windows/x64" --hidden-import PySide6.QtSvg nordic_ui.py
+          if ($LASTEXITCODE -ne 0) { throw 'Construction PyInstaller echouee.' }
+          $bundledFmod = 'dist/ValheimStatsTracker/_internal/fmod_toolkit/libfmod/Windows/x64/fmod.dll'
+          if (-not (Test-Path -LiteralPath $bundledFmod -PathType Leaf)) {
+            throw "fmod.dll absente de l'application construite : $bundledFmod"
+          }
+          Write-Host "FMOD native presente dans le bundle Windows : $bundledFmod"
           $version = (Get-Content version.json | ConvertFrom-Json).version
           $archive = "dist/Valheim_Stats_Tracker_v${version}_Windows.zip"
           Compress-Archive -Path dist/ValheimStatsTracker -DestinationPath $archive -CompressionLevel Optimal
           if (-not (Test-Path $archive)) { throw "ZIP Windows introuvable" }
           Write-Host "Archive Windows : $archive"
-      - name: Tester UnityPy.resources dans l'exécutable compilé
+      - name: Tester UnityPy.resources et FMOD natif dans l'exécutable compilé
         shell: pwsh
         run: |
           $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
           $process = Start-Process -FilePath $exe -ArgumentList '--verify-unitypy-bundle' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "UnityPy/resources absent du programme Windows (code $($process.ExitCode))" }
-          Write-Host 'Extraction : ressources UnityPy embarquées et importées dans le programme compilé'
+          Write-Host 'Extraction : UnityPy.resources + fmod_toolkit/fmod.dll presentes et chargeables dans le programme compile'
       - name: Tester l'extracteur dans l'exécutable Windows assemblé
         shell: pwsh
         run: |
