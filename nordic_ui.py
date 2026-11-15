@@ -454,6 +454,21 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             self.icon_status=label('Sélectionne le dossier contenant valheim.exe.',muted=True,wrap=True)
             icon_layout.addWidget(self.icon_status)
             inner.layout().insertWidget(3,icons)
+            wiki, wiki_layout=panel('IMAGES DU WIKI VALHEIM',
+                'Complète les illustrations absentes depuis le wiki communautaire. '
+                'Les sprites déjà extraits du jeu restent prioritaires.')
+            wiki_button=QPushButton('Compléter les images manquantes du catalogue')
+            wiki_button.clicked.connect(self._open_collection_wiki)
+            wiki_layout.addWidget(wiki_button)
+            wiki_layout.addWidget(label(
+                'Les téléchargements se font seulement au besoin ; maximum 20 par action. '
+                'Une attribution renvoie à chaque page du wiki.',muted=True,wrap=True))
+            inner.layout().insertWidget(4,wiki)
+
+    def _open_collection_wiki(self):
+        self.show_page(10)
+        self.collection_page._fetch_missing()
+
     def _open_icon_report(self):
         from v2_core import app_dir
         file=app_dir()/'game_icons'/'extraction-report.json'
@@ -574,6 +589,8 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             self.show_page(1);self.draw_achievements()
     def show_page(self,index):
         super().show_page(index)
+        if index == 10 and hasattr(self, 'collection_page'):
+            self.collection_page.activate()
         if not self.motion:return
         page=self.stack.currentWidget()
         if page.graphicsEffect():page.setGraphicsEffect(None)
@@ -728,6 +745,24 @@ def _verify_icon_extractor():
         if count!=2:
             raise RuntimeError(f'Extraction de contrôle incomplète : {count}/2')
 
+def _verify_wiki_cache():
+    """Verifie les imports natifs wiki/Pillow depuis l'executable PyInstaller."""
+    import tempfile
+    from pathlib import Path
+    from PIL import Image, ImageOps
+    from wiki_images import WikiImageCache, wiki_title
+    if wiki_title('$enemy_greyling') != 'Greyling':
+        raise RuntimeError('Mapping du prefab Greyling incorrect')
+    with tempfile.TemporaryDirectory() as temp:
+        cache=WikiImageCache(Path(temp)/'wiki_cache')
+        if cache.count()!=0 or cache.cached_image('$enemy_greyling') is not None:
+            raise RuntimeError('Le cache wiki de controle est non vide')
+        image=Image.new('RGB',(30,30),(123,45,67))
+        image=ImageOps.exif_transpose(image)
+        if image.size != (30,30):
+            raise RuntimeError('Le decodeur Pillow ImageOps ne fonctionne pas')
+
+
 def _verify_updater_bootstrap():
     """Test reel du lanceur PowerShell depuis l'EXE Windows PyInstaller."""
     import tempfile
@@ -754,6 +789,14 @@ def _verify_updater_bootstrap():
 
 if __name__=='__main__':
     import sys
+    if '--verify-wiki-cache' in sys.argv:
+        try:
+            _verify_wiki_cache()
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            sys.exit(23)
+        sys.exit(0)
     if '--verify-updater-bootstrap' in sys.argv:
         try:
             _verify_updater_bootstrap()

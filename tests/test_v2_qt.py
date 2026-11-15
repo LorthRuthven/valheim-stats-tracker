@@ -120,6 +120,45 @@ class QtWindowTests(unittest.TestCase):
                 self.assertTrue(game_icon('$enemy_nonexistent_bad_icon_123').isNull())
                 reset_icon_cache()
 
+    def test_cached_wiki_fallback_illustrates_catalogue_and_credits_source(self):
+        app=QApplication.instance() or QApplication([])
+        import json
+        from pathlib import Path
+        from unittest.mock import patch
+        from PySide6.QtGui import QColor, QPixmap
+        from wiki_images import WikiImageCache
+        from real_assets import reset_icon_cache
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            cache=WikiImageCache(root/'wiki_cache')
+            token='$enemy_greyling'
+            path,meta,_=cache._paths(token)
+            path.parent.mkdir(parents=True,exist_ok=True)
+            picture=QPixmap(120,120)
+            picture.fill(QColor(74,138,81))
+            self.assertTrue(picture.save(str(path)))
+            meta.write_text(json.dumps({
+                'token':token,
+                'wiki_title':'Greyling',
+                'page_url':'https://valheim.wiki/w/Greyling',
+                'source':'Valheim Wiki'
+            }),encoding='utf-8')
+            with patch('v2_core.app_dir',return_value=root), patch(
+                    'real_assets._wiki_cache',return_value=cache):
+                w=NordicWindow(TrackerStore(tmp))
+                w.collection_page.wiki_cache=cache
+                w.collection_page.search.setText(token)
+                app.processEvents()
+                self.assertEqual(w.collection_page.table.rowCount(),1)
+                item=w.collection_page.table.item(0,0)
+                self.assertFalse(item.icon().isNull())
+                self.assertFalse(w.collection_page.preview.pixmap().isNull())
+                self.assertTrue(w.collection_page.image_link.isEnabled())
+                self.assertIn('Valheim Wiki',w.collection_page.image_source.text())
+                self.assertTrue(hasattr(w,'_open_collection_wiki'))
+                w.close()
+                reset_icon_cache()
+
     def test_labels_have_transparent_background(self):
         # Régression visuelle V2.1 : les QLabel ne doivent pas devenir
         # des rectangles opaques autour de chaque texte.

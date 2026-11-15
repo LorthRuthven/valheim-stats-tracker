@@ -112,6 +112,21 @@ def game_icon(prefab):
             return icon
     return QIcon()
 
+def collection_icon(prefab):
+    """Ordre strict : sprite extrait > illustration officielle > image wiki cachée."""
+    icon=game_icon(prefab)
+    if not icon.isNull():
+        return icon
+    image=_wiki_cache().cached_image(prefab)
+    return _qicon(image) if image is not None else QIcon()
+
+
+@lru_cache(maxsize=1)
+def _wiki_cache():
+    from wiki_images import WikiImageCache
+    return WikiImageCache()
+
+
 def reset_icon_cache():
     """Appelé après une nouvelle extraction pour actualiser immédiatement toutes les pages."""
     _local_aliases.cache_clear()

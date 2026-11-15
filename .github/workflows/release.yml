@@ -21,7 +21,7 @@ jobs:
       - name: Tester le moteur, l'historique et l'updater
         run: python3 -m unittest discover -s tests -v
       - name: Vérifier les fichiers Python
-        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_update_ui.py game_icon_extraction.py display_scaling.py collection_catalog.py collection_page.py tools/fetch_game_assets.py
+        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_update_ui.py game_icon_extraction.py display_scaling.py collection_catalog.py collection_page.py wiki_images.py tools/fetch_game_assets.py
 
   windows:
     runs-on: windows-latest
@@ -56,6 +56,11 @@ jobs:
         shell: pwsh
         run: |
           python -m unittest discover -s tests -p test_icon_extraction.py -v
+      - name: Valider une vraie image Greyling via le MediaWiki communautaire
+        shell: pwsh
+        run: |
+          python -c 'from tempfile import TemporaryDirectory; from pathlib import Path; from wiki_images import WikiImageCache; temp=TemporaryDirectory(); client=WikiImageCache(Path(temp.name)/"wiki_cache"); image=client.fetch("$enemy_greyling"); print("Greyling image:", image, "source:", client.source("$enemy_greyling")); assert image and image.is_file(), "Le wiki Valheim ne fournit pas de photo verifiee pour Greyling via les API selectionnees"; temp.cleanup()'
+          if ($LASTEXITCODE -ne 0) { throw 'Le fallback wiki reel doit fonctionner avant publication.' }
       - name: Construire l'application Windows autonome
         shell: pwsh
         run: |
@@ -97,6 +102,13 @@ jobs:
           $check = Start-Process -FilePath $exe -ArgumentList '--verify-icon-extractor' -Wait -PassThru
           if ($check.ExitCode -ne 0) { throw "Le test d'extraction Sprite/Texture2D compilé a échoué : $($check.ExitCode)" }
           Write-Host "Extraction UnityPy / Pillow depuis EXE : OK"
+      - name: Tester le cache Wiki et Pillow depuis le vrai programme Windows compilé
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
+          $test = Start-Process -FilePath $exe -ArgumentList '--verify-wiki-cache' -Wait -PassThru
+          if ($test.ExitCode -ne 0) { throw "Cache Wiki ou Pillow indisponible depuis l'EXE : $($test.ExitCode)" }
+          Write-Host 'Import Wiki et Pillow depuis EXE : OK'
       - name: Tester le lancement de PowerShell depuis le programme Windows compilé
         shell: pwsh
         run: |
