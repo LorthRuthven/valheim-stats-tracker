@@ -56,7 +56,7 @@ class QtWindowTests(unittest.TestCase):
         app=QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as tmp:
             w=NordicWindow(TrackerStore(tmp))
-            self.assertEqual(w.stack.count(),10)
+            self.assertEqual(w.stack.count(),11)
             self.assertTrue(hasattr(w,'activity_items'))
             self.assertTrue(hasattr(w,'skills_table'))
             self.assertTrue(hasattr(w,'raw_table_restored'))
@@ -65,6 +65,36 @@ class QtWindowTests(unittest.TestCase):
             self.assertTrue(hasattr(w,'history_changes_restored'))
             self.assertTrue(hasattr(w,'combat_details'))
             self.assertTrue(hasattr(w,'update_controller'))
+            self.assertTrue(hasattr(w,'collection_page'))
+            self.assertEqual(w.NAV[-1][0],'Encyclopédie')
+            self.assertIs(w.stack.widget(10),w.collection_page)
+            w.close()
+
+    def test_collection_filters_and_achievement_image_panel(self):
+        app=QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            self.assertTrue(hasattr(w,'ach_large_icon'))
+            self.assertTrue(hasattr(w,'ach_state'))
+            collection=w.collection_page
+            self.assertGreater(len(collection.entries),250)
+            self.assertTrue(collection.table.rowCount()>0)
+            self.assertEqual(collection.table.columnCount(),3)
+            collection.search.setText('boar')
+            app.processEvents()
+            self.assertTrue(collection.table.rowCount()>0)
+            self.assertTrue(all('boar' in item['token'].casefold()
+                                or 'boar' in item['name'].casefold()
+                                for item in collection.visible_entries))
+            collection.search.clear()
+            collection.activity.setCurrentText('Activité enregistrée')
+            character={'groups':{'Any':{'enemies':[{'$enemy_boar':1}]}}}
+            collection.refresh(character)
+            self.assertTrue(collection.visible_entries)
+            self.assertTrue(all(x['observed'] for x in collection.visible_entries))
+            collection.activity.setCurrentText('Toutes les activités')
+            w.show_page(10)
+            self.assertEqual(w.stack.currentIndex(),10)
             w.close()
 
     def test_labels_have_transparent_background(self):
@@ -91,13 +121,13 @@ class QtWindowTests(unittest.TestCase):
             w=NordicWindow(TrackerStore(tmp))
             w.show()
             app.processEvents()
-            self.assertEqual(w.stack.count(),10)
+            self.assertEqual(w.stack.count(),11)
             self.assertTrue(w.hero.renderer.isValid())
             self.assertFalse(rune_icon('trophy').pixmap(28,28).isNull())
             self.assertFalse(w.grab().isNull())
             w.hero.ring.move_to(48,animated=False)
             self.assertAlmostEqual(w.hero.ring.get_value(),48)
-            for i in range(10):
+            for i in range(11):
                 w.show_page(i)
                 self.assertEqual(w.stack.currentIndex(),i)
                 self.assertTrue(w.nav_buttons[i].isChecked())
