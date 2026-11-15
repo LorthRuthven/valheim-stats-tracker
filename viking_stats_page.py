@@ -94,6 +94,7 @@ class VikingStatsPage(QScrollArea):
         super().__init__(parent)
         self.directory = directory
         self.profile = None
+        self.previous = None
         self._favorites = set()
         self._columns = 0
         self.visible_stat_keys = []
@@ -143,6 +144,15 @@ class VikingStatsPage(QScrollArea):
             muted=True, wrap=True))
         self.layout.addWidget(intro)
 
+        self.favorite_panel, favorites_layout = panel(
+            "★ MES STATISTIQUES ÉPINGLÉES",
+            "Retrouve tes indicateurs favoris en premier, quel que soit leur catégorie."
+        )
+        self.favorite_grid = QGridLayout()
+        self.favorite_grid.setSpacing(12)
+        favorites_layout.addLayout(self.favorite_grid)
+        self.layout.addWidget(self.favorite_panel)
+        self.favorite_cards = {}
         self.cards = {stat.key: StatCard(stat, self.toggle_favorite) for stat in STATS}
         self.sections = {}
         for category in CATEGORIES:
@@ -157,9 +167,13 @@ class VikingStatsPage(QScrollArea):
 
     def refresh(self, profile, previous=None):
         self.profile = profile
+        self.previous = previous
         name = profile.get("name", "") if profile else ""
         self._favorites = favorites(name, self.directory)
         for key, card in self.cards.items():
+            card.set_favorite(key in self._favorites)
+            card.set_values(profile, previous, self.difficulty.currentData())
+        for key, card in self.favorite_cards.items():
             card.set_favorite(key in self._favorites)
             card.set_values(profile, previous, self.difficulty.currentData())
         self.summary.setText(
@@ -173,9 +187,8 @@ class VikingStatsPage(QScrollArea):
         if not self.cards:
             return
         group = self.difficulty.currentData()
-        for card in self.cards.values():
-            # En l'absence de nouveau relevé, le gain affiché reste vide.
-            card.set_values(self.profile, None, group)
+        for card in (*self.cards.values(), *self.favorite_cards.values()):
+            card.set_values(self.profile, self.previous, group)
 
     def toggle_favorite(self, key):
         if key not in self.cards:
@@ -189,6 +202,13 @@ class VikingStatsPage(QScrollArea):
             save_favorites(name, self._favorites, self.directory)
         for identity, card in self.cards.items():
             card.set_favorite(identity in self._favorites)
+        for identity, card in self.favorite_cards.items():
+            card.set_favorite(identity in self._favorites)
+        self.summary.setText(
+            f"{name}  •  {len(STATS)} statistiques disponibles  •  "
+            f"{len(self._favorites)} favoris épinglés" if name
+            else f"{len(STATS)} compteurs reconnus • Choisis un personnage."
+        )
         self.relayout()
 
     def relayout(self, *_):
@@ -198,6 +218,26 @@ class VikingStatsPage(QScrollArea):
         needle = self.search.text().casefold().strip()
         columns = 3 if self.viewport().width() >= 1050 else (2 if self.viewport().width() >= 710 else 1)
         self._columns = columns
+        # Rangée de favoris dédiée, en haut du tableau, sans déplacer les cartes
+        # originales des sections de catégorie.
+        while self.favorite_grid.count():
+            item=self.favorite_grid.takeAt(0)
+            if item.widget() is not None:
+                item.widget().hide()
+        favorites_visible = (
+            [stat for stat in STATS if stat.key in self._favorites]
+            if category_filter == "Toutes les catégories" and not needle else []
+        )
+        self.favorite_panel.setVisible(bool(favorites_visible))
+        for index, stat in enumerate(favorites_visible):
+            card=self.favorite_cards.get(stat.key)
+            if card is None:
+                card=StatCard(stat, self.toggle_favorite)
+                self.favorite_cards[stat.key]=card
+            card.set_favorite(True)
+            card.set_values(self.profile, self.previous, self.difficulty.currentData())
+            self.favorite_grid.addWidget(card,index//columns,index%columns)
+            card.show()
         visible = []
         for category in CATEGORIES:
             frame, grid = self.sections[category]
