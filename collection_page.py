@@ -326,10 +326,12 @@ class CollectionPage(QWidget):
         self._wiki_busy=False
         self.wiki_button.setEnabled(True)
         self.wiki_clear.setEnabled(True)
+        missing_reason = self.wiki_cache.last_error(self._selected_token() or "")
         self.wiki_status.setText(
             f"Valheim Wiki : {found} nouvelle(s) image(s) sur {total} tentative(s). "
             "Les pages sans correspondance exacte restent sans illustration. "
             f"Cache : {self.wiki_cache.count()} image(s)."
+            + ("\nDernier diagnostic : " + missing_reason if missing_reason and found == 0 else "")
         )
 
     def _clear_wiki_cache(self):
