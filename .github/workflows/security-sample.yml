@@ -1,0 +1,81 @@
+name: Préparer échantillon Microsoft Defender (sans exécution)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/security-sample.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer la release originale V2.4.0 (sans l'exécuter)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p sample
+          gh release download v2.4.0 --repo LorthRuthven/valheim-stats-tracker \
+            --pattern 'Valheim_Stats_Tracker_v2.4.0_Windows.zip' --dir sample
+      - name: Installer la bibliothèque pour archive d'échantillon Microsoft
+        run: python -m pip install pyzipper==0.3.6
+      - name: Vérifier les empreintes et empaqueter uniquement l'EXE sans jamais le lancer
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from zipfile import ZipFile
+          import pyzipper
+
+          root = Path("sample")
+          archive = root / "Valheim_Stats_Tracker_v2.4.0_Windows.zip"
+          exact = "5060ec05567ed9623366a65b2ef5d527389df83aa3cec61ce0c42fc29773235f"
+          observed = hashlib.file_digest(archive.open("rb"), "sha256").hexdigest()
+          if observed != exact:
+              raise RuntimeError("Archive GitHub ne correspond pas au SHA-256 publié : ne pas préparer d'échantillon")
+          with ZipFile(archive) as original:
+              exe = original.read("ValheimStatsTracker/ValheimStatsTracker.exe")
+          if not exe.startswith(b"MZ") or len(exe) > 50 * 1024 * 1024:
+              raise RuntimeError("Exécutable PE absent ou d'une taille incompatible avec le portail Microsoft")
+          exe_sha = hashlib.sha256(exe).hexdigest()
+          sample = root / "ValheimStatsTracker_v2.4.0_Microsoft_SAMPLE.zip"
+          with pyzipper.AESZipFile(sample, "w", compression=pyzipper.ZIP_DEFLATED,
+                                  encryption=pyzipper.WZ_AES) as out:
+              out.setpassword(b"infected")
+              out.writestr("ValheimStatsTracker.exe", exe)
+          if sample.stat().st_size > 50 * 1024 * 1024:
+              raise RuntimeError("Echantillon trop volumineux pour le portail Microsoft")
+          with pyzipper.AESZipFile(sample, "r") as check:
+              check.setpassword(b"infected")
+              assert hashlib.sha256(check.read("ValheimStatsTracker.exe")).hexdigest() == exe_sha
+          report = (
+              "SAMPLE FOR MICROSOFT SECURITY INTELLIGENCE ANALYSIS - DO NOT EXECUTE\n"
+              "Source: https://github.com/LorthRuthven/valheim-stats-tracker/releases/tag/v2.4.0\n"
+              "Release ZIP SHA-256: " + observed + "\n"
+              "ValheimStatsTracker.exe SHA-256: " + exe_sha + "\n"
+              "Executable bytes: " + str(len(exe)) + "\n"
+              "Protected sample: " + sample.name + "\n"
+              "Sample archive password: infected\n"
+              "Defender detection A: Trojan:Win32/Bearfoos.A!ml\n"
+              "Defender detection B: Behavior:Win32/DefenseEvasion.A!ml\n"
+              "Status: Not independently confirmed as false positives.\n"
+              "Submit only through https://www.microsoft.com/wdsi/filesubmission\n"
+              "Do not restore, execute or whitelist the sample on your PC.\n"
+          )
+          (root / "MICROSOFT_SUBMISSION.txt").write_text(report, encoding="utf-8")
+          print(report)
+          PY
+      - name: Archiver uniquement l'échantillon chiffré et ses empreintes
+        uses: actions/upload-artifact@v4
+        with:
+          name: microsoft-defender-v2-4-0-sample
+          path: |
+            sample/ValheimStatsTracker_v2.4.0_Microsoft_SAMPLE.zip
+            sample/MICROSOFT_SUBMISSION.txt
+          retention-days: 7
+          if-no-files-found: error
