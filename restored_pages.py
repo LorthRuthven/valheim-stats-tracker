@@ -442,7 +442,7 @@ class RestoredPagesMixin:
         for token,display in BOSSES.items():
             lines.append(tuple([display]+[txt(p['groups'][g]['enemies'][0].get(token,0)) for g in groups]))
         _fill_table(self.boss_table,lines,
-             [game_icon(name) for name in BOSSES.values()])
+             [game_icon(token) for token in BOSSES])
         done={g:sum(p['groups'][g]['enemies'][0].get(tok,0)>0 for tok in BOSSES) for g in groups}
         self.boss_info.setText(
             'Boss distincts validés : '+', '.join(
