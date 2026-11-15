@@ -1,0 +1,228 @@
+"""La page « Statistiques du Viking » : cartes façon Minecraft, vraies données.
+
+Chaque icône de jeu n'est montrée que si elle existe réellement. Une rune
+typographique signale une statistique pour laquelle aucune image n'a été associée.
+"""
+from __future__ import annotations
+
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel,
+    QLineEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+)
+
+from desktop_v2 import label, panel
+from real_assets import game_icon
+from viking_stats import (
+    CATEGORIES, STATS, change, favorites, pretty, save_favorites, value,
+)
+
+
+class StatCard(QFrame):
+    def __init__(self, stat, toggle):
+        super().__init__()
+        self.stat = stat
+        self.setObjectName("vikingStatCard")
+        self.setMinimumHeight(154)
+        self.setMinimumWidth(210)
+        self.setStyleSheet(
+            "QFrame#vikingStatCard {background:#192b35;border:1px solid #436069;"
+            "border-radius:14px;} "
+            "QFrame#vikingStatCard:hover {border:1px solid #cda271;background:#253b43;} "
+            "QPushButton#statStar {border:none;background:transparent;color:#efc78d;"
+            "padding:0px;font:bold 17pt 'Segoe UI';}"
+        )
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(15, 11, 15, 12)
+        outer.setSpacing(7)
+        top = QHBoxLayout()
+        top.setSpacing(12)
+        self.picture = QLabel()
+        self.picture.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.picture.setFixedSize(55, 55)
+        self.picture.setObjectName("statPicture")
+        image = game_icon(stat.icon) if stat.icon else None
+        if image is not None and not image.isNull():
+            self.picture.setPixmap(image.pixmap(QSize(53, 53)))
+        else:
+            self.picture.setText(stat.glyph)
+            self.picture.setStyleSheet("color:#e5bf85;font:bold 26pt Georgia;")
+        top.addWidget(self.picture)
+        name = label(stat.title, wrap=True)
+        name.setStyleSheet("color:#f4e8d7;font:bold 10pt 'Segoe UI';")
+        name.setMinimumHeight(45)
+        top.addWidget(name, 1)
+        self.star = QPushButton("☆")
+        self.star.setObjectName("statStar")
+        self.star.setFixedSize(35, 35)
+        self.star.setToolTip("Épingler ou retirer des favoris")
+        self.star.clicked.connect(lambda _=False, key=stat.key: toggle(key))
+        top.addWidget(self.star, alignment=Qt.AlignmentFlag.AlignTop)
+        outer.addLayout(top)
+        self.amount = label("—")
+        self.amount.setObjectName("statValue")
+        self.amount.setStyleSheet("color:#fff4dc;font:bold 22pt 'Segoe UI';")
+        outer.addWidget(self.amount)
+        self.description = label(stat.note, muted=True, wrap=True)
+        self.description.setStyleSheet("color:#b1c5c4;font:9pt 'Segoe UI';")
+        outer.addWidget(self.description)
+        self.delta = label("", muted=True)
+        self.delta.setObjectName("statChange")
+        self.delta.setStyleSheet("color:#9cd9bf;font:9pt 'Segoe UI';")
+        outer.addWidget(self.delta)
+
+    def set_favorite(self, favorite):
+        self.star.setText("★" if favorite else "☆")
+        self.star.setToolTip("Retirer des favoris" if favorite else "Épingler dans les favoris")
+
+    def set_values(self, profile, previous, group):
+        current = value(profile, self.stat, group)
+        self.amount.setText(pretty(current, self.stat.unit))
+        d = change(profile, previous, self.stat, group)
+        if d is None or d <= 0 or self.stat.unit == "binary":
+            self.delta.setText("")
+        else:
+            self.delta.setText("↑ +" + pretty(d, self.stat.unit) + " depuis le dernier relevé")
+        self.setToolTip(f"{self.stat.title}\nCompteur : {self.stat.counter}\n"
+                        f"Groupe : {group}\n{self.stat.note}")
+
+
+class VikingStatsPage(QScrollArea):
+    def __init__(self, directory, parent=None):
+        super().__init__(parent)
+        self.directory = directory
+        self.profile = None
+        self._favorites = set()
+        self._columns = 0
+        self.visible_stat_keys = []
+        self.setWidgetResizable(True)
+        self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.content = QWidget()
+        self.layout = QVBoxLayout(self.content)
+        self.layout.setContentsMargins(12, 13, 16, 20)
+        self.layout.setSpacing(14)
+        self.setWidget(self.content)
+
+        intro, tools = panel(
+            "STATISTIQUES DU VIKING",
+            "Tous les chiffres viennent des compteurs du personnage. "
+            "Comme dans Minecraft, épingle tes statistiques préférées pour les retrouver rapidement."
+        )
+        title = label("TON AVENTURE EN CHIFFRES", section=True)
+        title.setStyleSheet("color:#f3c88c;font:bold 15pt 'Segoe UI';")
+        tools.addWidget(title)
+        self.summary = label(
+            "Charge ton personnage pour consulter ses statistiques.", muted=True, wrap=True)
+        tools.addWidget(self.summary)
+        filter_row = QHBoxLayout()
+        self.search = QLineEdit()
+        self.search.setPlaceholderText("Rechercher : arbres, distance, portails, boss…")
+        self.search.setClearButtonEnabled(True)
+        self.search.textChanged.connect(self.relayout)
+        filter_row.addWidget(self.search, 4)
+        self.category = QComboBox()
+        self.category.addItems(("Toutes les catégories", "Favoris", *CATEGORIES))
+        self.category.currentIndexChanged.connect(self.relayout)
+        filter_row.addWidget(self.category, 2)
+        self.difficulty = QComboBox()
+        for title, key in (
+            ("Toutes difficultés", "Any"), ("Normal ou +", "Default"),
+            ("Difficile ou +", "Hard"), ("Très difficile ou +", "VeryHard"),
+            ("Extrême", "Hardcore"),
+        ):
+            self.difficulty.addItem(title, key)
+        self.difficulty.currentIndexChanged.connect(self.update_values)
+        filter_row.addWidget(self.difficulty, 2)
+        tools.addLayout(filter_row)
+        tools.addWidget(label(
+            "Les groupes de difficulté se recouvrent : ne pas les additionner. "
+            "Distance de nage indisponible dans ce format de sauvegarde.",
+            muted=True, wrap=True))
+        self.layout.addWidget(intro)
+
+        self.cards = {stat.key: StatCard(stat, self.toggle_favorite) for stat in STATS}
+        self.sections = {}
+        for category in CATEGORIES:
+            frame, group_layout = panel(category.upper(), "")
+            grid = QGridLayout()
+            grid.setSpacing(12)
+            group_layout.addLayout(grid)
+            self.sections[category] = frame, grid
+            self.layout.addWidget(frame)
+        self.layout.addStretch(1)
+        self.refresh(None)
+
+    def refresh(self, profile, previous=None):
+        self.profile = profile
+        name = profile.get("name", "") if profile else ""
+        self._favorites = favorites(name, self.directory)
+        for key, card in self.cards.items():
+            card.set_favorite(key in self._favorites)
+            card.set_values(profile, previous, self.difficulty.currentData())
+        self.summary.setText(
+            f"{name}  •  {len(STATS)} statistiques disponibles  •  "
+            f"{len(self._favorites)} favoris épinglés"
+            if name else f"{len(STATS)} compteurs reconnus • Choisis un personnage pour afficher les valeurs."
+        )
+        self.relayout()
+
+    def update_values(self, *_):
+        if not self.cards:
+            return
+        group = self.difficulty.currentData()
+        for card in self.cards.values():
+            # En l'absence de nouveau relevé, le gain affiché reste vide.
+            card.set_values(self.profile, None, group)
+
+    def toggle_favorite(self, key):
+        if key not in self.cards:
+            return
+        if key in self._favorites:
+            self._favorites.remove(key)
+        else:
+            self._favorites.add(key)
+        name = self.profile.get("name", "") if self.profile else ""
+        if name:
+            save_favorites(name, self._favorites, self.directory)
+        for identity, card in self.cards.items():
+            card.set_favorite(identity in self._favorites)
+        self.relayout()
+
+    def relayout(self, *_):
+        if not hasattr(self, "sections"):
+            return
+        category_filter = self.category.currentText()
+        needle = self.search.text().casefold().strip()
+        columns = 3 if self.viewport().width() >= 1050 else (2 if self.viewport().width() >= 710 else 1)
+        self._columns = columns
+        visible = []
+        for category in CATEGORIES:
+            frame, grid = self.sections[category]
+            while grid.count():
+                item = grid.takeAt(0)
+                if item.widget() is not None:
+                    item.widget().hide()
+            entries = [
+                stat for stat in STATS
+                if stat.category == category
+                and (category_filter in ("Toutes les catégories", "Favoris") or category_filter == category)
+                and (category_filter != "Favoris" or stat.key in self._favorites)
+                and (not needle or needle in stat.title.casefold()
+                     or needle in stat.note.casefold()
+                     or needle in stat.counter.casefold())
+            ]
+            frame.setVisible(bool(entries))
+            for index, stat in enumerate(entries):
+                card = self.cards[stat.key]
+                grid.addWidget(card, index // columns, index % columns)
+                card.show()
+                visible.append(stat.key)
+        self.visible_stat_keys = visible
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        new_columns = 3 if self.viewport().width() >= 1050 else (2 if self.viewport().width() >= 710 else 1)
+        if self._columns != new_columns:
+            self.relayout()
