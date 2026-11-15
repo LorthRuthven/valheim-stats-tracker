@@ -745,6 +745,24 @@ def _verify_icon_extractor():
         if count!=2:
             raise RuntimeError(f'Extraction de contrôle incomplète : {count}/2')
 
+def _verify_wiki_cache():
+    """Verifie les imports natifs wiki/Pillow depuis l'executable PyInstaller."""
+    import tempfile
+    from pathlib import Path
+    from PIL import Image, ImageOps
+    from wiki_images import WikiImageCache, wiki_title
+    if wiki_title('$enemy_greyling') != 'Greyling':
+        raise RuntimeError('Mapping du prefab Greyling incorrect')
+    with tempfile.TemporaryDirectory() as temp:
+        cache=WikiImageCache(Path(temp)/'wiki_cache')
+        if cache.count()!=0 or cache.cached_image('$enemy_greyling') is not None:
+            raise RuntimeError('Le cache wiki de controle est non vide')
+        image=Image.new('RGB',(30,30),(123,45,67))
+        image=ImageOps.exif_transpose(image)
+        if image.size != (30,30):
+            raise RuntimeError('Le decodeur Pillow ImageOps ne fonctionne pas')
+
+
 def _verify_updater_bootstrap():
     """Test reel du lanceur PowerShell depuis l'EXE Windows PyInstaller."""
     import tempfile
@@ -771,6 +789,14 @@ def _verify_updater_bootstrap():
 
 if __name__=='__main__':
     import sys
+    if '--verify-wiki-cache' in sys.argv:
+        try:
+            _verify_wiki_cache()
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            sys.exit(23)
+        sys.exit(0)
     if '--verify-updater-bootstrap' in sys.argv:
         try:
             _verify_updater_bootstrap()
