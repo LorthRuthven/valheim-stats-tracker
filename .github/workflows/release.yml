@@ -146,15 +146,15 @@ jobs:
           $marker = Join-Path $userdata 'ci-do-not-delete-on-update.marker'
           Set-Content -LiteralPath $marker -Value 'données utilisateur conservées'
           $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$install")
-          & $setup @arguments
-          if ($LASTEXITCODE -ne 0) { throw "Échec installation Windows (code $LASTEXITCODE)" }
+          $first = Start-Process -FilePath $setup -ArgumentList $arguments -Wait -PassThru -ErrorAction Stop
+          if ($first.ExitCode -ne 0) { throw "Échec installation Windows (code $($first.ExitCode))" }
           $installed = Join-Path $install 'ValheimStatsTracker.exe'
           if (-not (Test-Path -LiteralPath $installed -PathType Leaf)) { throw 'EXE non installé' }
           $original = (Get-FileHash 'dist/ValheimStatsTracker/ValheimStatsTracker.exe' -Algorithm SHA256).Hash
           $deployed = (Get-FileHash $installed -Algorithm SHA256).Hash
           if ($original -ne $deployed) { throw 'Le fichier installé ne correspond pas au binaire construit.' }
-          & $setup @arguments
-          if ($LASTEXITCODE -ne 0) { throw "Échec mise à jour du même dossier (code $LASTEXITCODE)" }
+          $second = Start-Process -FilePath $setup -ArgumentList $arguments -Wait -PassThru -ErrorAction Stop
+          if ($second.ExitCode -ne 0) { throw "Échec mise à jour du même dossier (code $($second.ExitCode))" }
           if ((Get-Content -LiteralPath $marker) -ne 'données utilisateur conservées') {
             throw 'Historique local effacé par la mise à jour'
           }
