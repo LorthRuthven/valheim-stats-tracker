@@ -574,6 +574,8 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             self.show_page(1);self.draw_achievements()
     def show_page(self,index):
         super().show_page(index)
+        if index == 10 and hasattr(self, 'collection_page'):
+            self.collection_page.activate()
         if not self.motion:return
         page=self.stack.currentWidget()
         if page.graphicsEffect():page.setGraphicsEffect(None)
