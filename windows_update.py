@@ -100,7 +100,9 @@ param(
  [Parameter(Mandatory=$true)][string]$Target,
  [Parameter(Mandatory=$true)][string]$Backup,
  [Parameter(Mandatory=$true)][string]$Log,
- [switch]$SmokeTest
+ [switch]$SmokeTest,
+ [switch]$SimulateRelaunchFailure,
+ [switch]$SilentRelaunchFailure
 )
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -158,6 +160,9 @@ try {
   $updateApplied = $true
   Write-Journal 'COPY_OK'
   $exe = Join-Path $Target 'ValheimStatsTracker.exe'
+  # La copie est une réussite indépendamment du lancement. Un blocage SmartScreen
+  # ne doit ni annuler la mise à jour, ni effacer le diagnostic.
+  Write-Journal 'INSTALL_OK'
   Write-Journal 'RELAUNCH_START'
   if ($SmokeTest) {
     $process = Start-Process -FilePath $exe -ArgumentList '--verify-unitypy-bundle' -WorkingDirectory $Target -Wait -PassThru -ErrorAction Stop
@@ -166,15 +171,36 @@ try {
     }
     Write-Journal 'RELAUNCH_TEST_OK'
   } else {
-    $process = Start-Process -FilePath $exe -WorkingDirectory $Target -PassThru -ErrorAction Stop
-    Start-Sleep -Seconds 4
-    $process.Refresh()
-    if ($process.HasExited) {
-      throw "Le nouveau tracker se ferme immédiatement (code $($process.ExitCode))."
+    try {
+      if ($SimulateRelaunchFailure) { throw 'Redémarrage simulé refusé pour le test de régression.' }
+      $process = Start-Process -FilePath $exe -WorkingDirectory $Target -PassThru -ErrorAction Stop
+      Start-Sleep -Seconds 4
+      $process.Refresh()
+      if ($process.HasExited) {
+        throw "Le nouveau tracker se ferme immédiatement (code $($process.ExitCode))."
+      }
+      Write-Journal "RELAUNCH_OK pid=$($process.Id)"
+    } catch {
+      $reason = $_.Exception.Message
+      Write-Journal "RELAUNCH_ERROR $reason"
+      # La version est déjà installée : ne pas restaurer l'ancienne version
+      # pour une erreur de lancement (SmartScreen, contrôle des applications, crash).
+      if (!$SilentRelaunchFailure) {
+        try {
+          Add-Type -AssemblyName System.Windows.Forms
+          $notice = "La mise à jour a été installée, mais l'application n'a pas redémarré automatiquement." +
+            "`r`n`r`nOuvre manuellement : $exe" +
+            "`r`n`r`nSi Windows affiche un avertissement, vérifie la provenance de l'exécutable avant de l'autoriser." +
+            "`r`n`r`nDiagnostic : $Log" +
+            "`r`nMotif technique : $reason"
+          [void][System.Windows.Forms.MessageBox]::Show($notice, 'Valheim Stats Tracker - redémarrage', 'OK', 'Warning')
+        } catch {
+          Write-Journal "RELAUNCH_NOTICE_ERROR $($_.Exception.Message)"
+        }
+      }
+      exit 2
     }
-    Write-Journal "RELAUNCH_OK pid=$($process.Id)"
   }
-  Write-Journal 'INSTALL_OK'
   exit 0
 } catch {
   Write-Journal "INSTALL_ERROR $($_.Exception.Message)"
