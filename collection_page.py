@@ -167,8 +167,8 @@ class CollectionPage(QWidget):
             position = next((i for i, entry in enumerate(shown)
                              if entry["token"] == selected), 0)
             self.table.selectRow(position)
-        else:
-            self.show_selected()
+        # setRowCount() peut conserver la meme selection : rafraichir tout de meme la fiche.
+        self.show_selected()
 
     def show_selected(self):
         index = self.table.currentRow()
