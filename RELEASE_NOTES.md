@@ -1,19 +1,19 @@
-# Valheim Stats Tracker V2.2.6 — Correctif d'extraction des véritables icônes
+# Valheim Stats Tracker V2.2.7 — Ressources archspec de l'extracteur Valheim
 
-## Cause confirmée par le rapport de la V2.2.5
-La lecture de 802 ressources locales Valheim a détecté **2 098 sprites** et **3 359 textures**, mais enregistré **0 image**. Les erreurs répétées indiquent :
-`PyInstallerImportError: Failed to load dynlib/dll ... fmod_toolkit/libfmod/Windows/x64/fmod.dll`.
+## Diagnostic reçu
+Un nouveau rapport de l'extracteur indique 802 bundles lus, 2 098 sprites, 3 359 textures et toujours 0 image. Les 2 120 erreurs proviennent cette fois d'un fichier manquant :
+`archspec/json/cpu/microarchitectures.json`.
 
-L'exécutable PyInstaller embarquait `UnityPy`, mais pas explicitement la DLL native de sa dépendance `fmod_toolkit`. Les tests existants créaient de faux sprites et ne chargeaient pas la bibliothèque native.
+**Attention :** le chemin de l'exécutable mentionné dans ce rapport porte encore le nom de dossier `Valheim_Stats_Tracker_v2.2.5_Windows`. Il faut vérifier la version réelle du programme utilisé ; le correctif FMOD de la V2.2.6 est indépendant de cette anomalie de données archspec.
 
-## Changements
-- Construction Windows : inclure `fmod_toolkit` et `fmod.dll` sous le chemin attendu `_internal/fmod_toolkit/libfmod/Windows/x64/fmod.dll`.
-- Bloquer la publication si la DLL source est absente ou si elle manque dans le programme construit.
-- Dans le programme compilé, tester **le chargement réel de fmod.dll** avec `ctypes.WinDLL`, en plus des tests UnityPy et des sprites fictifs.
-- L'extraction signale immédiatement un paquet Windows incomplet au lieu d'analyser des centaines de bundles pour aboutir à zéro image.
-- Conserver les autres tests : 10 pages Qt, affichage, statuts, statistiques, lecture des sauvegardes et updater.
-- Aucun fichier Valheim n'est modifié et aucune icône artificielle ne remplace les vrais sprites.
+## Correctifs
+- Empaqueter explicitement toutes les données JSON de `archspec` (bibliothèque Python utilisée lors du décodage), dont `microarchitectures.json`.
+- Vérifier la présence du fichier dans le ZIP Windows AVANT de publier.
+- Tester dans le véritable EXE compilé **l'accès au catalogue CPU archspec**, dont la lecture est différée jusqu'au premier décodage.
+- En cas de paquet incomplet, afficher une erreur immédiatement avant l'analyse des 802 fichiers Valheim.
+- Conserver l'intégration de `fmod.dll` et ses tests, l'updater V2.2.5 et tous les écrans existants.
+- Tests unitaires : simulation de JSON absent / présent.
 
-**Validation sur ton PC encore nécessaire :** le nouveau test de packaging certifie que la bibliothèque native se charge sur Windows CI ; il ne peut pas garantir à lui seul le nombre final d'icônes extraites de ta version de Valheim.
+L'extraction des vraies données Valheim ne peut être vérifiée sur GitHub Actions, faute d'installation du jeu. Le résultat réel devra être contrôlé dans `%LOCALAPPDATA%\\ValheimStatsTracker\\game_icons\\extraction-report.json`.
 
-Pour tester : dans Réglages → Véritables icônes Valheim, relancer l'extraction et consulter `%LOCALAPPDATA%\\ValheimStatsTracker\\game_icons\\extraction-report.json` si nécessaire.
+Aucune sauvegarde personnelle, aucun favori et aucun historique n'est modifié.
