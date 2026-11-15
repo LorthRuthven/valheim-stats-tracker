@@ -207,6 +207,18 @@ class WikiImageCache:
             pass
         return None
 
+    def last_error(self, token):
+        """Diagnostic de la derniere tentative, pour le panneau wiki."""
+        *_, miss = self._paths(token)
+        try:
+            data = json.loads(miss.read_text(encoding="utf-8"))
+            if data.get("token") == token:
+                return str(data.get("reason",""))[:250]
+        except (OSError, ValueError, TypeError):
+            pass
+        return ""
+
+
     def _missed_recently(self, token):
         *_, miss = self._paths(token)
         try:
