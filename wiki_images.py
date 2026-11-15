@@ -227,6 +227,10 @@ class WikiImageCache:
         except (OSError, KeyError, ValueError, TypeError):
             return False
 
+    def can_attempt(self, token):
+        return not self._missed_recently(token)
+
+
     def fetch(self, token, *, force=False):
         """Télécharge une image unique. À appeler uniquement hors thread Qt UI."""
         existing = self.cached_image(token)
