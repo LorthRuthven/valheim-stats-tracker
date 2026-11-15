@@ -1,12 +1,12 @@
-"""Vérification et téléchargement des mises à jour Windows — sans exécution cachée.
+"""Mises à jour Windows : installeur standard visible, aucun PowerShell caché.
 
-Mesure temporaire V2.4.1 après les alertes Defender graves :
-- SHA-256 du ZIP vérifié contre l'empreinte GitHub Releases ;
-- aucune extraction ou exécution de binaire téléchargé par l'application ;
-- aucune commande PowerShell, politique d'exécution modifiée ou processus masqué ;
-- l'utilisateur extrait explicitement l'archive dans un nouveau dossier.
+La provenance GitHub et le SHA-256 sont vérifiés AVANT de proposer l'installation.
+Le clic utilisateur déclenche l'installateur Windows normal (assistant visible).
+Jamais de modification directe de l'EXE en cours d'exécution, de suppression de
+dossiers ou de modification de l'antivirus.
 
-Le verdict antivirus d'un exécutable reste indépendant du contrôle de l'archive.
+Une archive Windows portable est proposée si aucun installateur n'est publié.
+Les contrôles de fichiers ne remplacent pas une analyse de sécurité indépendante.
 """
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import re
+import struct
 import urllib.request
 import zipfile
 from pathlib import Path, PurePosixPath
@@ -23,6 +24,7 @@ API = f"https://api.github.com/repos/{REPO}/releases/latest"
 MAX_ZIP = 250 * 1024 * 1024
 MAX_TOTAL = 850 * 1024 * 1024
 MAX_FILES = 25_000
+MAX_INSTALLER = 250 * 1024 * 1024
 
 
 class UpdateError(Exception):
@@ -35,8 +37,17 @@ def version_tuple(text):
     return tuple(map(int, text.split(".")))
 
 
+def asset_filename(version, kind):
+    version_tuple(version)
+    if kind == "installer":
+        return f"Valheim_Stats_Tracker_v{version}_Setup_Windows.exe"
+    if kind == "zip":
+        return f"Valheim_Stats_Tracker_v{version}_Windows.zip"
+    raise UpdateError("Type de téléchargement invalide.")
+
+
 def check_release(current, opener=None):
-    """Accepte uniquement la version officielle et son SHA-256 publié."""
+    """Privilégie l'installateur standard ; ZIP portable en repli."""
     opener = opener or urllib.request.urlopen
     request = urllib.request.Request(
         API, headers={"User-Agent": "Valheim-Stats-Tracker-Windows"}
@@ -45,24 +56,27 @@ def check_release(current, opener=None):
         data = json.loads(response.read(128_000))
     version = str(data.get("tag_name", "")).removeprefix("v")
     version_tuple(version)
-    target = f"Valheim_Stats_Tracker_v{version}_Windows.zip"
-    matching = next((a for a in data.get("assets", [])
-                     if a.get("name") == target), None)
-    if not matching:
-        raise UpdateError("ZIP Windows absent de la dernière version.")
-    url = matching.get("browser_download_url", "")
-    expected = f"https://github.com/{REPO}/releases/download/v{version}/{target}"
-    if url != expected:
-        raise UpdateError("Adresse de mise à jour non officielle.")
-    digest = matching.get("digest") or ""
-    if not re.fullmatch(r"sha256:[a-fA-F0-9]{64}", digest):
-        raise UpdateError("Empreinte SHA-256 absente de la version officielle.")
-    return {
-        "version": version,
-        "available": version_tuple(version) > version_tuple(current),
-        "url": url,
-        "sha256": digest.split(":", 1)[1].lower(),
-    }
+    for kind in ("installer", "zip"):
+        filename = asset_filename(version, kind)
+        matching = next((a for a in data.get("assets", [])
+                         if a.get("name") == filename), None)
+        if matching is None:
+            continue
+        url = matching.get("browser_download_url", "")
+        expected = f"https://github.com/{REPO}/releases/download/v{version}/{filename}"
+        if url != expected:
+            raise UpdateError("Adresse de mise à jour non officielle.")
+        digest = matching.get("digest") or ""
+        if not re.fullmatch(r"sha256:[a-fA-F0-9]{64}", digest):
+            raise UpdateError("Empreinte SHA-256 absente de la version officielle.")
+        return {
+            "version": version,
+            "available": version_tuple(version) > version_tuple(current),
+            "kind": kind,
+            "url": url,
+            "sha256": digest.split(":", 1)[1].lower(),
+        }
+    raise UpdateError("Aucun installateur ou ZIP Windows officiel dans la release.")
 
 
 def validate_archive(path):
@@ -104,16 +118,39 @@ def validate_archive(path):
         raise UpdateError("Archive Windows corrompue ou inaccessible.") from exc
 
 
+def validate_installer(path):
+    """Contrôle statique PE ; ne conclut PAS à l'innocuité du programme."""
+    path = Path(path)
+    size = path.stat().st_size
+    if size < 1024 or size > MAX_INSTALLER:
+        raise UpdateError("Installateur Windows trop petit ou trop volumineux.")
+    with path.open("rb") as executable:
+        if executable.read(2) != b"MZ":
+            raise UpdateError("En-tête exécutable Windows absent.")
+        executable.seek(0x3C)
+        offset_data = executable.read(4)
+        if len(offset_data) != 4:
+            raise UpdateError("En-tête PE incomplet.")
+        offset = struct.unpack("<I", offset_data)[0]
+        if offset > min(size - 4, 4 * 1024 * 1024):
+            raise UpdateError("Offset PE invalide.")
+        executable.seek(offset)
+        if executable.read(4) != b"PE\x00\x00":
+            raise UpdateError("Signature PE invalide.")
+
+
 def stage_release(info, directory, progress=lambda amount, total: None, opener=None):
-    """Télécharge le ZIP vérifié, sans installer ni exécuter l'EXE."""
+    """Télécharge un installateur ou ZIP officiel en vérifiant son SHA-256."""
     opener = opener or urllib.request.urlopen
     version = str(info.get("version", ""))
     version_tuple(version)
+    kind = info.get("kind", "zip")
+    filename = asset_filename(version, kind)
     target = Path(directory)
     target.mkdir(parents=True, exist_ok=True)
-    partial = target / f"Valheim_{version}.download"
-    archive = target / f"Valheim_Stats_Tracker_v{version}_Windows.zip"
-    expected_url = f"https://github.com/{REPO}/releases/download/v{version}/{archive.name}"
+    partial = target / f"Valheim_{version}_{kind}.download"
+    archive = target / filename
+    expected_url = f"https://github.com/{REPO}/releases/download/v{version}/{filename}"
     if info.get("url") != expected_url:
         raise UpdateError("Lien de téléchargement non officiel.")
     digest_expected = info.get("sha256")
@@ -134,18 +171,47 @@ def stage_release(info, directory, progress=lambda amount, total: None, opener=N
                 if not chunk:
                     break
                 size += len(chunk)
-                if size > MAX_ZIP:
+                if size > (MAX_INSTALLER if kind == "installer" else MAX_ZIP):
                     raise UpdateError("Téléchargement trop volumineux.")
                 digest.update(chunk)
                 output.write(chunk)
                 progress(size, announced)
         if digest.hexdigest() != digest_expected:
             raise UpdateError("SHA-256 incorrect : téléchargement annulé.")
-        validate_archive(partial)
+        if kind == "installer":
+            validate_installer(partial)
+        else:
+            validate_archive(partial)
         partial.replace(archive)
         return archive
     finally:
         partial.unlink(missing_ok=True)
+
+
+def launch_verified_installer(info, installer):
+    """Ouvre l'assistant normal de Windows après une demande utilisateur.
+
+    Pas de processus masqué, de privilèges forcés ni de contournement Defender.
+    """
+    if info.get("kind") != "installer":
+        raise UpdateError("Ce fichier n'est pas un installateur officiel.")
+    installer = Path(installer)
+    expected_name = asset_filename(str(info.get("version", "")), "installer")
+    if installer.name != expected_name or not installer.is_file():
+        raise UpdateError("Installateur téléchargé introuvable.")
+    digest_expected = info.get("sha256")
+    if not isinstance(digest_expected, str) or not re.fullmatch(r"[0-9a-f]{64}", digest_expected):
+        raise UpdateError("Empreinte SHA-256 de l'installateur invalide.")
+    with installer.open("rb") as stream:
+        digest_observed = hashlib.file_digest(stream, "sha256").hexdigest()
+    if digest_observed != digest_expected:
+        raise UpdateError("L'installateur a changé depuis le téléchargement : exécution refusée.")
+    validate_installer(installer)
+    if os.name != "nt":
+        raise UpdateError("Installateur utilisable uniquement sur Windows.")
+    # Lance le programme d'installation normal, avec sa fenêtre visible.
+    # Il peut demander une confirmation Windows ; ne jamais la contourner.
+    os.startfile(str(installer))
 
 
 def open_download_folder(archive):

@@ -1,3 +1,28 @@
+# Valheim Stats Tracker V2.4.2 — Installateur Windows classique (CANDIDAT NON PUBLIÉ)
+
+**En développement.** La publication reste verrouillée tant que les alertes Defender
+antérieures n'ont pas été revues. Un build propre n'est pas un verdict antivirus.
+
+- Nouvel assistant d'installation Inno Setup en français, avec raccourci Démarrer
+  et raccourci Bureau facultatif. Installation dans
+  %LOCALAPPDATA%\Programs\ValheimStatsTracker, sans privilèges administrateur.
+- Lorsqu'une future version officielle fournit un Setup Windows, le bouton
+  « Télécharger et installer » vérifie la provenance GitHub et le SHA-256,
+  puis demande explicitement avant d'ouvrir l'assistant visible de Windows.
+  L'installateur standard gère la mise à jour du dossier de l'application.
+- Si la release ne contient que le ZIP portable, le bouton conserve le
+  téléchargement vérifié et l'installation manuelle de V2.4.1.
+- Plus aucun script PowerShell caché ni remplacement de l'exécutable courant ;
+  aucun réglage de Microsoft Defender n'est touché.
+- Historique, paramètres, favoris, graphismes, douze pages et 47 statistiques
+  continuent de vivre dans leur dossier existant.
+- CI Windows : compilation du vrai Setup, installation/réinstallation et
+  vérification de conservation des données. La signature de code reste à prévoir.
+- Transition depuis la V2.4.1 portable : première installation du Setup
+  à faire une seule fois après revue de sécurité ; les mises à jour suivantes
+  pourront utiliser le bouton intégré.
+
+---
 # Valheim Stats Tracker V2.4.1 — Révision de sécurité (NON PUBLIÉE)
 
 Cette version est **candidature de sécurité uniquement**. Aucune distribution Windows

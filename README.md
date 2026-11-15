@@ -1,3 +1,30 @@
+## Distribution Windows V2.4.2 — installateur (en développement)
+
+La V2.4.2 utilise un installateur Windows Inno Setup, distinct du ZIP portable.
+L'installateur est construit dans GitHub Actions à partir des mêmes exécutables
+PyInstaller, en mode utilisateur, dans %LOCALAPPDATA%\Programs\ValheimStatsTracker.
+Il crée un raccourci Démarrer, propose un raccourci Bureau et réutilise le même
+répertoire pour les mises à jour suivantes. Le dossier de données distinct
+%LOCALAPPDATA%\ValheimStatsTracker est conservé.
+
+Quand une nouvelle release officielle contient un fichier
+Valheim_Stats_Tracker_vX.Y.Z_Setup_Windows.exe, le tracker vérifie son SHA-256
+officiel GitHub, le télécharge, puis demande à l'utilisateur d'ouvrir
+l'assistant graphique Windows (pas de PowerShell caché). Si seul le ZIP
+Valheim_Stats_Tracker_vX.Y.Z_Windows.zip existe, le téléchargement reste
+manuel, comme avec la V2.4.1 portable.
+
+**Migration portable -> installé :** le premier Setup doit être lancé
+manuellement une fois, depuis une release validée ; ensuite, le bouton de mise
+à jour peut ouvrir l'assistant officiel. Les données de suivi sont conservées.
+
+**Sécurité :** les détections Defender graves observées sur V2.2.x et V2.4.0
+n'ont pas encore de conclusion indépendante. L'installation d'une version
+nouvellement compilée ne doit pas être considérée comme sûre sur la seule
+base des tests fonctionnels. Pas d'exclusions antivirus. Publication
+V2.4.2 verrouillée jusqu'à revue de sécurité. Voir SECURITY_REVIEW.md.
+
+---
 # Valheim Stats Tracker
 
 Application Windows sans mod pour suivre les statistiques de personnages **Valheim** via leurs sauvegardes `.fch`. Les informations sont relevées à chaque sauvegarde, et non à chaque seconde de jeu.
