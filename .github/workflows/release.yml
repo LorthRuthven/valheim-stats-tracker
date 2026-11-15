@@ -79,6 +79,13 @@ jobs:
           $check = Start-Process -FilePath $exe -ArgumentList '--verify-icon-extractor' -Wait -PassThru
           if ($check.ExitCode -ne 0) { throw "Le test d'extraction Sprite/Texture2D compilé a échoué : $($check.ExitCode)" }
           Write-Host "Extraction UnityPy / Pillow depuis EXE : OK"
+      - name: Tester le lancement de PowerShell depuis le programme Windows compilé
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
+          $process = Start-Process -FilePath $exe -ArgumentList '--verify-updater-bootstrap' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "L'EXE n'a pas pu lancer PowerShell automatiquement (code $($process.ExitCode))" }
+          Write-Host 'Lancement enfant depuis EXE PyInstaller : OK'
       - name: Tester remplacement et redémarrage Windows (installation réelle)
         shell: pwsh
         run: |
