@@ -2,6 +2,8 @@ name: Tester et publier Valheim Stats Tracker
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write
@@ -109,62 +111,42 @@ jobs:
           $test = Start-Process -FilePath $exe -ArgumentList '--verify-wiki-cache' -Wait -PassThru
           if ($test.ExitCode -ne 0) { throw "Cache Wiki ou Pillow indisponible depuis l'EXE : $($test.ExitCode)" }
           Write-Host 'Import Wiki et Pillow depuis EXE : OK'
-      - name: Tester le lancement de PowerShell depuis le programme Windows compilé
+      - name: Tester l'updater sans processus caché depuis le véritable EXE Windows
         shell: pwsh
         run: |
           $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
-          $process = Start-Process -FilePath $exe -ArgumentList '--verify-updater-bootstrap' -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw "L'EXE n'a pas pu lancer PowerShell automatiquement (code $($process.ExitCode))" }
-          Write-Host 'Lancement enfant depuis EXE PyInstaller : OK'
-      - name: Tester remplacement et redémarrage Windows (installation réelle)
+          $process = Start-Process -FilePath $exe -ArgumentList '--verify-safe-updater' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Validation ZIP depuis EXE Windows échouée (code $($process.ExitCode))" }
+          Write-Host 'Vérification du ZIP sans extraction ni exécution : OK'
+      - name: Vérifier l'état de Defender et analyser le binaire si disponible
         shell: pwsh
         run: |
-          python -c 'from windows_update import INSTALL_PS1; from pathlib import Path; Path("dist/install_smoke.ps1").write_text(INSTALL_PS1, encoding="utf-8-sig")'
-          $root = Join-Path $env:RUNNER_TEMP 'valheim-update-smoke'
-          $old = Join-Path $root 'old'
-          $new = Join-Path $root 'new'
-          $backup = Join-Path $root 'backup'
-          $log = Join-Path $root 'install.log'
-          New-Item -ItemType Directory -Force -Path $old, $new | Out-Null
-          Set-Content -LiteralPath (Join-Path $old 'ValheimStatsTracker.exe') -Value 'old executable marker'
-          Set-Content -LiteralPath (Join-Path $old 'version-marker.txt') -Value 'old'
-          Copy-Item -Path 'dist/ValheimStatsTracker/*' -Destination $new -Recurse -Force
-          Set-Content -LiteralPath (Join-Path $new 'version-marker.txt') -Value 'new'
-          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'dist/install_smoke.ps1' -ParentPid 999999 -Source $new -Target $old -Backup $backup -Log $log -SmokeTest
-          $exitCode = $LASTEXITCODE
-          if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log }
-          if ($exitCode -ne 0) { throw "Test réel du script de mise à jour échoué : $exitCode" }
-          if ((Get-Content -LiteralPath (Join-Path $old 'version-marker.txt')) -ne 'new') { throw 'Les nouveaux fichiers ne sont pas installés' }
-          if ((Get-Content -LiteralPath (Join-Path $backup 'version-marker.txt')) -ne 'old') { throw 'Sauvegarde de la version précédente manquante' }
-          if (-not (Select-String -LiteralPath $log -Pattern 'RELAUNCH_TEST_OK' -Quiet)) { throw 'Redémarrage effectif non validé' }
-          Write-Host 'INSTALLATION + REDÉMARRAGE + SAUVEGARDE : OK'
-      - name: Tester un redémarrage bloqué sans annuler une mise à jour réussie
-        shell: pwsh
-        run: |
-          python -c 'from windows_update import INSTALL_PS1; from pathlib import Path; Path("dist/install_blocked.ps1").write_text(INSTALL_PS1, encoding="utf-8-sig")'
-          $root = Join-Path $env:RUNNER_TEMP 'valheim-update-relaunch-failed'
-          $old = Join-Path $root 'old'
-          $new = Join-Path $root 'new'
-          $backup = Join-Path $root 'backup'
-          $log = Join-Path $root 'install.log'
-          New-Item -ItemType Directory -Force -Path $old, $new | Out-Null
-          Set-Content -LiteralPath (Join-Path $old 'ValheimStatsTracker.exe') -Value 'ancien programme'
-          Set-Content -LiteralPath (Join-Path $new 'ValheimStatsTracker.exe') -Value 'nouveau programme'
-          Set-Content -LiteralPath (Join-Path $old 'version-marker.txt') -Value 'old'
-          Set-Content -LiteralPath (Join-Path $new 'version-marker.txt') -Value 'new'
-          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'dist/install_blocked.ps1' -ParentPid 999999 -Source $new -Target $old -Backup $backup -Log $log -SimulateRelaunchFailure -SilentRelaunchFailure
-          $exitCode = $LASTEXITCODE
-          Get-Content -LiteralPath $log
-          if ($exitCode -ne 2) { throw "Redémarrage bloqué non distingué de l'installation : $exitCode" }
-          if ((Get-Content -LiteralPath (Join-Path $old 'version-marker.txt')) -ne 'new') { throw 'Mise à jour annulée malgré une copie réussie' }
-          if ((Get-Content -LiteralPath (Join-Path $backup 'version-marker.txt')) -ne 'old') { throw 'Sauvegarde de secours absente' }
-          if (-not (Select-String -LiteralPath $log -Pattern 'INSTALL_OK' -Quiet)) { throw 'Installation non journalisée' }
-          if (-not (Select-String -LiteralPath $log -Pattern 'RELAUNCH_ERROR' -Quiet)) { throw 'Blocage de redémarrage non journalisé' }
-          if (Select-String -LiteralPath $log -Pattern 'ROLLBACK_START' -Quiet) { throw 'Rollback incorrect en cas de blocage de lancement' }
-          Write-Host 'COPIE PRESERVEE + DIAGNOSTIC DU REDEMARRAGE : OK'
-          # GitHub Actions termine la commande PowerShell avec LASTEXITCODE.
-          # Ici le code 2 est attendu et explicitement valide par les assertions.
-          $global:LASTEXITCODE = 0
+          $check = Get-Command Get-MpComputerStatus -ErrorAction SilentlyContinue
+          if (-not $check) {
+            Write-Warning 'Microsoft Defender indisponible sur le runner : aucun verdict antivirus.'
+          } else {
+            $status = Get-MpComputerStatus -ErrorAction SilentlyContinue
+            if (-not $status -or -not $status.AMServiceEnabled -or -not $status.RealTimeProtectionEnabled) {
+              Write-Warning 'Microsoft Defender inactif sur le runner : test non probant, aucune approbation antivirus.'
+            } else {
+              $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
+              Write-Host ('Defender actif : ' + $status.AMProductVersion)
+              Start-MpScan -ScanType CustomScan -ScanPath $exe -ErrorAction Stop
+              if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+                throw 'EXE supprimé ou mis en quarantaine pendant le scan.'
+              }
+              $findings = @(Get-MpThreatDetection -ErrorAction SilentlyContinue |
+                Where-Object { $_.Resources -and
+                  (($_.Resources -join ' ') -like "*ValheimStatsTracker.exe*") })
+              if ($findings.Count -gt 0) {
+                $findings | Format-List | Out-String | Write-Host
+                throw 'Microsoft Defender a détecté le tracker : publication interdite.'
+              }
+              Write-Host 'Scan Defender du binaire terminé sans détection sur ce runner.'
+            }
+          }
+          # Même un résultat propre sur le runner ne remplace pas
+          # une analyse indépendante / la décision explicite de publication.
       - name: Transmettre l'archive Windows à la publication
         uses: actions/upload-artifact@v4
         with:
@@ -174,6 +156,9 @@ jobs:
           retention-days: 7
 
   release:
+    # Validation manuelle spécifique à la version après analyse indépendante.
+    # Sans variable GitHub VALHEIM_WINDOWS_APPROVED_VERSION=2.4.1, ne RIEN publier.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.VALHEIM_WINDOWS_APPROVED_VERSION == '2.4.1'
     needs: [tests, windows]
     runs-on: ubuntu-latest
     steps:
