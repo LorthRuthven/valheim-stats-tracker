@@ -97,6 +97,29 @@ class QtWindowTests(unittest.TestCase):
             self.assertEqual(w.stack.currentIndex(),10)
             w.close()
 
+    def test_local_sprite_aliases_match_real_prefabs(self):
+        app=QApplication.instance() or QApplication([])
+        import json
+        from pathlib import Path
+        from unittest.mock import patch
+        from PySide6.QtGui import QColor, QPixmap
+        from real_assets import game_icon, reset_icon_cache, _icon_candidates
+        self.assertIn('boar',_icon_candidates('$enemy_boar'))
+        self.assertIn('swordiron',_icon_candidates('$item_sword_iron'))
+        with tempfile.TemporaryDirectory() as temp:
+            directory=Path(temp)
+            icons=directory/'game_icons'
+            icons.mkdir()
+            pixel=QPixmap(30,30)
+            pixel.fill(QColor(245,132,49))
+            self.assertTrue(pixel.save(str(icons/'spriteboar.png')))
+            (icons/'index.json').write_text(
+                json.dumps({'aliases':{'boar':'spriteboar.png'}}),encoding='utf-8')
+            with patch('v2_core.app_dir',return_value=directory):
+                self.assertFalse(game_icon('$enemy_boar').isNull())
+                self.assertTrue(game_icon('$enemy_nonexistent_bad_icon_123').isNull())
+                reset_icon_cache()
+
     def test_labels_have_transparent_background(self):
         # Régression visuelle V2.1 : les QLabel ne doivent pas devenir
         # des rectangles opaques autour de chaque texte.
