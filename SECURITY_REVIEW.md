@@ -1,3 +1,27 @@
+## Candidat V2.4.2 : installateur Windows visible, non publié
+
+Le comportement V2.4.1 (ZIP uniquement) a été conservé en secours.
+Pour les releases contenant un installateur Inno Setup :
+- SHA-256 de l'installateur et provenance GitHub vérifiés au téléchargement,
+  puis SHA-256 et structure PE vérifiés de nouveau juste avant l'ouverture.
+- Une confirmation utilisateur explicite est requise ; le programme
+  ouvre l'assistant Windows normal via os.startfile, sans session cachée,
+  sans script PowerShell, sans commande d'élévation forcée.
+- Installer par utilisateur dans LocalAppData/Programs, AppId fixe,
+  mises à jour successives dans le même dossier, interaction Windows Restart Manager.
+- Aucune exclusion antivirus, modification de Defender, tâche planifiée
+  ou suppression des données utilisateur.
+- Tests GitHub : deux installations successives sur runner Windows,
+  vérification du SHA-256 installé, conservation d'un marqueur utilisateur.
+
+Les deux anciens signalements Defender restent non résolus.
+**Un binaire compilé et fonctionnel n'est pas automatiquement sûr.**
+Le workflow de release impose toujours l'approbation spécifique V2.4.2
+via la variable VALHEIM_WINDOWS_APPROVED_VERSION=2.4.2 avant publication.
+La signature Authenticode et une revue indépendante du binaire restent
+des prérequis recommandés pour une distribution publique.
+
+---
 # Analyse de sécurité — distribution Windows V2.4.1 (non approuvée)
 
 ## Incident du 15 novembre 2026
