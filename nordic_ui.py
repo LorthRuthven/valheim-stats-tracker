@@ -454,6 +454,21 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             self.icon_status=label('Sélectionne le dossier contenant valheim.exe.',muted=True,wrap=True)
             icon_layout.addWidget(self.icon_status)
             inner.layout().insertWidget(3,icons)
+            wiki, wiki_layout=panel('IMAGES DU WIKI VALHEIM',
+                'Complète les illustrations absentes depuis le wiki communautaire. '
+                'Les sprites déjà extraits du jeu restent prioritaires.')
+            wiki_button=QPushButton('Compléter les images manquantes du catalogue')
+            wiki_button.clicked.connect(self._open_collection_wiki)
+            wiki_layout.addWidget(wiki_button)
+            wiki_layout.addWidget(label(
+                'Les téléchargements se font seulement au besoin ; maximum 20 par action. '
+                'Une attribution renvoie à chaque page du wiki.',muted=True,wrap=True))
+            inner.layout().insertWidget(4,wiki)
+
+    def _open_collection_wiki(self):
+        self.show_page(10)
+        self.collection_page._fetch_missing()
+
     def _open_icon_report(self):
         from v2_core import app_dir
         file=app_dir()/'game_icons'/'extraction-report.json'
