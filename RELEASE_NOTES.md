@@ -1,3 +1,25 @@
+# Valheim Stats Tracker V2.4.1 — Révision de sécurité (NON PUBLIÉE)
+
+Cette version est **candidature de sécurité uniquement**. Aucune distribution Windows
+ne sera présentée comme sûre avant vérification indépendante des alertes
+\`Trojan:Win32/Bearfoos.A!ml\` et \`Behavior:Win32/DefenseEvasion.A!ml\`.
+
+- Suppression totale de l'installateur PowerShell caché, y compris
+  \`-ExecutionPolicy Bypass\`, la copie en arrière-plan et le redémarrage automatique.
+- Conservation de la recherche de version et du téléchargement depuis les releases
+  officielles GitHub, avec validation SHA-256 du ZIP.
+- L'utilisateur reçoit un ZIP vérifié dans le dossier de mises à jour, sans extraction
+  ni lancement de logiciel par l'application.
+- Aucun changement du suivi des 47 statistiques, des douze pages, du stockage de
+  sauvegardes, des favoris ou de l'extraction des images Valheim.
+- Tests de sécurité supplémentaires contre les archives ZIP mal formées et
+  les téléchargements non officiels.
+- Le pipeline de publication exige une approbation explicite de la version.
+
+**À lire avant diffusion :** \`SECURITY_REVIEW.md\`.
+
+---
+
 # Valheim Stats Tracker V2.4.0 — Statistiques du Viking
 
 ## Nouvelle page « Statistiques du Viking »
