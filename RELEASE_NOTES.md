@@ -1,15 +1,20 @@
-# Valheim Stats Tracker V2.2.4 — Redémarrage Windows plus fiable
+# Valheim Stats Tracker V2.2.5 — Lancement automatique de l'updater Windows
 
-## Correction de l'updater Windows
-- **Installation et démarrage séparés** : une mise à jour dont tous les fichiers ont été copiés ne sera plus automatiquement annulée parce que Windows refuse de lancer le nouvel EXE.
-- En cas de refus de redémarrage, la version installée et la **sauvegarde de l'ancienne version** sont conservées.
-- Le programme affiche un message indiquant le chemin de l'EXE, le journal de diagnostic et les vérifications à effectuer si Windows affiche un avertissement.
-- Le journal `%LOCALAPPDATA%\\ValheimStatsTracker\\updates\\install.log` sépare clairement `INSTALL_OK`, `RELAUNCH_OK` et `RELAUNCH_ERROR`.
-- Test Windows automatisé : installation réussie, redémarrage simulé refusé, nouvelle version conservée, pas de rollback injustifié.
-- Les vrais échecs de copie continuent de déclencher la restauration de l'ancienne version.
+## Correction du lancement de l'installateur
+Après confirmation sur le PC utilisateur : les ZIP et le script `install.ps1` sont bien créés, le script fonctionne manuellement, mais aucun `install.log` n'apparaît depuis l'application.
 
-## Sécurité et limite
-- Cette mise à jour **ne contourne pas SmartScreen ni Microsoft Defender**. Windows peut encore demander une confirmation pour un nouvel EXE non signé. La solution durable pour réduire ces avertissements est de signer les binaires avec un certificat de signature de code reconnu.
-- Les fonctions et améliorations V2.2.3 restent présentes : interface agrandie, réglage de taille, vraie extraction d'icônes Valheim et rapport détaillé.
+- PowerShell est maintenant lancé via son **chemin Windows absolu** plutôt que via une recherche dans le PATH de l'application.
+- En environnement **PyInstaller**, la recherche des DLL système est rétablie temporairement pour lancer PowerShell, comme le recommande la documentation PyInstaller.
+- Le lancement est indépendant du processus Qt, sans `DETACHED_PROCESS`, mais sans fenêtre console.
+- L'environnement enfant est marqué comme indépendant de PyInstaller pour le lancement ultérieur du nouvel exécutable.
+- Deux journaux distincts sont désormais conservés dès la tentative de lancement :
+  - `%LOCALAPPDATA%\\ValheimStatsTracker\\updates\\launcher.log` : demande et PID du lancement, erreurs immédiates.
+  - `%LOCALAPPDATA%\\ValheimStatsTracker\\updates\\powershell-output.log` : sortie et erreurs PowerShell avant la création éventuelle de `install.log`.
+- `install.log` reste le journal de l'installation, de la copie et du redémarrage.
 
-Les sauvegardes Valheim, historiques, statistiques et favoris ne sont pas remplacés.
+## Validation
+- Nouveau **test de lancement de PowerShell depuis le véritable exécutable Windows PyInstaller**, et non seulement depuis Python ou PowerShell manuellement.
+- Tests existants inchangés : lecture des sauvegardes, écrans Qt, extraction d'icônes, contrôles d'intégrité ZIP, redémarrage et rollback.
+- Aucune désactivation ou exclusion de Microsoft Defender ou SmartScreen.
+
+Les sauvegardes de personnages, l'historique et les favoris restent dans le dossier local habituel.
