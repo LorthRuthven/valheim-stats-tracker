@@ -53,36 +53,70 @@ def achievement_icon(title):
     if not isinstance(title,str):return QIcon()
     return _find_asset('achievements',title)
 
-def game_icon(prefab):
-    if not isinstance(prefab,str):return QIcon()
-    from v2_core import app_dir
-    variants=[prefab,prefab.removeprefix('$item_'),prefab.removeprefix('$piece_')]
-    local=app_dir()/'game_icons'
+@lru_cache(maxsize=8)
+def _local_aliases(index_file, modified_ns):
+    """Lit l'index une fois par révision, pas à chaque ligne de catalogue."""
     try:
-        local_index=json.loads((local/'index.json').read_text(encoding='utf-8'))
-        if not isinstance(local_index,dict):
-            local_index={}
-        aliases=local_index.get('aliases',{})
-    except (OSError,ValueError):
-        aliases={}
-    if isinstance(aliases,dict):
-        for variant in variants:
-            value=aliases.get(_slug(variant))
-            if isinstance(value,str) and value.endswith('.png') and '/' not in value and '\\' not in value and '..' not in value:
-                matched=_qicon(local/value)
-                if not matched.isNull():
-                    return matched
+        value=json.loads(Path(index_file).read_text(encoding='utf-8'))
+        aliases=value.get('aliases',{}) if isinstance(value,dict) else {}
+        return aliases if isinstance(aliases,dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+def _icon_candidates(token):
+    """Correspondances exactes seulement : aucun rapprochement flou."""
+    if not isinstance(token,str):
+        return ()
+    raw=token.strip().removeprefix('$')
+    candidates=[raw]
+    prefixes=('item_', 'enemy_', 'piece_', 'pickable_', 'animal_', 'ship_', 'tool_')
+    for prefix in prefixes:
+        if raw.casefold().startswith(prefix):
+            candidates.append(raw[len(prefix):])
+            break
+    result=[]
+    for item in candidates:
+        key=_slug(item)
+        if key and key not in result:
+            result.append(key)
+    return tuple(result)
+
+def game_icon(prefab):
+    """Icône authentique extraite localement, sinon ressource officielle embarquée."""
+    if not isinstance(prefab,str):
+        return QIcon()
+    from v2_core import app_dir
+    local=app_dir()/'game_icons'
+    index_file=local/'index.json'
+    try:
+        revision=index_file.stat().st_mtime_ns
+    except OSError:
+        revision=0
+    aliases=_local_aliases(str(index_file),revision)
+    variants=_icon_candidates(prefab)
     for variant in variants:
-        safe=_slug(variant)
-        if not safe:continue
+        value=aliases.get(variant)
+        if (isinstance(value,str) and value.endswith('.png')
+                and '/' not in value and '\\' not in value and '..' not in value):
+            matched=_qicon(local/value)
+            if not matched.isNull():
+                return matched
+    for variant in variants:
         for ext in ('.png','.jpg'):
-            path=local/(safe+ext)
-            ico=_qicon(path)
-            if not ico.isNull():return ico
+            icon=_qicon(local/(variant+ext))
+            if not icon.isNull():
+                return icon
     for variant in variants:
-        ico=_find_asset('items',variant)
-        if not ico.isNull():return ico
+        icon=_find_asset('items',variant)
+        if not icon.isNull():
+            return icon
     return QIcon()
+
+def reset_icon_cache():
+    """Appelé après une nouvelle extraction pour actualiser immédiatement toutes les pages."""
+    _local_aliases.cache_clear()
+    _qicon.cache_clear()
+
 
 def hero_photo():
     path=bundled_assets()/'hero.jpg'
