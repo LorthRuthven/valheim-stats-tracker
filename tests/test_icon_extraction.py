@@ -10,7 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace as NS
 
 from game_icon_extraction import (
-    IconExtractionError, bundle_paths, extract_owned_icons, icon_aliases, verify_fmod_runtime
+    IconExtractionError, bundle_paths, extract_owned_icons, icon_aliases, verify_fmod_runtime, verify_archspec_runtime
 )
 
 try:
@@ -36,6 +36,15 @@ def object_of(kind, name, image=None, fail=False):
 
 
 class IconExtractionTests(unittest.TestCase):
+    def test_archspec_cpu_json_is_required_in_windows_package(self):
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(IconExtractionError, 'microarchitectures.json'):
+                verify_archspec_runtime(Path(temp))
+            file = Path(temp)/'archspec'/'json'/'cpu'/'microarchitectures.json'
+            file.parent.mkdir(parents=True)
+            file.write_text('{"microarchitectures": {}}', encoding='utf-8')
+            self.assertEqual(verify_archspec_runtime(Path(temp)), file)
+
     def test_fmod_native_library_is_required_in_windows_package(self):
         # Test du controle sans installer Windows ni redistribuer de DLL.
         with tempfile.TemporaryDirectory() as temp:
