@@ -101,6 +101,30 @@ jobs:
           if ((Get-Content -LiteralPath (Join-Path $backup 'version-marker.txt')) -ne 'old') { throw 'Sauvegarde de la version précédente manquante' }
           if (-not (Select-String -LiteralPath $log -Pattern 'RELAUNCH_TEST_OK' -Quiet)) { throw 'Redémarrage effectif non validé' }
           Write-Host 'INSTALLATION + REDÉMARRAGE + SAUVEGARDE : OK'
+      - name: Tester un redémarrage bloqué sans annuler une mise à jour réussie
+        shell: pwsh
+        run: |
+          python -c 'from windows_update import INSTALL_PS1; from pathlib import Path; Path("dist/install_blocked.ps1").write_text(INSTALL_PS1, encoding="utf-8-sig")'
+          $root = Join-Path $env:RUNNER_TEMP 'valheim-update-relaunch-failed'
+          $old = Join-Path $root 'old'
+          $new = Join-Path $root 'new'
+          $backup = Join-Path $root 'backup'
+          $log = Join-Path $root 'install.log'
+          New-Item -ItemType Directory -Force -Path $old, $new | Out-Null
+          Set-Content -LiteralPath (Join-Path $old 'ValheimStatsTracker.exe') -Value 'ancien programme'
+          Set-Content -LiteralPath (Join-Path $new 'ValheimStatsTracker.exe') -Value 'nouveau programme'
+          Set-Content -LiteralPath (Join-Path $old 'version-marker.txt') -Value 'old'
+          Set-Content -LiteralPath (Join-Path $new 'version-marker.txt') -Value 'new'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'dist/install_blocked.ps1' -ParentPid 999999 -Source $new -Target $old -Backup $backup -Log $log -SimulateRelaunchFailure -SilentRelaunchFailure
+          $exitCode = $LASTEXITCODE
+          Get-Content -LiteralPath $log
+          if ($exitCode -ne 2) { throw "Redémarrage bloqué non distingué de l'installation : $exitCode" }
+          if ((Get-Content -LiteralPath (Join-Path $old 'version-marker.txt')) -ne 'new') { throw 'Mise à jour annulée malgré une copie réussie' }
+          if ((Get-Content -LiteralPath (Join-Path $backup 'version-marker.txt')) -ne 'old') { throw 'Sauvegarde de secours absente' }
+          if (-not (Select-String -LiteralPath $log -Pattern 'INSTALL_OK' -Quiet)) { throw 'Installation non journalisée' }
+          if (-not (Select-String -LiteralPath $log -Pattern 'RELAUNCH_ERROR' -Quiet)) { throw 'Blocage de redémarrage non journalisé' }
+          if (Select-String -LiteralPath $log -Pattern 'ROLLBACK_START' -Quiet) { throw 'Rollback incorrect en cas de blocage de lancement' }
+          Write-Host 'COPIE PRESERVEE + DIAGNOSTIC DU REDEMARRAGE : OK'
       - name: Transmettre l'archive Windows à la publication
         uses: actions/upload-artifact@v4
         with:
