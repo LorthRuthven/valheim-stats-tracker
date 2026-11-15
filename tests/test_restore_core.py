@@ -45,15 +45,22 @@ class RestoredFeatureTests(unittest.TestCase):
         code=(ROOT/'restored_pages.py').read_text(encoding='utf8')
         self.assertIn('max(0, value-previous)',code)
 
-    def test_windows_installer_logs_and_relaunch_check(self):
-        from windows_update import INSTALL_PS1
+    def test_windows_updater_removes_stealth_processes_and_exe_replacement(self):
+        import inspect
+        import windows_update
+        source=inspect.getsource(windows_update)
+        self.assertNotIn('INSTALL_PS1',source)
+        self.assertNotIn('launch_powershell',source)
+        self.assertNotIn('ExecutionPolicy',source)
+        self.assertNotIn('subprocess',source)
+        self.assertNotIn('rmtree(',source)
+        self.assertNotIn('extractall(',source)
+        self.assertNotIn('install_and_restart',source)
+        self.assertIn('digest.hexdigest()',source)
+        self.assertIn('validate_archive(partial)',source)
         workflow=(ROOT/'.github/workflows/release.yml').read_text(encoding='utf8')
-        for marker in ('BACKUP_OK', 'COPY_OK', 'RELAUNCH_OK',
-                       'RELAUNCH_TEST_OK', 'ROLLBACK_OK', 'INSTALL_ERROR'):
-            self.assertIn(marker, INSTALL_PS1)
-        self.assertIn('if ($process.HasExited)', INSTALL_PS1)
-        self.assertIn('Wait-Process -Id $ParentPid -Timeout', INSTALL_PS1)
-        self.assertIn('Tester remplacement et redémarrage Windows', workflow)
+        self.assertIn('--verify-safe-updater',workflow)
+        self.assertNotIn('--verify-updater-bootstrap',workflow)
 
     def test_windows_updater_archive_security(self):
         from windows_update import validate_archive, UpdateError, version_tuple
