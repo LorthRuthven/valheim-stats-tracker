@@ -21,7 +21,7 @@ jobs:
       - name: Tester le moteur, l'historique et l'updater
         run: python3 -m unittest discover -s tests -v
       - name: Vérifier les fichiers Python
-        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_update_ui.py game_icon_extraction.py display_scaling.py collection_catalog.py collection_page.py wiki_images.py viking_stats.py viking_stats_page.py tools/fetch_game_assets.py
+        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_update_ui.py game_icon_extraction.py display_scaling.py collection_catalog.py collection_page.py wiki_images.py viking_stats.py viking_stats_page.py stat_pictograms.py tools/fetch_game_assets.py
 
   windows:
     runs-on: windows-latest
