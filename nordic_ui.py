@@ -581,12 +581,18 @@ def _verify_unitypy_bundle():
     import sys
     from pathlib import Path
     if os.name == 'nt' and getattr(sys, 'frozen', False):
-        from game_icon_extraction import verify_fmod_runtime
+        from game_icon_extraction import verify_fmod_runtime, verify_archspec_runtime
         dll = verify_fmod_runtime(Path(sys._MEIPASS))
+        verify_archspec_runtime(Path(sys._MEIPASS))
         try:
             ctypes.WinDLL(str(dll))
         except OSError as exc:
             raise RuntimeError(f'fmod.dll presente mais impossible a charger : {dll} : {exc}') from exc
+    # Importer archspec ne suffit pas : son JSON est charge paresseusement.
+    # Forcer un vrai acces au catalogue CPU depuis l'EXE compile.
+    import archspec.cpu
+    if archspec.cpu.TARGETS['x86_64'].name != 'x86_64':
+        raise RuntimeError('La base microarchitectures.json ne peut pas etre lue')
     import UnityPy
     if not callable(UnityPy.load):
         raise RuntimeError('UnityPy.load absent du paquet')
