@@ -8,17 +8,18 @@ from __future__ import annotations
 import math
 import json
 from pathlib import Path
-from PySide6.QtCore import Qt, QByteArray, QRectF, QTimer, QUrl, Property, QPropertyAnimation, QEasingCurve, QObject, Signal
+from PySide6.QtCore import Qt, QByteArray, QRectF, QSize, QTimer, QUrl, Property, QPropertyAnimation, QEasingCurve, QObject, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QIcon, QPixmap, QLinearGradient, QDesktopServices
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QApplication, QFrame, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QStackedWidget, QWidget, QSizePolicy,
-    QGraphicsOpacityEffect, QProgressBar, QCheckBox, QComboBox
+    QGraphicsOpacityEffect, QProgressBar, QCheckBox, QComboBox, QScrollArea
 )
 from desktop_v2 import TrackerWindow as BaseTracker, TrendChart, label, panel
 from restored_pages import RestoredPagesMixin
-from real_assets import hero_photo, achievement_icon, game_icon
+from real_assets import hero_photo, achievement_icon, game_icon, reset_icon_cache
+from collection_page import CollectionPage
 from windows_update_ui import UpdatePanel
 from display_scaling import SCALES, DEFAULT_SCALE, update_readability
 from v2_core import VERSION, progress_ranking
@@ -109,6 +110,16 @@ QScrollBar::handle:vertical{{background:#526b70;border-radius:5px;min-height:30p
 QProgressBar{{background:#0e1b24;border:1px solid #40585c;border-radius:7px;color:#f8e8d1;text-align:center;height:17px;}}
 QProgressBar::chunk{{background:#c39557;border-radius:5px;}}
 QToolTip{{background:#1a2b33;border:1px solid {BRONZE};color:#f5e6cf;padding:8px;}}
+QTreeWidget#achievementList{{border-radius:12px;alternate-background-color:#23353d;}}
+QTreeWidget#achievementList::item{{padding:11px 6px;border-bottom:1px solid #334b50;}}
+QTreeWidget#achievementList::item:selected{{background:#3d554e;color:#fff7e8;}}
+QLabel#achievementHeroTitle{{font:bold 15pt Segoe UI;color:#f5d49a;}}
+QLabel#collectionDetailTitle{{font:bold 16pt Segoe UI;}}
+QLabel#collectionDetailStatus{{font:bold 11pt Segoe UI;color:#a9dbc6;}}
+QLabel#collectionSummary{{font:bold 10pt Segoe UI;color:#e8c493;}}
+QLabel#collectionPreview{{background:#111e27;border:1px solid #3a545a;border-radius:12px;padding:10px;}}
+QTableWidget#collectionTable::item{{padding:9px 7px;}}
+
 """
 
 class Artwork(QWidget):
@@ -213,6 +224,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         ('Activités','Objets'),
         ('Compétences','Compétences'),
         ('Compteurs bruts','Statistiques'),
+        ('Encyclopédie','Collection'),
     ]
     def __init__(self,store=None):
         self.motion=True
@@ -221,7 +233,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.icon_events.finished.connect(self._icons_finished)
         self.icon_events.progress.connect(self._icons_progress)
         super().__init__(store=store)
-        self.setWindowTitle('Valheim Stats Tracker • Chroniques nordiques • '+VERSION)
+        self.setWindowTitle('Valheim Stats Tracker • Collections & progression • '+VERSION)
         self.setStyleSheet(QSS)
         self.setMinimumSize(1100,740)
         self.resize(1580,940)
@@ -251,15 +263,28 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         tag.setStyleSheet('color:#ddae6f;font:9pt Segoe UI;')
         menu.addWidget(tag);menu.addSpacing(4)
         menu.addWidget(label('LES CHAPITRES',muted=True))
+        # La navigation reste accessible sur les petits ecrans, meme avec 11 pages.
+        nav_scroller=QScrollArea()
+        nav_scroller.setWidgetResizable(True)
+        nav_scroller.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        nav_scroller.setFrameShape(QFrame.Shape.NoFrame)
+        nav_container=QWidget()
+        nav_layout=QVBoxLayout(nav_container)
+        nav_layout.setContentsMargins(0,0,0,0)
+        nav_layout.setSpacing(4)
         self.nav_buttons=[]
+        nav_icons=('home','trophy','skull','history','settings',
+                   'trophy','skull','axe','tree','settings','compass')
         for idx,(name,_) in enumerate(self.NAV):
             btn=QPushButton(name);btn.setObjectName('nav');btn.setCheckable(True)
             btn.setMinimumHeight(35)
-            btn.setIcon(rune_icon(('home','trophy','skull','history','settings','trophy','skull','axe','tree','settings')[idx]))
+            btn.setIcon(rune_icon(nav_icons[idx]))
             btn.clicked.connect(lambda _=False,i=idx:self.show_page(i))
-            menu.addWidget(btn);self.nav_buttons.append(btn)
-        menu.addStretch()
-        glimpse=PhotoArtwork(HERO,72)
+            nav_layout.addWidget(btn);self.nav_buttons.append(btn)
+        nav_layout.addStretch(1)
+        nav_scroller.setWidget(nav_container)
+        menu.addWidget(nav_scroller,1)
+        glimpse=PhotoArtwork(HERO,55)
         menu.addWidget(glimpse)
         menu.addWidget(label('PERSONNAGE',muted=True))
         self.sidebar_character=label('Aucun personnage',wrap=True)
@@ -287,6 +312,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.stack=QStackedWidget();ml.addWidget(self.stack,1)
         self._make_dashboard();self._make_achievements();self._make_combat()
         self._make_history();self._make_settings();self._make_restored_pages()
+        self._make_collection_page()
         row.addWidget(main,1)
         self.statusBar().showMessage('Sans mod • Lecture seule • Vérification toutes les 5 secondes')
     def _scroll_page(self):
@@ -306,6 +332,64 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         super()._make_dashboard()
         self.dash_priority.verticalHeader().setDefaultSectionSize(47)
         self.dash_priority.cellDoubleClicked.connect(self._jump_to_achievement)
+    def _make_collection_page(self):
+        self.collection_page=CollectionPage(self)
+        self.stack.addWidget(self.collection_page)
+
+    def _make_achievements(self):
+        super()._make_achievements()
+        self.ach_tree.setObjectName('achievementList')
+        self.ach_tree.setIconSize(QSize(52,52))
+        self.ach_tree.setAlternatingRowColors(True)
+        detail=self.stack.widget(1).layout().itemAt(1).widget()
+        content=detail.layout()
+        hero=QHBoxLayout()
+        self.ach_large_icon=QLabel('Illustration indisponible')
+        self.ach_large_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.ach_large_icon.setFixedSize(104,104)
+        self.ach_large_icon.setWordWrap(True)
+        self.ach_large_icon.setStyleSheet(
+            'background:#10212a;border:1px solid #425a5c;border-radius:12px;color:#a8bbb6;')
+        hero.addWidget(self.ach_large_icon)
+        textcol=QVBoxLayout()
+        self.ach_state=QLabel('Sélectionne un succès pour afficher sa progression.')
+        self.ach_state.setObjectName('achievementHeroTitle')
+        self.ach_state.setWordWrap(True)
+        textcol.addWidget(self.ach_state)
+        self.ach_condition_count=label('',muted=True,wrap=True)
+        textcol.addWidget(self.ach_condition_count)
+        hero.addLayout(textcol,1)
+        content.insertLayout(2,hero)
+        self.ach_bar.setMinimumHeight(23)
+
+    def draw_success_detail(self):
+        super().draw_success_detail()
+        if not hasattr(self,'ach_large_icon'):
+            return
+        achievement=next((x for x in getattr(self,'results',[])
+                          if x['key']==getattr(self,'selected_achievement','')),None)
+        self.ach_large_icon.clear()
+        if not achievement:
+            self.ach_large_icon.setText('Illustration indisponible')
+            self.ach_state.setText('Aucun succès sélectionné')
+            self.ach_condition_count.clear()
+            return
+        visual=achievement_icon(achievement.get('title_en',''))
+        if visual.isNull():
+            self.ach_large_icon.setText('Icône officielle indisponible')
+        else:
+            self.ach_large_icon.setPixmap(visual.pixmap(QSize(92,92)))
+        self.ach_state.setText(
+            'OBJECTIF ATTEINT' if achievement.get('complete') else
+            ('PROGRESSION EN COURS' if achievement.get('measurable')
+             else 'PROGRESSION NON CALCULABLE')
+        )
+        self.ach_condition_count.setText(
+            f"{achievement.get('category','')}  •  "
+            f"{achievement.get('completed_conditions',0)} / "
+            f"{achievement.get('total_conditions',0)} critères"
+        )
+
     def _make_settings(self):
         super()._make_settings()
         area=self.stack.widget(4)
@@ -424,10 +508,11 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         else:
             self.icon_progress.setValue(100)
             self.icon_status.setText(f'{count} vraies icônes disponibles.\n'+details)
-            from real_assets import _qicon
-            _qicon.cache_clear()
+            reset_icon_cache()
             self._refresh_restored_pages()
             self.draw_achievements()
+            self.draw_combat()
+            self.collection_page.refresh(self.store.profile)
 
     def _appearance_path(self):
         return self.store.directory/'appearance.json'
@@ -501,6 +586,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         super().populate()
         self._refresh_restored_pages()
         profile=self.store.profile
+        self.collection_page.refresh(profile)
         if profile:
             self.hero.title.setText('LA SAGA DE '+profile['name'].upper())
             active=[a for a in self.results if a.get('origin')=='Jeu + Steam']
@@ -513,7 +599,10 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         ranked=progress_ranking(self.results,self.store.favorites())[:8]
         for idx,a in enumerate(ranked):
             item=self.dash_priority.item(idx,0)
-            if item:item.setIcon(rune_icon('trophy',24))
+            if item:
+                icon=achievement_icon(a.get('title_en',''))
+                if not icon.isNull():
+                    item.setIcon(icon)
             bar=QProgressBar();bar.setRange(0,1000)
             percent=float(a.get('percent') or 0)
             goal=round(percent*10)
@@ -537,6 +626,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             result=index.get(item.data(0,Qt.ItemDataRole.UserRole),{})
             ico=achievement_icon(result.get('title_en',''))
             if not ico.isNull():item.setIcon(0,ico)
+            item.setSizeHint(0,QSize(0,69))
         if hasattr(self,'ach_category'):
             category=self.ach_category.currentText()
             origin=self.ach_origin.currentIndex()
