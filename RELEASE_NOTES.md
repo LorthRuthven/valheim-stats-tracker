@@ -1,20 +1,19 @@
-# Valheim Stats Tracker V2.2.5 — Lancement automatique de l'updater Windows
+# Valheim Stats Tracker V2.2.6 — Correctif d'extraction des véritables icônes
 
-## Correction du lancement de l'installateur
-Après confirmation sur le PC utilisateur : les ZIP et le script `install.ps1` sont bien créés, le script fonctionne manuellement, mais aucun `install.log` n'apparaît depuis l'application.
+## Cause confirmée par le rapport de la V2.2.5
+La lecture de 802 ressources locales Valheim a détecté **2 098 sprites** et **3 359 textures**, mais enregistré **0 image**. Les erreurs répétées indiquent :
+`PyInstallerImportError: Failed to load dynlib/dll ... fmod_toolkit/libfmod/Windows/x64/fmod.dll`.
 
-- PowerShell est maintenant lancé via son **chemin Windows absolu** plutôt que via une recherche dans le PATH de l'application.
-- En environnement **PyInstaller**, la recherche des DLL système est rétablie temporairement pour lancer PowerShell, comme le recommande la documentation PyInstaller.
-- Le lancement est indépendant du processus Qt, sans `DETACHED_PROCESS`, mais sans fenêtre console.
-- L'environnement enfant est marqué comme indépendant de PyInstaller pour le lancement ultérieur du nouvel exécutable.
-- Deux journaux distincts sont désormais conservés dès la tentative de lancement :
-  - `%LOCALAPPDATA%\\ValheimStatsTracker\\updates\\launcher.log` : demande et PID du lancement, erreurs immédiates.
-  - `%LOCALAPPDATA%\\ValheimStatsTracker\\updates\\powershell-output.log` : sortie et erreurs PowerShell avant la création éventuelle de `install.log`.
-- `install.log` reste le journal de l'installation, de la copie et du redémarrage.
+L'exécutable PyInstaller embarquait `UnityPy`, mais pas explicitement la DLL native de sa dépendance `fmod_toolkit`. Les tests existants créaient de faux sprites et ne chargeaient pas la bibliothèque native.
 
-## Validation
-- Nouveau **test de lancement de PowerShell depuis le véritable exécutable Windows PyInstaller**, et non seulement depuis Python ou PowerShell manuellement.
-- Tests existants inchangés : lecture des sauvegardes, écrans Qt, extraction d'icônes, contrôles d'intégrité ZIP, redémarrage et rollback.
-- Aucune désactivation ou exclusion de Microsoft Defender ou SmartScreen.
+## Changements
+- Construction Windows : inclure `fmod_toolkit` et `fmod.dll` sous le chemin attendu `_internal/fmod_toolkit/libfmod/Windows/x64/fmod.dll`.
+- Bloquer la publication si la DLL source est absente ou si elle manque dans le programme construit.
+- Dans le programme compilé, tester **le chargement réel de fmod.dll** avec `ctypes.WinDLL`, en plus des tests UnityPy et des sprites fictifs.
+- L'extraction signale immédiatement un paquet Windows incomplet au lieu d'analyser des centaines de bundles pour aboutir à zéro image.
+- Conserver les autres tests : 10 pages Qt, affichage, statuts, statistiques, lecture des sauvegardes et updater.
+- Aucun fichier Valheim n'est modifié et aucune icône artificielle ne remplace les vrais sprites.
 
-Les sauvegardes de personnages, l'historique et les favoris restent dans le dossier local habituel.
+**Validation sur ton PC encore nécessaire :** le nouveau test de packaging certifie que la bibliothèque native se charge sur Windows CI ; il ne peut pas garantir à lui seul le nombre final d'icônes extraites de ta version de Valheim.
+
+Pour tester : dans Réglages → Véritables icônes Valheim, relancer l'extraction et consulter `%LOCALAPPDATA%\\ValheimStatsTracker\\game_icons\\extraction-report.json` si nécessaire.
