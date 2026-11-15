@@ -23,7 +23,7 @@ from collection_page import CollectionPage
 from windows_update_ui import UpdatePanel
 from display_scaling import SCALES, DEFAULT_SCALE, update_readability
 from v2_core import VERSION, progress_ranking
-from valheim_reader import BOSSES
+from valheim_reader import BOSSES, prefab_label
 
 BG='#0c1117'; SIDEBAR='#111b22'; PANEL='#17232c'
 BRONZE='#e9b77b'; FG='#f1eee8'; MUTED='#afc0bd'
@@ -645,11 +645,23 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
 
     def draw_combat(self):
         super().draw_combat()
-        # Une vraie icône de trophée uniquement si elle a été vérifiée.
+        if not self.store.profile:
+            return
+        # Correspondances exactes des prefabs du bestiaire et des boss.
         for i,(token,name) in enumerate(BOSSES.items()):
             cell=self.combat_bosses.item(i,0)
             icon=game_icon(token)
             if cell is not None and not icon.isNull():cell.setIcon(icon)
+        group=self.combat_group.currentData()
+        kills=self.store.profile['groups'][group]['enemies'][0]
+        enemies=sorted(((prefab_label(token), count, token)
+                        for token,count in kills.items() if count>0),
+                       key=lambda row:(-row[1],row[0]))
+        for i,(_,__,token) in enumerate(enemies):
+            cell=self.combat_enemies.item(i,0)
+            icon=game_icon(token)
+            if cell is not None and not icon.isNull():
+                cell.setIcon(icon)
 
 
 def main():
