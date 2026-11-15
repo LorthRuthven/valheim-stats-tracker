@@ -50,8 +50,15 @@ class UpdatePanel(QWidget):
         self.check_button.setEnabled(False)
         self.install_button.setEnabled(False)
         def run():
-            try:task()
-            except Exception as exc:self.events.failure.emit(str(exc))
+            try:
+                task()
+            except Exception as exc:
+                # À la fermeture de Qt, le widget peut être détruit alors que
+                # la vérification réseau se termine : ne pas faire échouer le thread.
+                try:
+                    self.events.failure.emit(str(exc))
+                except RuntimeError:
+                    pass
         threading.Thread(target=run,daemon=True).start()
 
     def check(self):
