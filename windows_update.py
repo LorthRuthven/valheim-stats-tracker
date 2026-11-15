@@ -224,6 +224,67 @@ try {
 }
 """
 
+def launch_powershell(script, args, directory):
+    """Lance PowerShell depuis un EXE PyInstaller en enregistrant les echecs precoces.
+
+    Le journal de lancement est ecrit avant de creer le processus enfant.
+    L'installateur utilise son propre install.log une fois le script demarre.
+    """
+    from datetime import datetime as _datetime
+    directory = Path(directory)
+    logs = directory / 'updates'
+    logs.mkdir(parents=True, exist_ok=True)
+    launcher_log = logs / 'launcher.log'
+    process_log = logs / 'powershell-output.log'
+
+    def trace(message):
+        with launcher_log.open('a', encoding='utf-8') as log:
+            log.write(f'{_datetime.now().isoformat(timespec="seconds")} {message}\n')
+
+    script = Path(script).resolve()
+    powershell = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32' / 'WindowsPowerShell' / 'v1.0' / 'powershell.exe'
+    trace(f'LAUNCH_REQUEST source={script} system_powershell={powershell}')
+    if not script.is_file():
+        trace('LAUNCH_ERROR Script PowerShell introuvable')
+        raise UpdateError(f'Script de mise a jour introuvable : {script}')
+    if not powershell.is_file():
+        trace('LAUNCH_ERROR PowerShell Windows absent')
+        raise UpdateError(f'PowerShell Windows introuvable : {powershell}')
+
+    command = [str(powershell), '-NoProfile', '-NonInteractive',
+               '-ExecutionPolicy', 'Bypass', '-File', str(script), *map(str, args)]
+    env = os.environ.copy()
+    # Le nouvel EXE doit etre independant du processus PyInstaller parent.
+    env['PYINSTALLER_RESET_ENVIRONMENT'] = '1'
+    dll_dir = getattr(sys, '_MEIPASS', None) if os.name == 'nt' else None
+    kernel = None
+    try:
+        if dll_dir is not None:
+            # PyInstaller modifie la recherche des DLL dans les enfants Windows.
+            # Restaurer temporairement l'ordre systeme avant de lancer powershell.
+            import ctypes
+            kernel = ctypes.windll.kernel32
+            if not kernel.SetDllDirectoryW(None):
+                raise OSError('SetDllDirectoryW(None) a echoue')
+        try:
+            with process_log.open('ab') as out:
+                out.write((f'\n--- {_datetime.now().isoformat()} PowerShell {script} ---\n').encode('utf-8'))
+                child = subprocess.Popen(
+                    command, cwd=str(directory), env=env,
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW,
+                    stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT,
+                    close_fds=True)
+        finally:
+            if kernel is not None:
+                kernel.SetDllDirectoryW(str(dll_dir))
+    except Exception as exc:
+        trace(f'LAUNCH_ERROR {type(exc).__name__}: {exc}')
+        raise UpdateError(f'Impossible de lancer PowerShell : {exc}. Journal : {launcher_log}') from exc
+
+    trace(f'LAUNCH_PID pid={child.pid} output={process_log}')
+    return child
+
+
 def install_and_restart(staged, directory):
     if os.name!='nt' or not getattr(sys,'frozen',False):
         raise UpdateError('Installe la version Windows autonome pour utiliser cette fonction.')
@@ -241,9 +302,9 @@ def install_and_restart(staged, directory):
     script.write_text(INSTALL_PS1,encoding='utf-8-sig')
     backup=data/'update_backups'/datetime.now().strftime('%Y%m%d_%H%M%S')
     log=data/'updates'/'install.log'
-    subprocess.Popen(
-       ['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',str(script),
-        '-ParentPid',str(os.getpid()),'-Source',str(staged),'-Target',str(folder),
-        '-Backup',str(backup),'-Log',str(log)],
-       cwd=str(data),creationflags=subprocess.CREATE_NEW_PROCESS_GROUP|subprocess.DETACHED_PROCESS,
-       close_fds=True)
+    launch_powershell(
+        script,
+        ['-ParentPid', str(os.getpid()),
+         '-Source', str(staged), '-Target', str(folder),
+         '-Backup', str(backup), '-Log', str(log)],
+        data)

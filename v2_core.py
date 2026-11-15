@@ -20,7 +20,7 @@ from valheim_reader import (
     metrics, prefab_label,
 )
 
-VERSION = "2.2.4"
+VERSION = "2.2.5"
 DATA_FOLDER = "ValheimStatsTracker"
 GAP_SECONDS = 90 * 60
 
