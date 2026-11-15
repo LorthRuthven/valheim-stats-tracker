@@ -15,6 +15,7 @@ import gc
 import json
 import os
 import re
+import sys
 import unicodedata
 from collections import Counter
 from datetime import datetime
@@ -95,6 +96,26 @@ def _is_icon_texture(name):
     ))
 
 
+def verify_fmod_runtime(root=None):
+    """Controle la DLL native requise par UnityPy dans l'application Windows.
+
+    root explicite permet les tests hors Windows. En usage Python non compile,
+    fmod_toolkit gere lui-meme sa bibliotheque native.
+    """
+    if root is None:
+        if os.name != 'nt' or not getattr(sys, 'frozen', False):
+            return None
+        root = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
+    dll = Path(root) / 'fmod_toolkit' / 'libfmod' / 'Windows' / 'x64' / 'fmod.dll'
+    if not dll.is_file():
+        raise IconExtractionError(
+            'Bibliotheque native fmod.dll introuvable dans le programme Windows : '
+            f'{dll}. Reinstalle la version Windows complete du tracker, '
+            'sans copier uniquement ValheimStatsTracker.exe.'
+        )
+    return dll
+
+
 def extract_owned_icons(game_directory, target_directory,
                         notify=lambda n, total, name: None,
                         maximum=MAX_IMAGES, unity_loader=None):
@@ -109,6 +130,8 @@ def extract_owned_icons(game_directory, target_directory,
         except (ImportError, ModuleNotFoundError) as exc:
             raise IconExtractionError('UnityPy n’est pas disponible : ' + str(exc)) from exc
         unity_loader = UnityPy.load
+    # Evite de relire 802 bundles en cas de paquet Windows incomplet.
+    verify_fmod_runtime()
     from PIL import Image
 
     paths = bundle_paths(game_directory)
