@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, security/v2-4-1-no-hidden-updater]
   workflow_dispatch:
 permissions:
   contents: write
@@ -118,6 +118,50 @@ jobs:
           $process = Start-Process -FilePath $exe -ArgumentList '--verify-safe-updater' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Validation ZIP depuis EXE Windows échouée (code $($process.ExitCode))" }
           Write-Host 'Vérification du ZIP sans extraction ni exécution : OK'
+      - name: Compiler l'installateur Windows traditionnel Inno Setup
+        shell: pwsh
+        run: |
+          $compiler = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path -LiteralPath $compiler)) {
+            choco install innosetup --no-progress -y
+            if ($LASTEXITCODE -ne 0) { throw 'Installation du compilateur Inno Setup échouée.' }
+          }
+          if (-not (Test-Path -LiteralPath $compiler)) {
+            throw "Compilateur Inno Setup introuvable : $compiler"
+          }
+          & $compiler 'installer/valheim_stats_tracker.iss'
+          if ($LASTEXITCODE -ne 0) { throw "Échec de construction de l'installateur (code $LASTEXITCODE)." }
+          $version = (Get-Content version.json | ConvertFrom-Json).version
+          $setup = "dist/installer/Valheim_Stats_Tracker_v$($version)_Setup_Windows.exe"
+          if (-not (Test-Path -LiteralPath $setup -PathType Leaf)) { throw "Installateur absent : $setup" }
+          Write-Host "Installateur créé : $setup"
+      - name: Tester l'installation et la mise à jour sans perte de données
+        shell: pwsh
+        run: |
+          $version = (Get-Content version.json | ConvertFrom-Json).version
+          $setup = (Resolve-Path "dist/installer/Valheim_Stats_Tracker_v$($version)_Setup_Windows.exe").Path
+          $install = Join-Path $env:RUNNER_TEMP 'valheim-installer-regression'
+          $userdata = Join-Path $env:LOCALAPPDATA 'ValheimStatsTracker'
+          New-Item -ItemType Directory -Force -Path $userdata | Out-Null
+          $marker = Join-Path $userdata 'ci-do-not-delete-on-update.marker'
+          Set-Content -LiteralPath $marker -Value 'données utilisateur conservées'
+          $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$install")
+          & $setup @arguments
+          if ($LASTEXITCODE -ne 0) { throw "Échec installation Windows (code $LASTEXITCODE)" }
+          $installed = Join-Path $install 'ValheimStatsTracker.exe'
+          if (-not (Test-Path -LiteralPath $installed -PathType Leaf)) { throw 'EXE non installé' }
+          $original = (Get-FileHash 'dist/ValheimStatsTracker/ValheimStatsTracker.exe' -Algorithm SHA256).Hash
+          $deployed = (Get-FileHash $installed -Algorithm SHA256).Hash
+          if ($original -ne $deployed) { throw 'Le fichier installé ne correspond pas au binaire construit.' }
+          & $setup @arguments
+          if ($LASTEXITCODE -ne 0) { throw "Échec mise à jour du même dossier (code $LASTEXITCODE)" }
+          if ((Get-Content -LiteralPath $marker) -ne 'données utilisateur conservées') {
+            throw 'Historique local effacé par la mise à jour'
+          }
+          if ((Get-FileHash $installed -Algorithm SHA256).Hash -ne $original) {
+            throw 'Le deuxième passage du Setup a changé ou supprimé l EXE'
+          }
+          Write-Host 'Installations successives + conservation des données : OK'
       - name: Vérifier l'état de Defender et analyser le binaire si disponible
         shell: pwsh
         run: |
@@ -147,18 +191,20 @@ jobs:
           }
           # Même un résultat propre sur le runner ne remplace pas
           # une analyse indépendante / la décision explicite de publication.
-      - name: Transmettre l'archive Windows à la publication
+      - name: Transmettre le ZIP portable et le véritable installateur Windows
         uses: actions/upload-artifact@v4
         with:
           name: valheim-windows
-          path: dist/*_Windows.zip
+          path: |
+            dist/*_Windows.zip
+            dist/installer/*_Setup_Windows.exe
           if-no-files-found: error
           retention-days: 7
 
   release:
     # Validation manuelle spécifique à la version après analyse indépendante.
-    # Sans variable GitHub VALHEIM_WINDOWS_APPROVED_VERSION=2.4.1, ne RIEN publier.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.VALHEIM_WINDOWS_APPROVED_VERSION == '2.4.1'
+    # Sans variable GitHub VALHEIM_WINDOWS_APPROVED_VERSION=2.4.2, ne RIEN publier.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.VALHEIM_WINDOWS_APPROVED_VERSION == '2.4.2'
     needs: [tests, windows]
     runs-on: ubuntu-latest
     steps:
@@ -178,12 +224,13 @@ jobs:
           TAG="v$VERSION"
           mkdir -p dist
           cp dist/windows/*_Windows.zip dist/
+          cp dist/windows/*_Setup_Windows.exe dist/
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release download "$TAG" -p update.json -D dist
-            gh release upload "$TAG" dist/*_Windows.zip --clobber
+            gh release upload "$TAG" dist/*_Windows.zip dist/*_Setup_Windows.exe --clobber
           else
             python3 tools/build_release.py --tag "$TAG" --repo "$GITHUB_REPOSITORY" --output dist
-            gh release create "$TAG" dist/*.zip dist/update.json --target "$GITHUB_SHA" --title "Valheim Stats Tracker $TAG" --notes-file RELEASE_NOTES.md --latest
+            gh release create "$TAG" dist/*.zip dist/*_Setup_Windows.exe dist/update.json --target "$GITHUB_SHA" --title "Valheim Stats Tracker $TAG" --notes-file RELEASE_NOTES.md --latest
           fi
           cp dist/update.json update.json
           git add -f update.json
