@@ -244,7 +244,8 @@ class CollectionPage(QWidget):
                 else "Aucune image confirmée pour ce prefab."
             )
             self.image_link.setEnabled(False)
-        if self._wiki_active and visual.isNull() and not self._wiki_busy:
+        if (self._wiki_active and visual.isNull() and not self._wiki_busy
+                and self.wiki_cache.can_attempt(entry["token"])):
             self.wiki_timer.start(380)
 
 
@@ -262,7 +263,8 @@ class CollectionPage(QWidget):
         if self.wiki_cache.cached_image(token) is not None:
             self.show_selected()
             return
-        self._start_wiki_download([token])
+        if self.wiki_cache.can_attempt(token):
+            self._start_wiki_download([token])
 
     def _fetch_missing(self):
         if self._wiki_busy:
@@ -333,6 +335,8 @@ class CollectionPage(QWidget):
             f"Cache : {self.wiki_cache.count()} image(s)."
             + ("\nDernier diagnostic : " + missing_reason if missing_reason and found == 0 else "")
         )
+        if self._wiki_active:
+            self.show_selected()
 
     def _clear_wiki_cache(self):
         if self._wiki_busy:
