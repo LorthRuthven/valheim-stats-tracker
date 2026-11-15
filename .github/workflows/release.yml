@@ -21,7 +21,7 @@ jobs:
       - name: Tester le moteur, l'historique et l'updater
         run: python3 -m unittest discover -s tests -v
       - name: Vérifier les fichiers Python
-        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_update_ui.py game_icon_extraction.py display_scaling.py collection_catalog.py collection_page.py wiki_images.py tools/fetch_game_assets.py
+        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_update_ui.py game_icon_extraction.py display_scaling.py collection_catalog.py collection_page.py wiki_images.py viking_stats.py viking_stats_page.py tools/fetch_game_assets.py
 
   windows:
     runs-on: windows-latest
@@ -46,7 +46,7 @@ jobs:
         shell: pwsh
         run: |
           $env:QT_QPA_PLATFORM = 'offscreen'
-          python -c "from PySide6.QtWidgets import QApplication; from nordic_ui import NordicWindow as TrackerWindow; from v2_core import TrackerStore; import tempfile; app=QApplication([]); tmp=tempfile.TemporaryDirectory(); w=TrackerWindow(store=TrackerStore(tmp.name)); assert w.stack.count()==11; assert w.NAV[-1][0]=='Encyclopédie'; assert w.collection_page.table.rowCount()>0; assert w.NAV[0][0]=='Vue d’ensemble'; w.show(); app.processEvents(); assert w.hero.renderer.isValid(); assert not w.grab().isNull(); assert w.update_controller is not None; w.set_motion(False); assert not w.motion; w.close(); tmp.cleanup(); print('Interface Qt V2.1 et illustrations : OK')"
+          python -c "from PySide6.QtWidgets import QApplication; from nordic_ui import NordicWindow as TrackerWindow; from v2_core import TrackerStore; import tempfile; app=QApplication([]); tmp=tempfile.TemporaryDirectory(); w=TrackerWindow(store=TrackerStore(tmp.name)); assert w.stack.count()==12; assert w.NAV[10][0]=='Encyclopédie'; assert w.NAV[11][0]=='Statistiques du Viking'; assert w.collection_page.table.rowCount()>0; assert w.viking_stats_page.cards['trees'] is not None; assert w.NAV[0][0]=='Vue d’ensemble'; w.show(); app.processEvents(); assert w.hero.renderer.isValid(); assert not w.grab().isNull(); assert w.update_controller is not None; w.set_motion(False); assert not w.motion; w.close(); tmp.cleanup(); print('Interface Qt V2.4 : 12 pages et statistiques illustrees OK')"
       - name: Tester les interactions et les animations Qt
         shell: pwsh
         run: |
