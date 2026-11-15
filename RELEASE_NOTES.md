@@ -1,22 +1,15 @@
-# Valheim Stats Tracker V2.2.3 — Lisibilité et extraction d'icônes
+# Valheim Stats Tracker V2.2.4 — Redémarrage Windows plus fiable
 
-## A. Interface plus grande et lisible
-- Réglages → **Taille de l’interface** : Compact, Normal, Grand, Très grand.
-- **Grand par défaut** pour tous les utilisateurs sans préférence enregistrée.
-- Ajustement immédiat des textes, panneaux, menus, champs, boutons et hauteurs des tableaux (dont Succès, Activités et Compétences).
-- Préférences conservées dans `%LOCALAPPDATA%\\ValheimStatsTracker\\appearance.json` ; les animations et la lisibilité restent indépendantes.
-- Navigation plus large pour éviter les libellés coupés. Compatibilité avec Full HD.
+## Correction de l'updater Windows
+- **Installation et démarrage séparés** : une mise à jour dont tous les fichiers ont été copiés ne sera plus automatiquement annulée parce que Windows refuse de lancer le nouvel EXE.
+- En cas de refus de redémarrage, la version installée et la **sauvegarde de l'ancienne version** sont conservées.
+- Le programme affiche un message indiquant le chemin de l'EXE, le journal de diagnostic et les vérifications à effectuer si Windows affiche un avertissement.
+- Le journal `%LOCALAPPDATA%\\ValheimStatsTracker\\updates\\install.log` sépare clairement `INSTALL_OK`, `RELAUNCH_OK` et `RELAUNCH_ERROR`.
+- Test Windows automatisé : installation réussie, redémarrage simulé refusé, nouvelle version conservée, pas de rollback injustifié.
+- Les vrais échecs de copie continuent de déclencher la restauration de l'ancienne version.
 
-## B. Correctif et diagnostic d'extraction des vrais objets Valheim
-- Vérifie la présence de `valheim.exe` et `valheim_Data`.
-- Analyse les asset bundles Valheim et les éventuels fichiers `.assets`.
-- Accepte `Sprite` et les `Texture2D` dont les noms correspondent aux éléments d'interface et d'inventaire.
-- Utilise `parse_as_object()` ou `read()` selon la version de UnityPy.
-- Associe des variantes comme `Icon_Wood` au nom d'objet `Wood`, sans générer de faux dessins.
-- Barre de progression et **rapport détaillé** dans `%LOCALAPPDATA%\\ValheimStatsTracker\\game_icons\\extraction-report.json` : fichiers lus, sprites trouvés, textures trouvées, images enregistrées, erreurs, exemples.
-- **Zéro icône n'est plus une réussite silencieuse** : une erreur explicite pointe vers le rapport de diagnostic.
-- Tests automatisés sur des sprites et textures de démonstration, dont un test depuis l'exécutable Windows assemblé.
+## Sécurité et limite
+- Cette mise à jour **ne contourne pas SmartScreen ni Microsoft Defender**. Windows peut encore demander une confirmation pour un nouvel EXE non signé. La solution durable pour réduire ces avertissements est de signer les binaires avec un certificat de signature de code reconnu.
+- Les fonctions et améliorations V2.2.3 restent présentes : interface agrandie, réglage de taille, vraie extraction d'icônes Valheim et rapport détaillé.
 
-**Limite :** aucune installation réelle de Valheim n’est disponible sur les runners de test. Ces tests valident le fonctionnement de l'extracteur et le diagnostic, mais pas le nombre d'icônes provenant de chaque version du jeu. S'il manque encore des icônes, fournir le rapport pour identifier les bundles problématiques.
-
-La mise à jour Windows continue de conserver les fichiers locaux (sauvegardes, statistiques, historique et favoris).
+Les sauvegardes Valheim, historiques, statistiques et favoris ne sont pas remplacés.
