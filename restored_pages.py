@@ -533,8 +533,11 @@ class RestoredPagesMixin:
         for token, (card, state) in self.boss_cards.items():
             count = int(selected_kills.get(token, 0))
             cleared += bool(count)
-            state.setText(f"{count} victoire(s) enregistrée(s)" if count else
-                          "Aucune victoire enregistrée")
+            status = (f"{count} victoire(s) enregistrée(s)" if count else
+                      "Aucune victoire enregistrée")
+            if token in THEMATIC_BOSS_ICONS:
+                status += " · visuel thématique"
+            state.setText(status)
             card.setStyleSheet(
                 "QFrame#bossVisualCard {background:" +
                 ("#243b37;border:1px solid #96b883;" if count else
