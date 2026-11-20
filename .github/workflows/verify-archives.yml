@@ -37,3 +37,8 @@ jobs:
         shell: pwsh
         run: |
           python -c "from PySide6.QtWidgets import QApplication; from nordic_ui import NordicWindow; from v2_core import TrackerStore; from tempfile import TemporaryDirectory; app=QApplication([]); tmp=TemporaryDirectory(); w=NordicWindow(TrackerStore(tmp.name)); assert w.stack.count()==12; assert w.viking_stats_page.character_selector is not None; assert w.viking_stats_page.import_button.isEnabled(); w.close(); w.store.close(); tmp.cleanup(); print('V2.5 Qt archives OK')"
+
+      - name: Tester les cartes et la sélection Qt par personnage
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m unittest discover -s tests -p test_v2_qt.py -k character_archive_selector_and_cumulative_cards -v
