@@ -512,8 +512,13 @@ class RestoredPagesMixin:
 
     def _make_raw_detail(self):
         page=self._scroll_page()
-        p,pl=panel("COMPTEURS BRUTS",
-           "205 indices par groupe de difficulté ; indices sans nom conservés.")
+        return_button=QPushButton("← Retour aux réglages")
+        return_button.setObjectName("rawBackToSettings")
+        return_button.clicked.connect(lambda _=False:self.show_page(4))
+        page.addWidget(return_button)
+        p,pl=panel("DIAGNOSTIC AVANCÉ — COMPTEURS BRUTS",
+           "205 indices par groupe de difficulté ; indices sans nom conservés. "
+           "Réservé au contrôle et au diagnostic des données .fch.")
         row=QHBoxLayout()
         self.raw_group=group_control()
         self.raw_search=QLineEdit()
