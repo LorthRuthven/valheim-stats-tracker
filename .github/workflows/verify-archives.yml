@@ -58,6 +58,35 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: python -m unittest discover -s tests -p test_v2_qt.py -k character_archive_selector_and_cumulative_cards -v
 
+
+      - name: Préparer les images officielles pour les captures Qt
+        shell: pwsh
+        run: python -m tools.fetch_game_assets
+
+      - name: Télécharger une vraie sauvegarde publique pour le rendu
+        shell: pwsh
+        run: |
+          curl.exe --fail --location --retry 3 --silent --show-error "https://raw.githubusercontent.com/lanchelms/fch-decoder/1a5ff4f767e1bbf2f7955d4dcd22e628eb318427/testdata/Steam_444444_nichael.fch" --output "$env:RUNNER_TEMP/nichael.fch"
+          if (-not (Test-Path -LiteralPath "$env:RUNNER_TEMP/nichael.fch" -PathType Leaf)) { throw 'Fichier FCH public non téléchargé' }
+
+      - name: Capturer toutes les pages de la vraie interface Windows
+        env:
+          QT_QPA_PLATFORM: offscreen
+        shell: pwsh
+        run: |
+          python -m tools.capture_tracker_pages "$env:RUNNER_TEMP/nichael.fch" "captures/v2.5"
+          if ($LASTEXITCODE -ne 0) { throw 'Échec des captures de l’interface Qt' }
+          $screens = @(Get-ChildItem "captures/v2.5" -Filter "*.png")
+          if ($screens.Count -lt 12) { throw "Il manque des pages dans les captures : $($screens.Count)" }
+
+      - name: Joindre les 12 captures et le montage
+        uses: actions/upload-artifact@v4
+        with:
+          name: valheim-v2-5-captures-12-pages
+          path: captures/v2.5/
+          if-no-files-found: error
+          retention-days: 30
+
   defender-candidate:
     name: Compiler et analyser l'EXE Windows candidat
     runs-on: windows-latest
