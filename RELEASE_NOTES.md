@@ -17,11 +17,13 @@
 - La progression des succès Steam et celle du personnage actif ne sont pas affectées par la somme du tracker.
 
 ## Mise à jour Windows sans exécution silencieuse
-Pour réduire les comportements susceptibles de déclencher les protections Windows, l'updater Windows **ne lance plus PowerShell**, n'écrase plus l'exécutable en arrière-plan et ne redémarre pas le programme automatiquement. Il continue de vérifier la version GitHub, de télécharger l'archive Windows officielle et d'en contrôler l'empreinte SHA-256. L'installation se fait ensuite **manuellement**, avec ouverture des dossiers dans l'Explorateur : fermer le programme, renommer l'ancien dossier pour en garder une sauvegarde, copier le nouveau dossier et relancer.
+Le mécanisme de sécurité **V2.4.1**, déjà testé sur Windows, est repris dans V2.5.0. L'application vérifie la version GitHub, télécharge le ZIP officiel et contrôle l'empreinte SHA-256, **sans décompresser, exécuter, ni remplacer elle-même un EXE**, et sans lancer PowerShell. Elle ouvre le dossier de téléchargement. L'utilisateur peut faire analyser le ZIP puis l'extraire **dans un nouveau dossier**, fermer l'ancienne version et lancer la nouvelle.
 
-**Transition depuis V2.4 :** le bouton d'installation de V2.4 utilise encore son ancien mécanisme PowerShell ; pour éviter de le déclencher, installer la V2.5 une première fois depuis l'archive GitHub Releases après fermeture du programme.
+**Transition depuis V2.4 :** le bouton d'installation de V2.4 utilise encore son ancien mécanisme PowerShell. Pour éviter ce mécanisme, télécharger une fois le ZIP de la V2.5 depuis GitHub Releases, et l'installer manuellement après vérification.
 
-**Aucune garantie antivirus absolue** : les EXE restent non signés et la réputation SmartScreen peut varier selon Windows et les mises à jour Defender. Ne pas désactiver les protections pour installer.
+**Diffusion contrôlée :** la compilation et les tests automatiques ne garantissent pas un verdict antivirus. La publication reste bloquée tant que `VALHEIM_WINDOWS_APPROVED_VERSION` n'est pas explicitement défini à `2.5.0` après revue.
+
+**Aucune garantie antivirus absolue :** les EXE restent non signés et la réputation Defender/SmartScreen varie selon les machines et les mises à jour Microsoft. Ne pas désactiver de protections pour installer.
 
 ## Compatibilité
 Le lecteur intégré accepte les sauvegardes Valheim `.fch` **v46 et v47** avec 205 compteurs et validation SHA-512 ; les fichiers d'éditions plus anciennes non compatibles sont signalés individuellement, sans bloquer les autres imports. La fonction est intégrée à l'application **Windows Qt** ; le ZIP Python historique conserve son interface sans nouvelle page.
