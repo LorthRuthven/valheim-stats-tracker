@@ -37,7 +37,7 @@ class SafeWindowsUpdateTests(unittest.TestCase):
                 "version": "2.5.0", "url": "https://github.com/example/test",
                 "sha256": hashlib.sha256(data).hexdigest(),
             }
-            staged = stage_release(update, root / "updates", opener=lambda _: FakeResponse(data))
+            staged = stage_release(update, root / "updates", opener=lambda *_, **__: FakeResponse(data))
             self.assertTrue((staged / "ValheimStatsTracker.exe").exists())
             info = manual_update_instructions(staged, installed)
             self.assertEqual(Path(info["source"]), staged)
@@ -54,7 +54,7 @@ class SafeWindowsUpdateTests(unittest.TestCase):
                 "sha256": "0" * 64,
             }
             with self.assertRaisesRegex(UpdateError, "SHA-256"):
-                stage_release(update, folder, opener=lambda _: FakeResponse(data))
+                stage_release(update, folder, opener=lambda *_, **__: FakeResponse(data))
             self.assertFalse(list(Path(folder).rglob("*.exe")))
 
     def test_missing_staged_executable_rejected(self):
