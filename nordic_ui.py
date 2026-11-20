@@ -331,6 +331,44 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         box.layout().insertWidget(0,lab)
         box.setMinimumHeight(128)
         return box,val
+    def _make_combat(self):
+        super()._make_combat()
+        page=self.stack.widget(2)
+        interior=page.widget() if hasattr(page, 'widget') else None
+        if interior is None:
+            return
+        layout=interior.layout()
+        if layout is None:
+            return
+        summary, sl=panel(
+            'CHRONIQUE DES COMBATS',
+            'Indicateurs enregistrés pour le groupe de difficulté choisi, sans double comptage.'
+        )
+        strip=QHBoxLayout()
+        self.combat_summary_labels={}
+        for key, heading in (
+            ('kills','CRÉATURES ÉLIMINÉES'),
+            ('species','ESPÈCES RENCONTRÉES AU COMBAT'),
+            ('bosses','BOSS VAINCUS'),
+        ):
+            card=QFrame()
+            card.setObjectName('combatMetricCard')
+            card.setStyleSheet(
+                'QFrame#combatMetricCard {background:#172d39;'
+                'border:1px solid #425c64;border-radius:12px;}'
+            )
+            inner=QVBoxLayout(card)
+            inner.setContentsMargins(17,12,17,12)
+            small=label(heading,muted=True,wrap=True)
+            number=label('—')
+            number.setStyleSheet('color:#e9bb7b;font:bold 24pt Segoe UI;')
+            inner.addWidget(small)
+            inner.addWidget(number)
+            strip.addWidget(card,1)
+            self.combat_summary_labels[key]=number
+        sl.addLayout(strip)
+        layout.insertWidget(0,summary)
+
     def _make_dashboard(self):
         super()._make_dashboard()
         self.dash_priority.verticalHeader().setDefaultSectionSize(47)
@@ -681,6 +719,14 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             if cell is not None and not icon.isNull():cell.setIcon(icon)
         group=self.combat_group.currentData()
         kills=self.store.profile['groups'][group]['enemies'][0]
+        if hasattr(self,'combat_summary_labels'):
+            self.combat_summary_labels['kills'].setText(txt(sum(max(0,v) for v in kills.values())))
+            self.combat_summary_labels['species'].setText(
+                str(sum(v>0 for v in kills.values()))
+            )
+            self.combat_summary_labels['bosses'].setText(
+                f"{sum(kills.get(tok,0)>0 for tok in BOSSES)} / {len(BOSSES)}"
+            )
         enemies=sorted(((prefab_label(token), count, token)
                         for token,count in kills.items() if count>0),
                        key=lambda row:(-row[1],row[0]))
