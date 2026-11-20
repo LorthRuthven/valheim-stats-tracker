@@ -14,7 +14,7 @@ from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import (
     QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QHeaderView, QLabel,
     QLineEdit, QMessageBox, QProgressBar, QPushButton, QTableWidget,
-    QTableWidgetItem, QVBoxLayout, QWidget, QSplitter, QFrame,
+    QTableWidgetItem, QVBoxLayout, QWidget, QSplitter, QFrame, QSizePolicy,
 )
 from desktop_v2 import label, panel, table, txt
 from valheim_reader import (
@@ -348,6 +348,9 @@ class RestoredPagesMixin:
             "Une carte par objet : sprite du jeu, nom, famille et quantité exacte. "
             "Les images thématiques sont signalées."
         )
+        self.activity_gallery_panel.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum
+        )
         nav=QHBoxLayout()
         self.activity_gallery_count=label("Aucune activité",muted=True,wrap=True)
         nav.addWidget(self.activity_gallery_count,1)
@@ -367,6 +370,7 @@ class RestoredPagesMixin:
         gallery_layout.addWidget(self.activity_empty)
         self.activity_grid=QGridLayout()
         self.activity_grid.setSpacing(13)
+        self.activity_grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         gallery_layout.addLayout(self.activity_grid)
         self.activity_tiles=[]
         self.activity_page_size=16
