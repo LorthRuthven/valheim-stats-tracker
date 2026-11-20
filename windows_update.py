@@ -112,5 +112,4 @@ def manual_update_instructions(staged, executable=None):
     return {
         'source': str(staged),
         'target': str(destination),
-        'archive': str(staged.parent.parent / (staged.parent.name.removeprefix('new_') + '.zip')),
     }
