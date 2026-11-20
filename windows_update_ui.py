@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import threading
 import os
+from pathlib import Path
 from PySide6.QtCore import QObject, Signal, Qt, QTimer
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QMessageBox, QProgressBar, QPushButton, QVBoxLayout, QWidget
 
@@ -102,9 +103,10 @@ class UpdatePanel(QWidget):
             "La mise à jour a été téléchargée et contrôlée (SHA-256).\n\n"
             "Pour éviter tout script d'installation caché :\n"
             "1. Ferme complètement Valheim Stats Tracker.\n"
-            "2. Copie le contenu du dossier NOUVEAU vers le dossier ACTUEL "
-            "en remplaçant les anciens fichiers.\n"
-            "3. Relance ValheimStatsTracker.exe.\n\n"
+            "2. Renomme le dossier ACTUEL ValheimStatsTracker en "
+            "ValheimStatsTracker_ancien pour garder une sauvegarde.\n"
+            "3. Copie le dossier NOUVEAU ValheimStatsTracker à sa place.\n"
+            "4. Relance ValheimStatsTracker.exe.\n\n"
             "Tes historiques et favoris restent dans le dossier de données "
             "Windows, séparé de l'application.\n\n"
             "Ouvrir les deux dossiers dans l'Explorateur Windows maintenant ?"
@@ -116,8 +118,8 @@ class UpdatePanel(QWidget):
         )
         if answer==QMessageBox.StandardButton.Yes:
             try:
-                os.startfile(info['source'])
-                os.startfile(info['target'])
+                os.startfile(str(Path(info['source']).parent))
+                os.startfile(str(Path(info['target']).parent))
             except OSError as exc:
                 self._failed("Impossible d'ouvrir les dossiers : "+str(exc))
 
