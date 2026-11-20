@@ -72,7 +72,7 @@ class UpdatePanel(QWidget):
     def install(self):
         if not self.info or not self.info['available']:return
         answer=QMessageBox.question(self,"Mettre à jour Valheim Stats Tracker",
-            "Télécharger la version Windows "+self.info['version']+" ?\\n"
+            "Télécharger la version Windows "+self.info['version']+" ?\n"
             "Le fichier sera contrôlé par SHA-256. "
             "Pour réduire les alertes de sécurité, aucun installateur automatique "
             "ni script caché ne sera lancé. Le remplacement se fera manuellement.")
@@ -99,14 +99,14 @@ class UpdatePanel(QWidget):
             self._failed(str(exc))
             return
         text=(
-            "La mise à jour a été téléchargée et contrôlée (SHA-256).\\n\\n"
-            "Pour éviter tout script d'installation caché :\\n"
-            "1. Ferme complètement Valheim Stats Tracker.\\n"
+            "La mise à jour a été téléchargée et contrôlée (SHA-256).\n\n"
+            "Pour éviter tout script d'installation caché :\n"
+            "1. Ferme complètement Valheim Stats Tracker.\n"
             "2. Copie le contenu du dossier NOUVEAU vers le dossier ACTUEL "
-            "en remplaçant les anciens fichiers.\\n"
-            "3. Relance ValheimStatsTracker.exe.\\n\\n"
+            "en remplaçant les anciens fichiers.\n"
+            "3. Relance ValheimStatsTracker.exe.\n\n"
             "Tes historiques et favoris restent dans le dossier de données "
-            "Windows, séparé de l'application.\\n\\n"
+            "Windows, séparé de l'application.\n\n"
             "Ouvrir les deux dossiers dans l'Explorateur Windows maintenant ?"
         )
         answer=QMessageBox.question(
