@@ -773,6 +773,27 @@ def _verify_wiki_cache():
             raise RuntimeError('Le decodeur Pillow ImageOps ne fonctionne pas')
 
 
+def _verify_safe_updater():
+    """Vérifie l'archive sans exécution ni extraction dans l'EXE PyInstaller."""
+    from tempfile import TemporaryDirectory
+    from pathlib import Path
+    from zipfile import ZipFile
+    from windows_update import validate_archive, UpdateError
+    with TemporaryDirectory() as directory:
+        archive=Path(directory)/'windows.zip'
+        with ZipFile(archive,'w') as package:
+            package.writestr('ValheimStatsTracker/ValheimStatsTracker.exe',b'MZ')
+        validate_archive(archive)
+        archive.write_bytes(b'not a zip')
+        try:
+            validate_archive(archive)
+        except UpdateError:
+            pass
+        else:
+            raise RuntimeError('Archive corrompue acceptée par le vérificateur')
+
+
+
 if __name__=='__main__':
     import sys
     if '--verify-wiki-cache' in sys.argv:
@@ -782,6 +803,14 @@ if __name__=='__main__':
             import traceback
             traceback.print_exc()
             sys.exit(23)
+        sys.exit(0)
+    if '--verify-safe-updater' in sys.argv:
+        try:
+            _verify_safe_updater()
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            sys.exit(22)
         sys.exit(0)
     if '--verify-icon-extractor' in sys.argv:
         try:
