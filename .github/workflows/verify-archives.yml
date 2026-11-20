@@ -75,7 +75,7 @@ jobs:
         shell: pwsh
         run: |
           python -m tools.capture_tracker_pages "$env:RUNNER_TEMP/nichael.fch" "captures/v2.5"
-          if ($LASTEXITCODE -ne 0) { throw 'Échec des captures de l’interface Qt' }
+          if ($LASTEXITCODE -ne 0) { throw 'Erreur : captures interface Qt' }
           $screens = @(Get-ChildItem "captures/v2.5" -Filter "*.png")
           if ($screens.Count -lt 12) { throw "Il manque des pages dans les captures : $($screens.Count)" }
 
