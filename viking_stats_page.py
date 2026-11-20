@@ -131,6 +131,25 @@ class VikingStatsPage(QScrollArea):
         self.summary = label(
             "Charge ton personnage pour consulter ses statistiques.", muted=True, wrap=True)
         tools.addWidget(self.summary)
+        # Vue cumulative et vue individuelle : accès direct, sans ouvrir un menu.
+        view_row = QHBoxLayout()
+        view_row.addWidget(label("AFFICHAGE :", muted=True))
+        self.total_mode_button = QPushButton("CUMUL • Tous les Vikings")
+        self.total_mode_button.setObjectName("statsTotalMode")
+        self.total_mode_button.setCheckable(True)
+        self.total_mode_button.clicked.connect(self.show_total)
+        view_row.addWidget(self.total_mode_button)
+        self.individual_mode_button = QPushButton("INDIVIDUEL • Un Viking")
+        self.individual_mode_button.setObjectName("statsIndividualMode")
+        self.individual_mode_button.setCheckable(True)
+        self.individual_mode_button.clicked.connect(self.show_individual)
+        view_row.addWidget(self.individual_mode_button)
+        view_row.addStretch(1)
+        tools.addLayout(view_row)
+        self.source_hint = label(
+            "Choisis le cumul ou un Viking ; importe des .fch pour enrichir la liste.",
+            muted=True, wrap=True)
+        tools.addWidget(self.source_hint)
         # Le sélecteur est indépendant du personnage suivi automatiquement.
         # Une archive n'est jamais sélectionnée comme sauvegarde active du jeu.
         source_row = QHBoxLayout()
@@ -172,8 +191,9 @@ class VikingStatsPage(QScrollArea):
         filter_row.addWidget(self.difficulty, 2)
         tools.addLayout(filter_row)
         tools.addWidget(label(
-            "Les groupes de difficulté se recouvrent : ne pas les additionner. "
-            "Distance de nage indisponible dans ce format de sauvegarde.",
+            "Les activités enregistrées avant l'apparition de certains compteurs "
+            "peuvent manquer. Les groupes de difficulté se recouvrent : ne les additionne pas. "
+            "Distance de nage non disponible.",
             muted=True, wrap=True))
         self.layout.addWidget(intro)
 
@@ -208,6 +228,8 @@ class VikingStatsPage(QScrollArea):
             return
         report = self.store.archive.import_files(filenames)
         self.refresh(self.active_profile, self.active_previous)
+        if self.people:
+            self.show_total()
         message = (f"{report['added']} personnage(s) ajouté(s)\n"
                    f"{report['updated']} archive(s) actualisée(s)\n"
                    f"{report['unchanged']} fichier(s) déjà connu(s)")
@@ -234,6 +256,23 @@ class VikingStatsPage(QScrollArea):
             self.store.archive.remove(identity)
             self.refresh(self.active_profile, self.active_previous)
 
+    def show_total(self):
+        index = self.character_selector.findData("__total__")
+        if index >= 0:
+            self.character_selector.setCurrentIndex(index)
+            self.select_character()
+
+    def show_individual(self):
+        if not self.people:
+            return
+        active_id = character_key(self.active_profile) if self.active_profile else None
+        available = [p["id"] for p in self.people]
+        identity = active_id if active_id in available else available[0]
+        index = self.character_selector.findData(identity)
+        if index >= 0:
+            self.character_selector.setCurrentIndex(index)
+            self.select_character()
+
     def select_character(self, *_):
         identity = self.character_selector.currentData()
         entry = next((p for p in self.people if p["id"] == identity), None)
@@ -255,6 +294,27 @@ class VikingStatsPage(QScrollArea):
             self.previous = None
             self._favorite_target = ""
             description = "Aucun personnage importé"
+        is_total = identity == "__total__" and bool(self.people)
+        self.total_mode_button.setEnabled(bool(self.people))
+        self.individual_mode_button.setEnabled(bool(self.people))
+        self.total_mode_button.setChecked(is_total)
+        self.individual_mode_button.setChecked(bool(entry))
+        if is_total:
+            self.source_hint.setText(
+                f"Vue cumulative de {len(self.people)} Viking(s). "
+                "Activités additionnées, records conservés au maximum, "
+                "exploration réunie ; chaque personnage n'est compté qu'une fois."
+            )
+        elif entry:
+            self.source_hint.setText(
+                f"Vue individuelle : {entry['name']} "
+                f"({'sauvegarde active' if entry['source'] == 'active' else 'archive importée'}). "
+                "Le menu PERSONNAGES permet de choisir un autre Viking."
+            )
+        else:
+            self.source_hint.setText(
+                "Aucun Viking : charge un personnage actif ou importe des sauvegardes .fch."
+            )
         self.remove_button.setEnabled(bool(entry and entry["source"] == "archive"))
         self._favorites = favorites(self._favorite_target, self.directory)
         for key, card in self.cards.items():
@@ -284,9 +344,9 @@ class VikingStatsPage(QScrollArea):
         self.character_selector.clear()
         if self.people:
             self.character_selector.addItem(
-                f"Tous les personnages ({len(self.people)})", "__total__")
+                f"Σ CUMUL DE TOUS LES VIKINGS ({len(self.people)})", "__total__")
         for item in self.people:
-            suffix = "actif" if item["source"] == "active" else "archive"
+            suffix = "Viking actif" if item["source"] == "active" else "Viking archivé"
             self.character_selector.addItem(f"{item['name']}  ·  {suffix}", item["id"])
         choices = [self.character_selector.itemData(i)
                    for i in range(self.character_selector.count())]
