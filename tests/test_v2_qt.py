@@ -287,6 +287,9 @@ class QtWindowTests(unittest.TestCase):
             w.show_page(7)
             w._refresh_activity()
             app.processEvents()
+            from restored_pages import _display_token
+            self.assertEqual(_display_token("$item_raspberry"),"Framboise")
+            self.assertEqual(_display_token("$item_mushroom"),"Champignon")
             self.assertEqual(len(w.activity_rows),25)
             self.assertEqual(w.activity_page_number,0)
             self.assertEqual(len(w.activity_tiles),16)
