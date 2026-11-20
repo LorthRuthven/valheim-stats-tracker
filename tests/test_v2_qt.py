@@ -266,6 +266,72 @@ class QtWindowTests(unittest.TestCase):
             self.assertEqual(w.stack.count(), 12)
             w.close()
 
+    def test_activity_gallery_cards_filters_pagination_and_advanced_tables(self):
+        """La galerie est le rendu principal ; le tableau reste optionnel."""
+        app=QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            w.show()
+            w.set_motion(False)
+            w.store.profile={
+                "name":"Viking de test",
+                "groups":{
+                    "Any":{
+                        "pickables":{f"$item_wood_{i:02d}":float(i+1)
+                                     for i in range(25)},
+                        "picked_up":{},"crafted":{},
+                        "pieces_built":{},"foods_eaten":{}
+                    }
+                }
+            }
+            w.show_page(7)
+            w._refresh_activity()
+            app.processEvents()
+            self.assertEqual(len(w.activity_rows),25)
+            self.assertEqual(w.activity_page_number,0)
+            self.assertEqual(len(w.activity_tiles),16)
+            self.assertEqual(sum(not tile[0].isHidden()
+                                 for tile in w.activity_tiles),16)
+            self.assertTrue(w.activity_next.isEnabled())
+            self.assertFalse(w.activity_prev.isEnabled())
+            self.assertTrue(w.activity_technical_content.isHidden())
+            self.assertEqual(w.activity_items.rowCount(),25)
+            self.assertEqual(w.activity_metrics["types"].text(),"25")
+            w.activity_next.click()
+            app.processEvents()
+            self.assertEqual(w.activity_page_number,1)
+            self.assertEqual(sum(not tile[0].isHidden()
+                                 for tile in w.activity_tiles),9)
+            self.assertTrue(w.activity_prev.isEnabled())
+            self.assertFalse(w.activity_next.isEnabled())
+            w.activity_sort.setCurrentText("Les moins nombreux")
+            self.assertEqual(w.activity_page_number,0)
+            self.assertEqual(w.activity_rows[0][2],1.0)
+            w.activity_search.setText("wood_1")
+            self.assertEqual(len(w.activity_rows),10)
+            w.activity_family.setCurrentText("Métaux et minerais")
+            self.assertFalse(w.activity_rows)
+            self.assertFalse(w.activity_empty.isHidden())
+            w.activity_family.setCurrentText("Toutes les familles")
+            w.activity_search.clear()
+            w.activity_technical_button.click()
+            self.assertTrue(w.activity_technical_button.isChecked())
+            self.assertFalse(w.activity_technical_content.isHidden())
+            self.assertEqual(w.activity_items.rowCount(),25)
+
+            self.assertTrue(w.nav_buttons[9].isHidden())
+            w.show_page(4)
+            w.raw_diagnostic_button.click()
+            self.assertEqual(w.stack.currentIndex(),9)
+            self.assertTrue(w.nav_buttons[4].isChecked())
+            from PySide6.QtWidgets import QPushButton
+            back=w.stack.widget(9).findChild(QPushButton,"rawBackToSettings")
+            self.assertIsNotNone(back)
+            back.click()
+            self.assertEqual(w.stack.currentIndex(),4)
+            w.close()
+            w.store.close()
+
     def test_visual_review_widgets_and_security_update_text(self):
         app=QApplication.instance() or QApplication([])
         from PySide6.QtWidgets import QLabel
