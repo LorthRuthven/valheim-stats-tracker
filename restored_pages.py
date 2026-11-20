@@ -14,7 +14,7 @@ from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import (
     QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QHeaderView, QLabel,
     QLineEdit, QMessageBox, QProgressBar, QPushButton, QTableWidget,
-    QTableWidgetItem, QVBoxLayout, QWidget, QSplitter,
+    QTableWidgetItem, QVBoxLayout, QWidget, QSplitter, QFrame,
 )
 from desktop_v2 import label, panel, table, txt
 from valheim_reader import (
@@ -192,6 +192,48 @@ class RestoredPagesMixin:
         self.boss_table=table(["Boss", "Toutes", "Normal ou +", "Difficile ou +", "Très difficile ou +", "Extrême"])
         self.boss_table.setIconSize(__import__('PySide6.QtCore',fromlist=['QSize']).QSize(40,40))
         self.boss_table.verticalHeader().setDefaultSectionSize(48)
+        # Frise des huit boss : icônes du jeu lorsqu'elles sont disponibles.
+        self.boss_cards = {}
+        overview, cards_layout = panel(
+            "LES HUIT BOSS",
+            "Chaque carte représente un boss enregistré par le personnage, "
+            "pour la difficulté sélectionnée."
+        )
+        grid = QGridLayout()
+        grid.setSpacing(10)
+        for index, (token, name) in enumerate(BOSSES.items()):
+            box = QFrame()
+            box.setObjectName("bossVisualCard")
+            box.setStyleSheet(
+                "QFrame#bossVisualCard {background:#152c35; "
+                "border:1px solid #415c61;border-radius:12px;}"
+            )
+            line = QHBoxLayout(box)
+            line.setContentsMargins(12, 10, 12, 10)
+            picture = QLabel()
+            picture.setFixedSize(50, 50)
+            picture.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            icon = game_icon(token)
+            if not icon.isNull():
+                picture.setPixmap(icon.pixmap(48, 48))
+            else:
+                picture.setText("✦")
+                picture.setStyleSheet("color:#c6a67b;font:bold 22pt Georgia;")
+                picture.setToolTip("Icône authentique indisponible : importe les sprites du jeu.")
+            line.addWidget(picture)
+            texts = QVBoxLayout()
+            title = label(name, wrap=True)
+            title.setStyleSheet("font-weight:700;color:#e9dec7;")
+            state = label("En attente des compteurs", muted=True, wrap=True)
+            texts.addWidget(title)
+            texts.addWidget(state)
+            line.addLayout(texts, 1)
+            grid.addWidget(box, index // 4, index % 4)
+            self.boss_cards[token] = (box, state)
+        cards_layout.addLayout(grid)
+        self.boss_overview = label("Charge un personnage pour découvrir ses victoires.", muted=True, wrap=True)
+        cards_layout.addWidget(self.boss_overview)
+        page.addWidget(overview)
         tl.addWidget(self.boss_table)
         page.addWidget(top,1)
         info,il=panel("CONDITIONS DE VALIDATION",
@@ -232,8 +274,10 @@ class RestoredPagesMixin:
         page=self._scroll_page()
         p,pl=panel("COMPÉTENCES DU VIKING",
            "Niveaux et XP exacts enregistrés dans la dernière sauvegarde.")
-        self.skills_table=table(["Compétence", "Niveau", "XP enregistré", "Niveau relatif"])
-        self.skills_table.verticalHeader().setDefaultSectionSize(42)
+        self.skills_summary = label("En attente des compétences du Viking.", muted=True, wrap=True)
+        pl.addWidget(self.skills_summary)
+        self.skills_table=table(["Compétence", "Niveau", "XP enregistré", "Maîtrise / 100"])
+        self.skills_table.verticalHeader().setDefaultSectionSize(54)
         pl.addWidget(self.skills_table)
         page.addWidget(p,1)
 
@@ -443,6 +487,25 @@ class RestoredPagesMixin:
             lines.append(tuple([display]+[txt(p['groups'][g]['enemies'][0].get(token,0)) for g in groups]))
         _fill_table(self.boss_table,lines,
              [game_icon(token) for token in BOSSES])
+        selected = self.boss_group_choice.currentData()
+        selected_kills = p['groups'][selected]['enemies'][0]
+        cleared = 0
+        for token, (card, state) in self.boss_cards.items():
+            count = int(selected_kills.get(token, 0))
+            cleared += bool(count)
+            state.setText(f"{count} victoire(s) enregistrée(s)" if count else
+                          "Aucune victoire enregistrée")
+            card.setStyleSheet(
+                "QFrame#bossVisualCard {background:" +
+                ("#243b37;border:1px solid #96b883;" if count else
+                 "#152c35;border:1px solid #415c61;") +
+                "border-radius:12px;}"
+            )
+        self.boss_overview.setText(
+            f"{cleared} / {len(BOSSES)} boss distincts enregistrés dans le groupe "
+            f"« {self.boss_group_choice.currentText()} ». "
+            "Les niveaux de difficulté se recouvrent."
+        )
         done={g:sum(p['groups'][g]['enemies'][0].get(tok,0)>0 for tok in BOSSES) for g in groups}
         self.boss_info.setText(
             'Boss distincts validés : '+', '.join(
@@ -467,8 +530,12 @@ class RestoredPagesMixin:
             by_family[family]=by_family.get(family,0)+float(count)
         rows.sort(key=lambda r:(-r[2],r[1].casefold()))
         self.activity_summary.setText(
-            f"{len(rows)} types · {txt(sum(r[2] for r in rows))} unités affichées · "
-            f"Catégorie dominante : {max(by_family,key=by_family.get) if by_family else 'aucune'}")
+            (f"{len(rows)} types · {txt(sum(r[2] for r in rows))} unités affichées · "
+             f"Catégorie dominante : {max(by_family,key=by_family.get)}")
+            if by_family else
+            "Aucune activité correspondante dans cette sauvegarde et ces filtres. "
+            "Un compteur absent ne signifie pas que l'action n'a jamais été réalisée."
+        )
         self.activity_items.setRowCount(len(rows))
         for idx,(family,display,count,key) in enumerate(rows):
             self.activity_items.setItem(idx,0,_table_item(family))
@@ -485,8 +552,23 @@ class RestoredPagesMixin:
             key=lambda p:-float(p[1].get('level',0)))
         _fill_table(self.skills_table,[
             (name,txt(float(d.get('level',0)),2),txt(float(d.get('xp',0)),1),
-             f"{(float(d.get('level',0))%1)*100:.1f} %")
+             f"{max(0, min(100, float(d.get('level',0)))):.0f} / 100")
             for name,d in skills])
+        self.skills_summary.setText(
+            (f"{len(skills)} compétences enregistrées · "
+             f"Plus élevée : {skills[0][0]} "
+             f"(niveau {txt(float(skills[0][1].get('level',0)),1)}).")
+            if skills else "Aucune compétence enregistrée dans ce fichier."
+        )
+        for i, (name, item) in enumerate(skills):
+            level = max(0, min(100, float(item.get('level', 0))))
+            bar = QProgressBar()
+            bar.setRange(0, 1000)
+            bar.setValue(round(level * 10))
+            bar.setFormat(f"{level:.0f} / 100")
+            bar.setMinimumHeight(23)
+            bar.setToolTip(f"{name} : niveau {level:.1f} sur 100")
+            self.skills_table.setCellWidget(i, 3, bar)
 
     def _refresh_raw(self):
         if not self.store.profile or not hasattr(self,'raw_table_restored'):return
