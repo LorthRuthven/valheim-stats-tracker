@@ -109,62 +109,32 @@ jobs:
           $test = Start-Process -FilePath $exe -ArgumentList '--verify-wiki-cache' -Wait -PassThru
           if ($test.ExitCode -ne 0) { throw "Cache Wiki ou Pillow indisponible depuis l'EXE : $($test.ExitCode)" }
           Write-Host 'Import Wiki et Pillow depuis EXE : OK'
-      - name: Tester le lancement de PowerShell depuis le programme Windows compilé
+      - name: Vérifier l'updater sans processus caché
         shell: pwsh
         run: |
-          $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
-          $process = Start-Process -FilePath $exe -ArgumentList '--verify-updater-bootstrap' -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw "L'EXE n'a pas pu lancer PowerShell automatiquement (code $($process.ExitCode))" }
-          Write-Host 'Lancement enfant depuis EXE PyInstaller : OK'
-      - name: Tester remplacement et redémarrage Windows (installation réelle)
+          python -m unittest discover -s tests -p test_windows_update_safe.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Le téléchargement SHA-256 et la préparation manuelle ont échoué.' }
+          $source = Get-Content -Raw windows_update.py
+          if ($source -match 'ExecutionPolicy|subprocess\\.Popen|INSTALL_PS1|install\\.ps1') {
+            throw 'Un ancien mécanisme silencieux reste présent dans windows_update.py.'
+          }
+          Write-Host 'Mise à jour vérifiée et installée manuellement : aucune exécution PowerShell.'
+
+      - name: Vérifier Defender sur l'exécutable si le service est actif
         shell: pwsh
         run: |
-          python -c 'from windows_update import INSTALL_PS1; from pathlib import Path; Path("dist/install_smoke.ps1").write_text(INSTALL_PS1, encoding="utf-8-sig")'
-          $root = Join-Path $env:RUNNER_TEMP 'valheim-update-smoke'
-          $old = Join-Path $root 'old'
-          $new = Join-Path $root 'new'
-          $backup = Join-Path $root 'backup'
-          $log = Join-Path $root 'install.log'
-          New-Item -ItemType Directory -Force -Path $old, $new | Out-Null
-          Set-Content -LiteralPath (Join-Path $old 'ValheimStatsTracker.exe') -Value 'old executable marker'
-          Set-Content -LiteralPath (Join-Path $old 'version-marker.txt') -Value 'old'
-          Copy-Item -Path 'dist/ValheimStatsTracker/*' -Destination $new -Recurse -Force
-          Set-Content -LiteralPath (Join-Path $new 'version-marker.txt') -Value 'new'
-          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'dist/install_smoke.ps1' -ParentPid 999999 -Source $new -Target $old -Backup $backup -Log $log -SmokeTest
-          $exitCode = $LASTEXITCODE
-          if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log }
-          if ($exitCode -ne 0) { throw "Test réel du script de mise à jour échoué : $exitCode" }
-          if ((Get-Content -LiteralPath (Join-Path $old 'version-marker.txt')) -ne 'new') { throw 'Les nouveaux fichiers ne sont pas installés' }
-          if ((Get-Content -LiteralPath (Join-Path $backup 'version-marker.txt')) -ne 'old') { throw 'Sauvegarde de la version précédente manquante' }
-          if (-not (Select-String -LiteralPath $log -Pattern 'RELAUNCH_TEST_OK' -Quiet)) { throw 'Redémarrage effectif non validé' }
-          Write-Host 'INSTALLATION + REDÉMARRAGE + SAUVEGARDE : OK'
-      - name: Tester un redémarrage bloqué sans annuler une mise à jour réussie
-        shell: pwsh
-        run: |
-          python -c 'from windows_update import INSTALL_PS1; from pathlib import Path; Path("dist/install_blocked.ps1").write_text(INSTALL_PS1, encoding="utf-8-sig")'
-          $root = Join-Path $env:RUNNER_TEMP 'valheim-update-relaunch-failed'
-          $old = Join-Path $root 'old'
-          $new = Join-Path $root 'new'
-          $backup = Join-Path $root 'backup'
-          $log = Join-Path $root 'install.log'
-          New-Item -ItemType Directory -Force -Path $old, $new | Out-Null
-          Set-Content -LiteralPath (Join-Path $old 'ValheimStatsTracker.exe') -Value 'ancien programme'
-          Set-Content -LiteralPath (Join-Path $new 'ValheimStatsTracker.exe') -Value 'nouveau programme'
-          Set-Content -LiteralPath (Join-Path $old 'version-marker.txt') -Value 'old'
-          Set-Content -LiteralPath (Join-Path $new 'version-marker.txt') -Value 'new'
-          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'dist/install_blocked.ps1' -ParentPid 999999 -Source $new -Target $old -Backup $backup -Log $log -SimulateRelaunchFailure -SilentRelaunchFailure
-          $exitCode = $LASTEXITCODE
-          Get-Content -LiteralPath $log
-          if ($exitCode -ne 2) { throw "Redémarrage bloqué non distingué de l'installation : $exitCode" }
-          if ((Get-Content -LiteralPath (Join-Path $old 'version-marker.txt')) -ne 'new') { throw 'Mise à jour annulée malgré une copie réussie' }
-          if ((Get-Content -LiteralPath (Join-Path $backup 'version-marker.txt')) -ne 'old') { throw 'Sauvegarde de secours absente' }
-          if (-not (Select-String -LiteralPath $log -Pattern 'INSTALL_OK' -Quiet)) { throw 'Installation non journalisée' }
-          if (-not (Select-String -LiteralPath $log -Pattern 'RELAUNCH_ERROR' -Quiet)) { throw 'Blocage de redémarrage non journalisé' }
-          if (Select-String -LiteralPath $log -Pattern 'ROLLBACK_START' -Quiet) { throw 'Rollback incorrect en cas de blocage de lancement' }
-          Write-Host 'COPIE PRESERVEE + DIAGNOSTIC DU REDEMARRAGE : OK'
-          # GitHub Actions termine la commande PowerShell avec LASTEXITCODE.
-          # Ici le code 2 est attendu et explicitement valide par les assertions.
-          $global:LASTEXITCODE = 0
+          $defender = Get-MpComputerStatus -ErrorAction SilentlyContinue
+          if ($defender -and $defender.AntivirusEnabled -and $defender.AMServiceEnabled) {
+            $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
+            Start-MpScan -ScanType CustomScan -ScanPath $exe -ErrorAction Stop
+            if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+              throw 'Windows Defender a supprimé ou placé en quarantaine le programme.'
+            }
+            Write-Host 'Analyse Defender exécutée sur le programme Windows compilé.'
+          } else {
+            Write-Warning 'Defender indisponible sur ce runner : validation antivirus non garantie.'
+          }
+
       - name: Transmettre l'archive Windows à la publication
         uses: actions/upload-artifact@v4
         with:
