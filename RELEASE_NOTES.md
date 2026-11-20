@@ -16,6 +16,14 @@
 - Le personnage actif prévaut sur une archive portant le même identifiant : aucun double comptage.
 - La progression des succès Steam et celle du personnage actif ne sont pas affectées par la somme du tracker.
 
+## Visuels 100 % issus du jeu — sprites Valheim
+- Tous les anciens **pictogrammes dessinés** des cartes Statistiques du Viking et de la fenêtre de détail du cumul sont remplacés par des **objets et ressources authentiques du jeu**. Les associations sont thématiques pour les statistiques sans icône officielle dédiée.
+- La barre latérale, les boutons et les cartes du tableau de bord utilisent maintenant des sprites du jeu à la place des icônes SVG maison.
+- Les pages **Boss** (trophées réels), **Compétences** (armes, outils et équipements réels), **Combat** et **Activités** utilisent les vrais sprites lorsqu'ils existent. Kall Mandefimbul dispose actuellement d'une illustration Valheim thématique signalée comme telle, sans prétendre être son trophée officiel.
+- Le ZIP Windows embarque un jeu de PNG originaux vérifiés, sélectionnés depuis la bibliothèque publique de sprites de Valheim (révision épinglée), avec un index et un inventaire SHA-256. L'application privilégie toujours les visuels extraits localement du jeu par l'utilisateur.
+- **Protection contre les régressions :** compilation Windows interdite si un des sprites requis est absent ou ne peut pas être chargé par le véritable EXE PyInstaller. Les tests Qt vérifient les pixels au lieu de compter les seuls fichiers.
+- Attributions et origine des images inscrites dans `assets/ATTRIBUTIONS.txt` ; droits des illustrations du jeu réservés à Iron Gate / Coffee Stain, compagnon non officiel.
+
 ## Améliorations de lisibilité et navigation
 - **Modes « CUMUL • Tous les Vikings » et « INDIVIDUEL • Un Viking »** directement visibles dans Statistiques du Viking, en complément du sélecteur par personnage.
 - **Détail cliquable de chaque statistique en mode Cumul** : valeur retenue, toutes les valeurs individuelles triées, source du personnage, pourcentage et barre de contribution pour les sommes. Pour les records, identification du meilleur Viking ; pour les objectifs, personnages ayant atteint la condition. Valeurs brutes précises disponibles pour distances et durées. Les règles des groupes de difficulté restent inchangées.
