@@ -16,6 +16,13 @@
 - Le personnage actif prévaut sur une archive portant le même identifiant : aucun double comptage.
 - La progression des succès Steam et celle du personnage actif ne sont pas affectées par la somme du tracker.
 
+## Mise à jour Windows sans exécution silencieuse
+Pour réduire les comportements susceptibles de déclencher les protections Windows, l'updater Windows **ne lance plus PowerShell**, n'écrase plus l'exécutable en arrière-plan et ne redémarre pas le programme automatiquement. Il continue de vérifier la version GitHub, de télécharger l'archive Windows officielle et d'en contrôler l'empreinte SHA-256. L'installation se fait ensuite **manuellement**, avec ouverture des dossiers dans l'Explorateur : fermer le programme, renommer l'ancien dossier pour en garder une sauvegarde, copier le nouveau dossier et relancer.
+
+**Transition depuis V2.4 :** le bouton d'installation de V2.4 utilise encore son ancien mécanisme PowerShell ; pour éviter de le déclencher, installer la V2.5 une première fois depuis l'archive GitHub Releases après fermeture du programme.
+
+**Aucune garantie antivirus absolue** : les EXE restent non signés et la réputation SmartScreen peut varier selon Windows et les mises à jour Defender. Ne pas désactiver les protections pour installer.
+
 ## Compatibilité
 Le lecteur intégré accepte les sauvegardes Valheim `.fch` **v46 et v47** avec 205 compteurs et validation SHA-512 ; les fichiers d'éditions plus anciennes non compatibles sont signalés individuellement, sans bloquer les autres imports. La fonction est intégrée à l'application **Windows Qt** ; le ZIP Python historique conserve son interface sans nouvelle page.
 
