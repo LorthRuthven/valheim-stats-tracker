@@ -59,6 +59,10 @@ def screenshot_gallery(fch: Path, dest: Path):
         window.resize(1650, 960)
         window.show()
         app.processEvents()
+        # Le runner Windows limite parfois la fenêtre à son écran virtuel au moment de show().
+        window.resize(1650, 960)
+        app.processEvents()
+        print(f"Dimensions rendues : {window.width()} x {window.height()}", flush=True)
         store.choose(str(fch))
         window.refresh_save(force=True)
         app.processEvents()
@@ -73,7 +77,7 @@ def screenshot_gallery(fch: Path, dest: Path):
             window.repaint()
             app.processEvents()
             image = window.grab()
-            if image.isNull() or image.width() < 1400 or image.height() < 700:
+            if image.isNull() or image.width() < 1000 or image.height() < 690:
                 raise RuntimeError(f"Capture incorrecte de la page {index}: {image.size()}")
             output = dest / f"{index + 1:02d}_{slug}.png"
             if not image.save(str(output), "PNG"):
