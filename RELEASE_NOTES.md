@@ -16,6 +16,17 @@
 - Le personnage actif prévaut sur une archive portant le même identifiant : aucun double comptage.
 - La progression des succès Steam et celle du personnage actif ne sont pas affectées par la somme du tracker.
 
+## Améliorations de lisibilité et navigation
+- **Modes « CUMUL • Tous les Vikings » et « INDIVIDUEL • Un Viking »** directement visibles dans Statistiques du Viking, en complément du sélecteur par personnage.
+- **Raccourci « Cumul des Vikings »** dans la barre latérale ; après import de plusieurs fichiers `.fch`, le cumul s'affiche automatiquement.
+- **Boss :** galerie des huit boss avec véritables icônes locales lorsqu'elles existent, nombre de victoires enregistrées et synthèse par difficulté.
+- **Combat :** trois indicateurs (éliminations, espèces et boss distincts) calculés à partir des compteurs du groupe choisi.
+- **Activités :** trois objets ou ressources les plus comptabilisés dans la sélection, avec icônes locales réelles, et message explicatif si le filtre ne renvoie rien.
+- **Compétences :** barres de maîtrise (niveau / 100) et compétence la plus élevée ; les XP enregistrés restent affichés séparément.
+- **Encyclopédie :** zone d'illustration à hauteur fixe et espacement renforcé pour éviter tout chevauchement.
+- **Réglages :** texte mis en conformité avec la mise à jour par ZIP vérifié et installation manuelle sans PowerShell.
+- Tests Qt et captures de chaque page sous Windows pour vérifier ces changements.
+
 ## Mise à jour Windows sans exécution silencieuse
 Le mécanisme de sécurité **V2.4.1**, déjà testé sur Windows, est repris dans V2.5.0. L'application vérifie la version GitHub, télécharge le ZIP officiel et contrôle l'empreinte SHA-256, **sans décompresser, exécuter, ni remplacer elle-même un EXE**, et sans lancer PowerShell. Elle ouvre le dossier de téléchargement. L'utilisateur peut faire analyser le ZIP puis l'extraire **dans un nouveau dossier**, fermer l'ancienne version et lancer la nouvelle.
 
