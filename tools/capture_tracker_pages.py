@@ -118,6 +118,50 @@ def screenshot_gallery(fch: Path, dest: Path):
                 raise RuntimeError("Échec de la sauvegarde du mode")
             print(f"CAPTURE MODE : {output}", flush=True)
 
+        # Démonstration VISUELLE du détail avec deux Vikings : le deuxième
+        # est simulé en mémoire. Aucun faux fichier .fch n'est créé ou importé.
+        # Les captures précédentes restent 100 % issues du personnage public réel.
+        import copy
+        from valheim_reader import STAT_INDEX
+        fictional = copy.deepcopy(store.profile)
+        fictional["name"] = "Viking Démo (fictif)"
+        fictional["player_id"] = 987654321
+        for group_data in fictional.get("groups", {}).values():
+            raw = group_data.get("stats")
+            if isinstance(raw, list) and len(raw) > STAT_INDEX["DistanceRun"]:
+                raw[STAT_INDEX["DistanceRun"]] = 1948292.0
+        stats.people.append({
+            "id": "id:987654321",
+            "name": "Viking Démo (fictif)",
+            "source": "archive",
+            "filename": "EXEMPLE-SIMULÉ.fch",
+            "profile": fictional,
+        })
+        stats.character_selector.addItem(
+            "Viking Démo (fictif)  ·  Viking archivé", "id:987654321")
+        stats.character_selector.setItemText(
+            0, "Σ CUMUL DE TOUS LES VIKINGS (2)"
+        )
+        stats.show_total()
+        stats.verticalScrollBar().setValue(0)
+        app.processEvents()
+        cumshot = dest / "16_DEMONSTRATION-cumul-deux-vikings.png"
+        if not window.grab().save(str(cumshot), "PNG"):
+            raise RuntimeError("Capture du cumul démonstratif impossible")
+        print("CAPTURE DEMO CUMUL :", cumshot, flush=True)
+
+        dialog = stats.open_stat_details("run")
+        if dialog is None:
+            raise RuntimeError("Impossible d'ouvrir le détail de la course")
+        app.processEvents()
+        if len(dialog.rows) != 2:
+            raise RuntimeError("La fiche de démonstration doit contenir deux Vikings")
+        popupshot = dest / "17_DEMONSTRATION-detail-course-par-viking.png"
+        if not dialog.grab().save(str(popupshot), "PNG"):
+            raise RuntimeError("Impossible de capturer le détail du cumul")
+        print("CAPTURE DEMO DETAIL :", popupshot, flush=True)
+        dialog.close()
+
         window.close()
         store.close()
         app.processEvents()
@@ -152,7 +196,9 @@ def screenshot_gallery(fch: Path, dest: Path):
         "Captures authentiques du rendu Qt de Valheim Stats Tracker V2.5.0 sur Windows.\n"
         "Résolution : 1650 x 960.\n"
         "Données : personnage public de test Nichael (.fch v46), jamais modifié.\n"
-        "Les 12 PNG montrent le début de chaque page ; quatre vues supplémentaires détaillent les statistiques et les modes cumul/individuel.\n"
+        "Les 12 PNG montrent le début de chaque page ; quatre vues supplémentaires détaillent les statistiques et les modes cumul/individuel.\n"        "Les fichiers 16 et 17 sont des DEMONSTRATIONS : Viking Démo et ses chiffres sont fictifs,\n"
+        "créés seulement en mémoire pour illustrer les deux lignes du détail du cumul.\n"
+
         "Une capture sur runner GitHub peut différer légèrement de la machine personnelle.\n",
         encoding="utf-8")
     print(f"MONTAGE : {collage}", flush=True)
