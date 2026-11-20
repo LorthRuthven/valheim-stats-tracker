@@ -10,6 +10,7 @@ from PySide6.QtGui import QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QAbstractItemView, QComboBox, QHBoxLayout, QLabel, QLineEdit,
     QMessageBox, QPushButton, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
+    QScrollArea, QFrame,
 )
 import threading
 import time
@@ -111,6 +112,10 @@ class CollectionPage(QWidget):
             "FICHE DE COLLECTION",
             "Les objets sans image authentique ne reçoivent pas d'icône inventée."
         )
+        self.detail_title = label("Sélectionne une entrée", section=True, wrap=True)
+        self.detail_title.setObjectName("collectionDetailTitle")
+        detail_layout.addWidget(self.detail_title)
+        detail_layout.addSpacing(6)
         self.preview = QLabel("Choisis un objet")
         self.preview.setObjectName("collectionPreview")
         self.preview.setFixedHeight(184)
@@ -124,9 +129,6 @@ class CollectionPage(QWidget):
         )
         detail_layout.addWidget(self.preview)
         detail_layout.addSpacing(12)
-        self.detail_title = label("Sélectionne une entrée", section=True, wrap=True)
-        self.detail_title.setObjectName("collectionDetailTitle")
-        detail_layout.addWidget(self.detail_title)
         self.detail_category = label("", muted=True, wrap=True)
         detail_layout.addWidget(self.detail_category)
         self.detail_status = label("", wrap=True)
@@ -141,7 +143,16 @@ class CollectionPage(QWidget):
         self.image_link.clicked.connect(self._open_image_source)
         detail_layout.addWidget(self.image_link)
         detail_layout.addStretch(1)
-        split.addWidget(details)
+        # Un panneau scrollable évite que Qt compresse ses QLabel au point
+        # de superposer le nom de l'objet et l'illustration sur un écran Full HD.
+        details.setMinimumHeight(645)
+        self.detail_scroll = QScrollArea()
+        self.detail_scroll.setObjectName("collectionDetailScroll")
+        self.detail_scroll.setWidgetResizable(True)
+        self.detail_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.detail_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.detail_scroll.setWidget(details)
+        split.addWidget(self.detail_scroll)
         split.setStretchFactor(0, 3)
         split.setStretchFactor(1, 2)
         split.setSizes((780, 360))
