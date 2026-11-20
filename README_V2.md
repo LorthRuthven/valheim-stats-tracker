@@ -67,3 +67,8 @@ L'updater reprend le mécanisme de sécurité V2.4.1 : vérification de GitHub R
 
 Depuis une installation V2.4, utiliser une fois le ZIP officiel depuis le navigateur plutôt que son ancien bouton d'installation PowerShell. Aucune exception antivirus n'est requise ou recommandée.
 
+
+### Détail des statistiques de plusieurs personnages
+Dans **Statistiques du Viking**, choisir **CUMUL • Tous les Vikings** puis cliquer sur n'importe quelle carte ou sur **Voir le détail par Viking**. Une fiche présente le total, la règle de regroupement (somme, meilleur record, validé par au moins un Viking), les valeurs individuelles de chaque personnage, et, pour les sommes positives, leur pourcentage de contribution. Les personnes sont affichées par valeur décroissante, y compris celles à zéro. Une valeur absente de la sauvegarde s'affiche **—**, jamais comme une activité nulle inventée. La difficulté sélectionnée est respectée. Il est impossible de consulter ce détail en mode Individuel, où la présentation habituelle est préservée.
+
+Les captures de validation comprennent un exemple avec un deuxième Viking **fictif**, créé uniquement en mémoire pour illustrer la fenêtre sans modifier ni inventer de véritable fichier `.fch`.
