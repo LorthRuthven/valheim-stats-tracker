@@ -23,6 +23,7 @@ from valheim_reader import (
 )
 from v2_core import progress_ranking, pending_actions, session_report
 from real_assets import achievement_icon, game_icon
+from game_visuals import boss_game_icon, skill_game_icon, THEMATIC_BOSS_ICONS
 
 GROUP_CHOICES = (
     ('Toutes difficultés', 'Any'), ('Normal ou +', 'Default'),
@@ -213,13 +214,18 @@ class RestoredPagesMixin:
             picture = QLabel()
             picture.setFixedSize(50, 50)
             picture.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            icon = game_icon(token)
+            icon = boss_game_icon(token)
             if not icon.isNull():
                 picture.setPixmap(icon.pixmap(48, 48))
+                if token in THEMATIC_BOSS_ICONS:
+                    picture.setToolTip(
+                        "Illustration thématique Valheim, pas le trophée de ce boss."
+                    )
             else:
-                picture.setText("✦")
-                picture.setStyleSheet("color:#c6a67b;font:bold 22pt Georgia;")
-                picture.setToolTip("Icône authentique indisponible : importe les sprites du jeu.")
+                picture.setText("Image\nabsente")
+                picture.setWordWrap(True)
+                picture.setStyleSheet("color:#bcc9c9;font:8pt 'Segoe UI';")
+                picture.setToolTip("L'illustration de ce boss n'est pas disponible.")
             line.addWidget(picture)
             texts = QVBoxLayout()
             title = label(name, wrap=True)
@@ -310,6 +316,7 @@ class RestoredPagesMixin:
         self.skills_summary = label("En attente des compétences du Viking.", muted=True, wrap=True)
         pl.addWidget(self.skills_summary)
         self.skills_table=table(["Compétence", "Niveau", "XP enregistré", "Maîtrise / 100"])
+        self.skills_table.setIconSize(__import__('PySide6.QtCore',fromlist=['QSize']).QSize(40,40))
         self.skills_table.verticalHeader().setDefaultSectionSize(54)
         pl.addWidget(self.skills_table)
         page.addWidget(p,1)
@@ -519,7 +526,7 @@ class RestoredPagesMixin:
         for token,display in BOSSES.items():
             lines.append(tuple([display]+[txt(p['groups'][g]['enemies'][0].get(token,0)) for g in groups]))
         _fill_table(self.boss_table,lines,
-             [game_icon(token) for token in BOSSES])
+             [boss_game_icon(token) for token in BOSSES])
         selected = self.boss_group_choice.currentData()
         selected_kills = p['groups'][selected]['enemies'][0]
         cleared = 0
@@ -574,9 +581,10 @@ class RestoredPagesMixin:
             if not icon.isNull():
                 picture.setPixmap(icon.pixmap(44, 44))
             else:
-                picture.setText("✧")
-                picture.setStyleSheet("color:#c8ab82;font:bold 23pt Georgia;")
-                picture.setToolTip("Icône du jeu non disponible sur cette installation")
+                picture.setText("Image\nabsente")
+                picture.setWordWrap(True)
+                picture.setStyleSheet("color:#bac6c9;font:8pt 'Segoe UI';")
+                picture.setToolTip("Ce prefab n'a pas d'illustration disponible.")
             name.setText(display)
             quantity.setText(f"{txt(count)} unité(s) · {family}")
         self.activity_summary.setText(
@@ -603,7 +611,7 @@ class RestoredPagesMixin:
         _fill_table(self.skills_table,[
             (name,txt(float(d.get('level',0)),2),txt(float(d.get('xp',0)),1),
              f"{max(0, min(100, float(d.get('level',0)))):.0f} / 100")
-            for name,d in skills])
+            for name,d in skills], [skill_game_icon(name) for name,_ in skills])
         self.skills_summary.setText(
             (f"{len(skills)} compétences enregistrées · "
              f"Plus élevée : {skills[0][0]} "
