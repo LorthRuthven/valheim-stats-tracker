@@ -125,7 +125,28 @@ def skill_game_icon(skill):
     return game_icon(SKILL_ITEMS.get(name, "Wishbone"))
 
 
+# Sprites supplémentaires pour le catalogue Activités : vrais objets
+# Valheim identifiés dans items2sprites.csv, non des images thématiques.
+COMMON_ACTIVITY_ITEMS = (
+    "Wood", "FineWood", "Iron", "Carrot", "Honey", "Raspberry",
+    "Mushroom", "Stone", "Flint", "Copper", "Tin", "Bronze",
+    "Silver", "BlackMetal", "BlackMetalScrap", "FlametalNew",
+    "FlametalOre", "FlametalOreNew", "BlackMarble", "Grausten",
+    "YggdrasilWood", "Blackwood", "Eitr", "Sap", "Softtissue",
+    "Resin", "Coal", "RoundLog", "Blueberries", "Cloudberry",
+    "Thistle", "Dandelion", "Turnip", "Onion", "Barley", "Flax",
+    "CarrotSeeds", "TurnipSeeds", "OnionSeeds", "BarleyFlour",
+    "SurtlingCore", "SerpentScale", "Feathers", "Coins",
+    "TrophyBoar", "FishRaw", "DeerHide", "WolfPelt",
+    "Root", "BoneFragments", "Entrails", "LeatherScraps",
+    "DeerMeat", "LoxMeat", "Needle", "Tar", "Obsidian",
+    "Crystal", "Flametal", "CharredBone", "MorgenSinew",
+    "AskHide", "ScaleHide", "BlackCore", "MoltenCore",
+)
+
+
 def required_inventory_items():
-    """Inventaire exact des items officiels à inclure dans l'EXE Windows."""
+    """Vrais items exigés pour les pages et les activités du tracker."""
     return frozenset((*STAT_ITEMS.values(), *NAV_ITEMS.values(),
-                      *BOSS_ITEMS.values(), *SKILL_ITEMS.values()))
+                      *BOSS_ITEMS.values(), *SKILL_ITEMS.values(),
+                      *COMMON_ACTIVITY_ITEMS))
