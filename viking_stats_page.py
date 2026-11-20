@@ -10,9 +10,11 @@ from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QFileDialog, QMessageBox,
 )
 
 from desktop_v2 import label, panel
+from character_archive import aggregation_mode, character_key, combine_profiles
 from real_assets import game_icon
 from stat_pictograms import pictogram
 from viking_stats import (
@@ -85,14 +87,25 @@ class StatCard(QFrame):
             self.delta.setText("")
         else:
             self.delta.setText("↑ +" + pretty(d, self.stat.unit) + " depuis le dernier relevé")
+        rule = ""
+        if profile and profile.get("aggregate"):
+            policy = ("sum" if self.stat.counter == "@world_hours"
+                      else aggregation_mode(self.stat.counter))
+            rule = {"sum": "Somme des personnages", "max": "Meilleur record parmi les personnages",
+                    "any": "Atteint par au moins un personnage"}[policy] + "\n"
         self.setToolTip(f"{self.stat.title}\nCompteur : {self.stat.counter}\n"
-                        f"Groupe : {group}\n{self.stat.note}")
+                        f"Groupe : {group}\n{rule}{self.stat.note}")
 
 
 class VikingStatsPage(QScrollArea):
-    def __init__(self, directory, parent=None):
+    def __init__(self, directory, parent=None, store=None):
         super().__init__(parent)
         self.directory = directory
+        self.store = store
+        self.active_profile = None
+        self.active_previous = None
+        self.people = []
+        self._favorite_target = ""
         self.profile = None
         self.previous = None
         self._favorites = set()
@@ -118,6 +131,26 @@ class VikingStatsPage(QScrollArea):
         self.summary = label(
             "Charge ton personnage pour consulter ses statistiques.", muted=True, wrap=True)
         tools.addWidget(self.summary)
+        # Le sélecteur est indépendant du personnage suivi automatiquement.
+        # Une archive n'est jamais sélectionnée comme sauvegarde active du jeu.
+        source_row = QHBoxLayout()
+        source_row.addWidget(label("PERSONNAGES", muted=True))
+        self.character_selector = QComboBox()
+        self.character_selector.setObjectName("characterStatsSelector")
+        self.character_selector.setMinimumWidth(225)
+        self.character_selector.currentIndexChanged.connect(self.select_character)
+        source_row.addWidget(self.character_selector, 1)
+        self.import_button = QPushButton("Importer des .fch")
+        self.import_button.setObjectName("importFchArchives")
+        self.import_button.setToolTip("Importer plusieurs anciens personnages sans modifier leurs fichiers")
+        self.import_button.clicked.connect(self.import_archives)
+        self.import_button.setEnabled(store is not None)
+        source_row.addWidget(self.import_button)
+        self.remove_button = QPushButton("Retirer l'archive")
+        self.remove_button.clicked.connect(self.remove_archive)
+        self.remove_button.setEnabled(False)
+        source_row.addWidget(self.remove_button)
+        tools.addLayout(source_row)
         filter_row = QHBoxLayout()
         self.search = QLineEdit()
         self.search.setPlaceholderText("Rechercher : arbres, distance, portails, boss…")
@@ -165,23 +198,106 @@ class VikingStatsPage(QScrollArea):
         self.layout.addStretch(1)
         self.refresh(None)
 
-    def refresh(self, profile, previous=None):
-        self.profile = profile
-        self.previous = previous
-        name = profile.get("name", "") if profile else ""
-        self._favorites = favorites(name, self.directory)
+    def import_archives(self):
+        if self.store is None:
+            return
+        filenames, _ = QFileDialog.getOpenFileNames(
+            self, "Importer d'anciens personnages Valheim", "",
+            "Personnages Valheim (*.fch)")
+        if not filenames:
+            return
+        report = self.store.archive.import_files(filenames)
+        self.refresh(self.active_profile, self.active_previous)
+        message = (f"{report['added']} personnage(s) ajouté(s)\n"
+                   f"{report['updated']} archive(s) actualisée(s)\n"
+                   f"{report['unchanged']} fichier(s) déjà connu(s)")
+        if report["errors"]:
+            message += "\n\nFichiers non importés :\n" + "\n".join(report["errors"])
+        QMessageBox.information(self, "Import des personnages", message)
+
+    def remove_archive(self):
+        if self.store is None:
+            return
+        identity = self.character_selector.currentData()
+        entry = next((p for p in self.people
+                      if p["id"] == identity and p["source"] == "archive"), None)
+        if entry is None:
+            return
+        answer = QMessageBox.question(
+            self, "Retirer une archive",
+            f"Retirer {entry['name']} des statistiques du tracker ?\n"
+            "Le fichier .fch d'origine ne sera ni supprimé ni modifié.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer == QMessageBox.StandardButton.Yes:
+            self.store.archive.remove(identity)
+            self.refresh(self.active_profile, self.active_previous)
+
+    def select_character(self, *_):
+        identity = self.character_selector.currentData()
+        entry = next((p for p in self.people if p["id"] == identity), None)
+        if identity == "__total__":
+            self.profile = combine_profiles(p["profile"] for p in self.people)
+            self.previous = None
+            self._favorite_target = "__all_characters__"
+            description = f"Cumul de {len(self.people)} personnage(s)"
+        elif entry:
+            self.profile = entry["profile"]
+            self.previous = self.active_previous if entry["source"] == "active" else None
+            # Les favoris historiques du personnage actif gardent sa clé de nom.
+            self._favorite_target = (
+                entry["name"] if entry["source"] == "active" else entry["id"])
+            description = (f"{entry['name']} · personnage actif" if entry["source"] == "active"
+                           else f"{entry['name']} · archive : {entry['filename']}")
+        else:
+            self.profile = None
+            self.previous = None
+            self._favorite_target = ""
+            description = "Aucun personnage importé"
+        self.remove_button.setEnabled(bool(entry and entry["source"] == "archive"))
+        self._favorites = favorites(self._favorite_target, self.directory)
         for key, card in self.cards.items():
             card.set_favorite(key in self._favorites)
-            card.set_values(profile, previous, self.difficulty.currentData())
+            card.set_values(self.profile, self.previous, self.difficulty.currentData())
         for key, card in self.favorite_cards.items():
             card.set_favorite(key in self._favorites)
-            card.set_values(profile, previous, self.difficulty.currentData())
+            card.set_values(self.profile, self.previous, self.difficulty.currentData())
         self.summary.setText(
-            f"{name}  •  {len(STATS)} statistiques disponibles  •  "
+            f"{description}  •  {len(STATS)} statistiques  •  "
             f"{len(self._favorites)} favoris épinglés"
-            if name else f"{len(STATS)} compteurs reconnus • Choisis un personnage pour afficher les valeurs."
         )
         self.relayout()
+
+    def refresh(self, profile, previous=None):
+        self.active_profile = profile
+        self.active_previous = previous
+        previous_selection = self.character_selector.currentData()
+        if self.store is not None:
+            self.people = self.store.archive.entries(profile)
+        elif profile:
+            self.people = [{"id": character_key(profile), "name": profile["name"],
+                            "source": "active", "profile": profile, "filename": ""}]
+        else:
+            self.people = []
+        self.character_selector.blockSignals(True)
+        self.character_selector.clear()
+        if self.people:
+            self.character_selector.addItem(
+                f"Tous les personnages ({len(self.people)})", "__total__")
+        for item in self.people:
+            suffix = "actif" if item["source"] == "active" else "archive"
+            self.character_selector.addItem(f"{item['name']}  ·  {suffix}", item["id"])
+        choices = [self.character_selector.itemData(i)
+                   for i in range(self.character_selector.count())]
+        active_id = character_key(profile) if profile else None
+        requested = (previous_selection if previous_selection in choices
+                     else active_id if active_id in choices
+                     else "__total__" if "__total__" in choices else None)
+        self.character_selector.setCurrentIndex(
+            choices.index(requested) if requested in choices else -1)
+        self.character_selector.blockSignals(False)
+        self.select_character()
 
     def update_values(self, *_):
         if not self.cards:
@@ -197,17 +313,17 @@ class VikingStatsPage(QScrollArea):
             self._favorites.remove(key)
         else:
             self._favorites.add(key)
-        name = self.profile.get("name", "") if self.profile else ""
+        name = self._favorite_target
         if name:
             save_favorites(name, self._favorites, self.directory)
         for identity, card in self.cards.items():
             card.set_favorite(identity in self._favorites)
         for identity, card in self.favorite_cards.items():
             card.set_favorite(identity in self._favorites)
+        # Conserver le descriptif de la source sélectionnée.
         self.summary.setText(
-            f"{name}  •  {len(STATS)} statistiques disponibles  •  "
-            f"{len(self._favorites)} favoris épinglés" if name
-            else f"{len(STATS)} compteurs reconnus • Choisis un personnage."
+            f"{self.character_selector.currentText()} • {len(STATS)} statistiques • "
+            f"{len(self._favorites)} favoris épinglés"
         )
         self.relayout()
 
