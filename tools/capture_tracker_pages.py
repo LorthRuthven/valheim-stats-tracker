@@ -1,0 +1,131 @@
+"""Capture de toutes les pages de l'interface Qt réelle, sur Windows.
+
+Usage : python -m tools.capture_tracker_pages <sauvegarde.fch> <dossier_sortie>
+Ce script est réservé à la documentation ; il ne modifie jamais les fichiers .fch.
+"""
+from __future__ import annotations
+
+import os
+import sys
+import tempfile
+from pathlib import Path
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+from PIL import Image, ImageDraw, ImageFont
+from PySide6.QtWidgets import QApplication
+
+from nordic_ui import NordicWindow
+from v2_core import TrackerStore
+
+PAGE_SLUGS = (
+    "vue-ensemble",
+    "succes",
+    "combat",
+    "historique",
+    "reglages",
+    "centre-progression",
+    "boss",
+    "activites",
+    "competences",
+    "compteurs-bruts",
+    "encyclopedie",
+    "statistiques-viking",
+)
+
+
+def screenshot_gallery(fch: Path, dest: Path):
+    if not fch.is_file():
+        raise FileNotFoundError(f"Fichier test introuvable : {fch}")
+    dest.mkdir(parents=True, exist_ok=True)
+    app = QApplication.instance() or QApplication([])
+    app.setApplicationName("Valheim Stats Tracker — Captures de validation")
+
+    shots = []
+    with tempfile.TemporaryDirectory(prefix="valheim_tracker_screens_") as temp:
+        store = TrackerStore(temp)
+        window = NordicWindow(store=store)
+        window.set_motion(False)
+        window.resize(1650, 960)
+        window.show()
+        app.processEvents()
+        store.choose(str(fch))
+        window.refresh_save(force=True)
+        app.processEvents()
+        if not store.profile:
+            raise RuntimeError("Aucun personnage chargé : impossible de valider le rendu.")
+        if window.stack.count() != 12:
+            raise RuntimeError(f"Nombre de pages inattendu : {window.stack.count()}")
+
+        for index, slug in enumerate(PAGE_SLUGS):
+            window.show_page(index)
+            app.processEvents()
+            window.repaint()
+            app.processEvents()
+            image = window.grab()
+            if image.isNull() or image.width() < 1400 or image.height() < 700:
+                raise RuntimeError(f"Capture incorrecte de la page {index}: {image.size()}")
+            output = dest / f"{index + 1:02d}_{slug}.png"
+            if not image.save(str(output), "PNG"):
+                raise RuntimeError(f"Impossible de sauver la capture : {output}")
+            shots.append((window.NAV[index][0], output))
+            print(f"CAPTURE {index + 1:02d}/12 {window.NAV[index][0]} : {output}", flush=True)
+
+        # Rendu supplémentaire dans la liste défilante des statistiques.
+        window.show_page(11)
+        app.processEvents()
+        scroller = window.viking_stats_page.verticalScrollBar()
+        if scroller.maximum() > 0:
+            for suffix, value in (("milieu", scroller.maximum() // 2),
+                                  ("bas", scroller.maximum())):
+                scroller.setValue(value)
+                app.processEvents()
+                path = dest / f"13_statistiques-viking_{suffix}.png"
+                if not window.grab().save(str(path), "PNG"):
+                    raise RuntimeError("Capture de défilement ratée")
+                print(f"CAPTURE BONUS : {path}", flush=True)
+
+        window.close()
+        store.close()
+        app.processEvents()
+
+    # Vignette comparative de toutes les pages ; les PNG restent intacts.
+    cols = 3
+    cell_w = 640
+    thumb_h = 375
+    title_h = 47
+    margin = 24
+    step_y = thumb_h + title_h + margin
+    rows = (len(shots) + cols - 1) // cols
+    background = Image.new("RGB", (cols * cell_w + (cols + 1) * margin,
+                                   rows * step_y + margin + 8), "#0c161c")
+    draw = ImageDraw.Draw(background)
+    font_path = Path("C:/Windows/Fonts/segoeuib.ttf")
+    if not font_path.is_file():
+        font_path = Path("C:/Windows/Fonts/arial.ttf")
+    font = ImageFont.truetype(str(font_path), 22) if font_path.is_file() else ImageFont.load_default()
+    for index, (title, shot) in enumerate(shots):
+        col, row = index % cols, index // cols
+        x = margin + col * (cell_w + margin)
+        y = margin + row * step_y
+        screenshot = Image.open(shot).convert("RGB")
+        screenshot.thumbnail((cell_w, thumb_h))
+        background.paste(screenshot, (x, y))
+        draw.text((x + 4, y + thumb_h + 8),
+                  f"{index + 1:02d} · {title}", fill="#f4dfbe", font=font)
+    collage = dest / "00_apercu_12_pages.jpg"
+    background.save(collage, quality=90, optimize=True)
+    (dest / "LIRE-MOI.txt").write_text(
+        "Captures authentiques du rendu Qt de Valheim Stats Tracker V2.5.0 sur Windows.\n"
+        "Résolution : 1650 x 960.\n"
+        "Données : personnage public de test Nichael (.fch v46), jamais modifié.\n"
+        "Les 12 PNG montrent le début de chaque page ; deux PNG détaillent la page des statistiques.\n"
+        "Une capture sur runner GitHub peut différer légèrement de la machine personnelle.\n",
+        encoding="utf-8")
+    print(f"MONTAGE : {collage}", flush=True)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        raise SystemExit("Usage : python -m tools.capture_tracker_pages sauvegarde.fch sortie/")
+    screenshot_gallery(Path(sys.argv[1]), Path(sys.argv[2]))
