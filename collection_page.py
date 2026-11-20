@@ -113,9 +113,17 @@ class CollectionPage(QWidget):
         )
         self.preview = QLabel("Choisis un objet")
         self.preview.setObjectName("collectionPreview")
-        self.preview.setMinimumHeight(170)
+        self.preview.setFixedHeight(184)
+        self.preview.setWordWrap(True)
         self.preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.preview.setContentsMargins(16, 12, 16, 12)
+        self.preview.setStyleSheet(
+            "QLabel#collectionPreview { background:#10212a; "
+            "border:1px solid #3f5960; border-radius:12px; "
+            "color:#b7c5c4; padding:8px; }"
+        )
         detail_layout.addWidget(self.preview)
+        detail_layout.addSpacing(12)
         self.detail_title = label("Sélectionne une entrée", section=True, wrap=True)
         self.detail_title.setObjectName("collectionDetailTitle")
         detail_layout.addWidget(self.detail_title)
@@ -227,7 +235,7 @@ class CollectionPage(QWidget):
         source=self.wiki_cache.source(entry["token"])
         if visual.isNull():
             self.preview.clear()
-            self.preview.setText("Image manquante\nRecherche possible sur Valheim Wiki")
+            self.preview.setText("Illustration indisponible\nRecherche possible sur le wiki")
         else:
             self.preview.setText("")
             self.preview.setPixmap(visual.pixmap(QSize(155, 155)))
