@@ -45,18 +45,19 @@ class RestoredFeatureTests(unittest.TestCase):
         code=(ROOT/'restored_pages.py').read_text(encoding='utf8')
         self.assertIn('max(0, value-previous)',code)
 
-    def test_windows_update_is_transparent_and_preserves_installed_files(self):
-        from windows_update import manual_update_instructions
-        self.assertTrue(callable(manual_update_instructions))
+    def test_windows_updater_download_is_manually_installed(self):
+        import windows_update
+        self.assertTrue(callable(windows_update.open_download_folder))
+        self.assertTrue(callable(windows_update.stage_release))
         workflow=(ROOT/'.github/workflows/release.yml').read_text(encoding='utf8')
         source=(ROOT/'windows_update.py').read_text(encoding='utf8')
         ui=(ROOT/'windows_update_ui.py').read_text(encoding='utf8')
-        self.assertNotIn('INSTALL_PS1 =', source)
-        self.assertNotIn("'ExecutionPolicy'", source)
-        self.assertNotIn('subprocess.Popen', source)
-        self.assertNotIn('install_and_restart', ui)
+        for unsafe in ('INSTALL_PS1', 'ExecutionPolicy', 'subprocess', 'extractall',
+                       'install_and_restart', 'launch_powershell'):
+            self.assertNotIn(unsafe, source)
+        self.assertIn('validate_archive(partial)', source)
         self.assertIn("Vérifier l'updater sans processus caché", workflow)
-        self.assertIn('manual_update_instructions', ui)
+        self.assertIn('open_download_folder', ui)
 
     def test_windows_updater_archive_security(self):
         from windows_update import validate_archive, UpdateError, version_tuple
