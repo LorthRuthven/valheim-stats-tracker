@@ -134,7 +134,15 @@ jobs:
           $defender = Get-MpComputerStatus -ErrorAction SilentlyContinue
           if ($defender -and $defender.AntivirusEnabled -and $defender.AMServiceEnabled) {
             $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
+            $scanStart = Get-Date
             Start-MpScan -ScanType CustomScan -ScanPath $exe -ErrorAction Stop
+            $recent = @(Get-MpThreatDetection -ErrorAction SilentlyContinue | Where-Object {
+              $_.InitialDetectionTime -ge $scanStart.AddMinutes(-1)
+            })
+            if ($recent.Count -gt 0) {
+              $ids = ($recent | ForEach-Object { $_.ThreatID }) -join ','
+              throw ("Defender signale une detection recente lors du controle: " + $ids)
+            }
             if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
               throw 'Windows Defender a supprimé ou placé en quarantaine le programme.'
             }
