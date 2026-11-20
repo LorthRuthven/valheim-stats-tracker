@@ -262,6 +262,9 @@ class QtWindowTests(unittest.TestCase):
             self.assertIsNotNone(w.skills_summary)
             self.assertEqual(set(w.combat_summary_labels),
                              {'kills','species','bosses'})
+            w.open_cumulative_stats()
+            self.assertEqual(w.stack.currentIndex(),11)
+            self.assertTrue(w.sidebar_cumulative_button.isEnabled())
             self.assertEqual(w.collection_page.preview.height(), 184)
             self.assertEqual(w.collection_page.preview.minimumHeight(), 184)
             settings=w.stack.widget(4)
