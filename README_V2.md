@@ -30,7 +30,7 @@ Les prochaines mises à jour de l'application Windows se téléchargeront depuis
 Le workflow GitHub Actions lance les tests Linux, construit l'archive Windows sur un runner Windows et publie l'archive ainsi que le paquet compatible avec l'ancien updater. Le manifeste `update.json` pointe uniquement vers le paquet historique Python.
 
 ## Chroniques nordiques (V2.1)
-La version Windows Qt utilise un bandeau graphique SVG original, une identité runique et des icônes par catégorie. Les transitions, compteurs circulaires et barres de progression sont animés avec Qt et désactivables dans les réglages (fichier local appearance.json). Les images sont embarquées et ne nécessitent ni connexion ni mod. La lecture .fch et le répertoire des données restent identiques à la V2.0.
+La version Windows Qt utilise un bandeau graphique SVG original, une identité visuelle nordique et des icônes d'inventaire Valheim authentiques pour toutes les catégories. Les transitions, compteurs circulaires et barres de progression sont animés avec Qt et désactivables dans les réglages (fichier local appearance.json). Les images sont embarquées et ne nécessitent ni connexion ni mod. La lecture .fch et le répertoire des données restent identiques à la V2.0.
 
 
 ### V2.1.1 — correctif de style Qt
@@ -41,7 +41,7 @@ Les étiquettes de texte ont un fond transparent pour éviter les rectangles noi
 
 La V2.2 restaure les pages Centre de progression, Boss, Activités, Compétences et Compteurs bruts ; Combats inclut les catégories de dégâts, Succès toutes ses conditions (sans limite 50/200), Historique l'export CSV et les gains entre relevés.
 
-**Images :** le décor et les pictogrammes Steam sont des ressources réellement publiées par les propriétaires du jeu et de la plateforme. Aucun dessin de substitution n'est présenté comme une icône officielle. Les vrais sprites d'inventaire peuvent être extraits localement, sans mod, via Réglages → Icônes Valheim ; nécessite que Valheim soit installé sur le PC. L'extraction ne modifie aucun fichier du jeu.
+**Images :** le décor et les icônes de succès Steam sont des ressources réellement publiées par les propriétaires du jeu et de la plateforme. Aucun dessin de substitution n'est présenté comme une icône officielle. Les vrais sprites d'inventaire peuvent être extraits localement, sans mod, via Réglages → Icônes Valheim ; nécessite que Valheim soit installé sur le PC. L'extraction ne modifie aucun fichier du jeu.
 
 **Mises à jour :** à partir de V2.2, les versions Windows autonomes ont leur propre updater avec SHA-256, sauvegarde et redémarrage. Les utilisateurs de V2.0/V2.1 doivent installer manuellement V2.2 une dernière fois.
 
@@ -72,3 +72,8 @@ Depuis une installation V2.4, utiliser une fois le ZIP officiel depuis le naviga
 Dans **Statistiques du Viking**, choisir **CUMUL • Tous les Vikings** puis cliquer sur n'importe quelle carte ou sur **Voir le détail par Viking**. Une fiche présente le total, la règle de regroupement (somme, meilleur record, validé par au moins un Viking), les valeurs individuelles de chaque personnage, et, pour les sommes positives, leur pourcentage de contribution. Les personnes sont affichées par valeur décroissante, y compris celles à zéro. Une valeur absente de la sauvegarde s'affiche **—**, jamais comme une activité nulle inventée. La difficulté sélectionnée est respectée. Il est impossible de consulter ce détail en mode Individuel, où la présentation habituelle est préservée.
 
 Les captures de validation comprennent un exemple avec un deuxième Viking **fictif**, créé uniquement en mémoire pour illustrer la fenêtre sans modifier ni inventer de véritable fichier `.fch`.
+
+### V2.5 — Images Valheim dans toutes les pages
+Les cartes de statistiques, les cartes de leur détail cumulatif, le menu latéral, les huit boss, les compétences et les indicateurs du tableau de bord n'utilisent plus de pictogrammes génériques dessinés. Ils utilisent une sélection embarquée de PNG issus de l'inventaire de Valheim (objets, ressources, équipements, trophées), validés image par image à la compilation. Les associations à une statistique sans icône dédiée sont thématiques, sans présenter l'image comme une récompense officielle.
+
+Les autres écrans privilégient toujours les vrais assets locaux extraits du jeu, puis les images wiki mises en cache lorsque c'est applicable. Lorsqu'aucune image vérifiée n'existe, aucun faux sprite n'est inventé. Le build Windows vérifie aussi les pixels depuis le véritable EXE PyInstaller. Les droits des images du jeu sont réservés à Iron Gate / Coffee Stain.
