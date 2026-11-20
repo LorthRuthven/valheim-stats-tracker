@@ -840,8 +840,49 @@ def _verify_safe_updater():
 
 
 
+
+def _verify_game_sprites_bundle():
+    """Dans le VRAI EXE, teste les pixels de chaque icône attendue par l'UI."""
+    import json
+    from PySide6.QtWidgets import QApplication
+    from real_assets import bundled_assets, manifest, game_icon
+    from game_visuals import (
+        required_inventory_items, STAT_ITEMS, NAV_ITEMS, BOSS_ITEMS, SKILL_ITEMS
+    )
+    from viking_stats import STATS
+    from valheim_reader import BOSSES, SKILLS
+    app = QApplication.instance() or QApplication([])
+    index_path = bundled_assets() / 'GAME_ICONS_AUDIT.json'
+    if not index_path.is_file():
+        raise RuntimeError('Audit du pack de sprites Valheim manquant dans le programme')
+    audit = json.loads(index_path.read_text(encoding='utf8'))
+    if audit.get('selected_icons', 0) < 38:
+        raise RuntimeError('Nombre insuffisant de sprites Valheim authentiques')
+    if set(STAT_ITEMS) != {stat.key for stat in STATS}:
+        raise RuntimeError('Statistiques manquant une association à un objet Valheim')
+    if set(BOSS_ITEMS) != set(BOSSES):
+        raise RuntimeError('Boss manquant une illustration du jeu')
+    if not set(SKILLS.values()).issubset(SKILL_ITEMS):
+        raise RuntimeError('Compétence manquant une illustration')
+    for item in sorted(required_inventory_items()):
+        icon = game_icon(item)
+        if icon.isNull() or icon.pixmap(53,53).isNull():
+            raise RuntimeError('Sprite Valheim absent du programme : ' + item)
+    print(f"{len(required_inventory_items())} icônes originales Valheim présentes dans l'EXE",flush=True)
+
+
+
+
 if __name__=='__main__':
     import sys
+    if '--verify-real-icons' in sys.argv:
+        try:
+            _verify_game_sprites_bundle()
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            sys.exit(24)
+        sys.exit(0)
     if '--verify-wiki-cache' in sys.argv:
         try:
             _verify_wiki_cache()
