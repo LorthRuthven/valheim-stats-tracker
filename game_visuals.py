@@ -68,7 +68,7 @@ NAV_ITEMS = {
     "trophy": "TrophyEikthyr",
     "skull": "TrophySkeleton",
     "history": "Torch",
-    "settings": "Hammer",
+    "settings": "MechanicalSpring",
     "paw": "TrophyBoar",
     "shield": "ShieldBanded",
     "clock": "Torch",
@@ -93,17 +93,17 @@ BOSS_ITEMS = {
 THEMATIC_BOSS_ICONS = frozenset({"$enemy_frozenking_p3"})
 
 SKILL_ITEMS = {
-    "Épées": "SwordIron", "Couteaux": "AxeIron", "Masses": "Hammer",
-    "Armes d’hast": "SwordIron", "Lances": "SwordIron",
+    "Épées": "SwordIron", "Couteaux": "KnifeCopper", "Masses": "MaceIron",
+    "Armes d’hast": "AtgeirIron", "Lances": "SpearFlint",
     "Blocage": "ShieldBanded", "Haches": "AxeIron", "Arcs": "Bow",
-    "Magie élémentaire": "SurtlingCore", "Magie du sang": "TrophyBonemass",
-    "Poings": "TrophyBoar", "Pioches": "PickaxeIron",
+    "Magie élémentaire": "StaffFireball", "Magie du sang": "StaffSkeleton",
+    "Poings": "FistFenrirClaw", "Pioches": "PickaxeIron",
     "Coupe du bois": "AxeIron", "Arbalètes": "CrossbowArbalest",
     "Saut": "CapeFeather", "Discrétion": "CapeDeerHide",
-    "Course": "MeadHasty", "Natation": "MeadBaseLightFoot",
+    "Course": "MeadHasty", "Natation": "MeadSwimmer",
     "Pêche": "FishingRod", "Cuisine": "CarrotSoup",
     "Agriculture": "Cultivator", "Artisanat": "Hammer",
-    "Esquive": "CapeFeather", "Équitation": "CapeAsksvin",
+    "Esquive": "CapeFeather", "Équitation": "SaddleAsksvin",
 }
 
 
