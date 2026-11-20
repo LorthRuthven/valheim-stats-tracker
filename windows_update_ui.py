@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import threading
+import os
 from PySide6.QtCore import QObject, Signal, Qt, QTimer
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QMessageBox, QProgressBar, QPushButton, QVBoxLayout, QWidget
 
 from v2_core import VERSION, app_dir
-from windows_update import check_release, stage_release, install_and_restart
+from windows_update import check_release, stage_release, manual_update_instructions
 
 class Events(QObject):
     checked=Signal(object)
@@ -32,7 +33,7 @@ class UpdatePanel(QWidget):
         row=QHBoxLayout()
         self.check_button=QPushButton("Vérifier les mises à jour")
         self.check_button.clicked.connect(self.check)
-        self.install_button=QPushButton("Télécharger et installer")
+        self.install_button=QPushButton("Télécharger la mise à jour")
         self.install_button.setEnabled(False)
         self.install_button.clicked.connect(self.install)
         row.addWidget(self.check_button);row.addWidget(self.install_button)
@@ -71,9 +72,10 @@ class UpdatePanel(QWidget):
     def install(self):
         if not self.info or not self.info['available']:return
         answer=QMessageBox.question(self,"Mettre à jour Valheim Stats Tracker",
-            "Installer la version Windows "+self.info['version']+" ?\n"
-            "L'application se fermera puis redémarrera. "
-            "Une copie des anciens fichiers sera conservée.")
+            "Télécharger la version Windows "+self.info['version']+" ?\\n"
+            "Le fichier sera contrôlé par SHA-256. "
+            "Pour réduire les alertes de sécurité, aucun installateur automatique "
+            "ni script caché ne sera lancé. Le remplacement se fera manuellement.")
         if answer!=QMessageBox.StandardButton.Yes:return
         self.status.setText("Téléchargement et contrôle SHA-256…")
         self.bar.setRange(0,100);self.bar.setValue(0)
@@ -90,13 +92,34 @@ class UpdatePanel(QWidget):
     def _downloaded(self,directory):
         self.busy=False
         self.bar.setValue(100)
-        self.status.setText("Fichiers contrôlés. Installation après fermeture…")
+        self.status.setText("Version vérifiée et téléchargée. Installation manuelle.")
         try:
-            install_and_restart(directory,app_dir())
+            info=manual_update_instructions(directory)
         except Exception as exc:
             self._failed(str(exc))
             return
-        QApplication.quit()
+        text=(
+            "La mise à jour a été téléchargée et contrôlée (SHA-256).\\n\\n"
+            "Pour éviter tout script d'installation caché :\\n"
+            "1. Ferme complètement Valheim Stats Tracker.\\n"
+            "2. Copie le contenu du dossier NOUVEAU vers le dossier ACTUEL "
+            "en remplaçant les anciens fichiers.\\n"
+            "3. Relance ValheimStatsTracker.exe.\\n\\n"
+            "Tes historiques et favoris restent dans le dossier de données "
+            "Windows, séparé de l'application.\\n\\n"
+            "Ouvrir les deux dossiers dans l'Explorateur Windows maintenant ?"
+        )
+        answer=QMessageBox.question(
+            self,"Mise à jour vérifiée — installation manuelle",text,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
+        )
+        if answer==QMessageBox.StandardButton.Yes:
+            try:
+                os.startfile(info['source'])
+                os.startfile(info['target'])
+            except OSError as exc:
+                self._failed("Impossible d'ouvrir les dossiers : "+str(exc))
 
     def _failed(self,message):
         self.busy=False
