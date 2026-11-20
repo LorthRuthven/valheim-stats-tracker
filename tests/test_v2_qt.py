@@ -207,6 +207,44 @@ class QtWindowTests(unittest.TestCase):
             self.assertFalse(w.grab().isNull())
             w.close()
 
+    def test_character_archive_selector_and_cumulative_cards(self):
+        from unittest.mock import patch
+        from valheim_reader import PLAYER_STAT_NAMES, STAT_INDEX
+        app = QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as root:
+            w = NordicWindow(TrackerStore(root))
+            archive = w.store.archive
+            from pathlib import Path
+            def profile(name, identity, deaths, builds):
+                arr = [0.0] * len(PLAYER_STAT_NAMES)
+                arr[STAT_INDEX["Deaths"]] = deaths
+                arr[STAT_INDEX["Builds"]] = builds
+                return {"name": name, "player_id": identity, "created": 42,
+                        "groups": {"Any": {"stats": arr},
+                                   "RawStats": {"stats": arr.copy(), "worlds": {}}}}
+            first = Path(root) / "ancien1.fch"
+            second = Path(root) / "ancien2.fch"
+            first.write_bytes(b"one")
+            second.write_bytes(b"two")
+            with patch("character_archive.decode",
+                       side_effect=[profile("Ulf", 1, 5, 80),
+                                    profile("Ragna", 2, 8, 115)]):
+                report = archive.import_files([first, second])
+            self.assertEqual(report["added"], 2)
+            stats = w.viking_stats_page
+            stats.refresh(None)
+            self.assertEqual(stats.character_selector.count(), 3)
+            stats.character_selector.setCurrentIndex(0)
+            self.assertEqual(stats.cards["deaths"].amount.text(), "13")
+            self.assertEqual(stats.cards["built"].amount.text(), "195")
+            stats.character_selector.setCurrentIndex(1)
+            self.assertEqual(stats.cards["deaths"].amount.text(), "8")
+            self.assertTrue(stats.remove_button.isEnabled())
+            stats.character_selector.setCurrentIndex(0)
+            self.assertFalse(stats.remove_button.isEnabled())
+            self.assertEqual(w.stack.count(), 12)
+            w.close()
+
     def test_labels_have_transparent_background(self):
         # Régression visuelle V2.1 : les QLabel ne doivent pas devenir
         # des rectangles opaques autour de chaque texte.
