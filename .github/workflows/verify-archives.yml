@@ -57,3 +57,65 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: python -m unittest discover -s tests -p test_v2_qt.py -k character_archive_selector_and_cumulative_cards -v
+
+  defender-candidate:
+    name: Compiler et analyser l'EXE Windows candidat
+    runs-on: windows-latest
+    needs: [archives, qt]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les dépendances Windows
+        run: python -m pip install -r requirements-windows.txt
+      - name: Préparer les images officielles pour le paquet
+        run: python -m tools.fetch_game_assets
+      - name: Construire l'application Windows autonome
+        shell: pwsh
+        run: |
+          # UnityPy utilise fmod_toolkit, dont la DLL native n'est pas embarquee par --collect-all UnityPy.
+          # Verifier explicitement la dependance a la construction avant de produire le ZIP.
+          $fmodDll = & python -c 'from pathlib import Path; from importlib.util import find_spec; spec=find_spec("fmod_toolkit"); assert spec and spec.submodule_search_locations, "fmod_toolkit non installe"; path=Path(next(iter(spec.submodule_search_locations)))/"libfmod"/"Windows"/"x64"/"fmod.dll"; assert path.is_file(), f"DLL FMOD absente du package : {path}"; print(path)'
+          if ($LASTEXITCODE -ne 0) { throw 'Dependance FMOD absente avant construction.' }
+          # Le decodeur charge archspec/json/cpu/microarchitectures.json a la premiere lecture de sprite.
+          $archspecCpu = & python -c 'from pathlib import Path; from importlib.util import find_spec; s=find_spec("archspec"); assert s and s.submodule_search_locations, "archspec introuvable"; p=Path(next(iter(s.submodule_search_locations)))/"json"/"cpu"; assert (p/"microarchitectures.json").is_file(), f"Ressources archspec absentes : {p}"; print(p)'
+          if ($LASTEXITCODE -ne 0) { throw 'Ressources JSON archspec introuvables avant construction.' }
+          python -m PyInstaller --noconfirm --clean --windowed --onedir --name ValheimStatsTracker --add-data 'fr_names.json;.' --add-data 'assets;assets' --hidden-import localization_fr --collect-all UnityPy --collect-all fmod_toolkit --add-binary "$fmodDll;fmod_toolkit/libfmod/Windows/x64" --collect-all archspec --add-data "$archspecCpu;archspec/json/cpu" --hidden-import PySide6.QtSvg nordic_ui.py
+          if ($LASTEXITCODE -ne 0) { throw 'Construction PyInstaller echouee.' }
+          $bundledFmod = 'dist/ValheimStatsTracker/_internal/fmod_toolkit/libfmod/Windows/x64/fmod.dll'
+          if (-not (Test-Path -LiteralPath $bundledFmod -PathType Leaf)) {
+            throw "fmod.dll absente de l'application construite : $bundledFmod"
+          }
+          Write-Host "FMOD native presente dans le bundle Windows : $bundledFmod"
+          $bundledArchspec = 'dist/ValheimStatsTracker/_internal/archspec/json/cpu/microarchitectures.json'
+          if (-not (Test-Path -LiteralPath $bundledArchspec -PathType Leaf)) {
+            throw "Base JSON archspec absente du programme construit : $bundledArchspec"
+          }
+          Write-Host "Archspec JSON present dans le bundle Windows : $bundledArchspec"
+          $version = (Get-Content version.json | ConvertFrom-Json).version
+          $archive = "dist/Valheim_Stats_Tracker_v${version}_Windows.zip"
+          Compress-Archive -Path dist/ValheimStatsTracker -DestinationPath $archive -CompressionLevel Optimal
+          if (-not (Test-Path $archive)) { throw "ZIP Windows introuvable" }
+          Write-Host "Archive Windows : $archive"
+      - name: Vérifier l'EXE compilé et ses DLL
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
+          $process = Start-Process -FilePath $exe -ArgumentList '--verify-unitypy-bundle' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Validation exécutable compilé échouée : $($process.ExitCode)" }
+
+      - name: Scanner la version candidate avec Defender, si disponible
+        shell: pwsh
+        run: |
+          $defender = Get-MpComputerStatus -ErrorAction SilentlyContinue
+          if ($defender -and $defender.AntivirusEnabled -and $defender.AMServiceEnabled) {
+            $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
+            Start-MpScan -ScanType CustomScan -ScanPath $exe -ErrorAction Stop
+            if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+              throw 'Defender a retiré l’exécutable candidat du dossier.'
+            }
+            Write-Host 'Defender disponible : analyse locale du candidat effectuée.'
+          } else {
+            Write-Warning 'Defender est désactivé sur le runner GitHub : analyse réelle non réalisée.'
+          }
