@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Installer Tkinter pour les tests historiques
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y python3-tk
       - name: Vérifier les fichiers Python
         run: python3 -m py_compile character_archive.py viking_stats_page.py nordic_ui.py valheim_reader.py v2_core.py
       - name: Tester le moteur et le cumul des personnages
