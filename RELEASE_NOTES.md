@@ -65,7 +65,7 @@ La **12ᵉ page** du tracker s'inspire des statistiques de Minecraft, avec **47 
 - **Exploration** : poissons pêchés/perdus, trésors enfouis, temps en jeu et les quatre directions du succès Exploration.
 
 ### Présentation
-- **47 cartes illustrées** avec les vraies icônes du jeu lorsqu'un prefab exact convient ; sinon, pictogrammes vectoriels d'interface (jamais présentés comme des images officielles).
+- **47 cartes illustrées** avec des sprites authentiques de l'inventaire Valheim, y compris pour les statistiques sans icône officielle dédiée (association thématique explicite). Aucun pictogramme vectoriel de substitution n'est utilisé.
 - **Favoris en haut de page**, possibilité d'épingler ou retirer chaque statistique par l'étoile ★.
 - **Favoris par personnage** dans le nouveau fichier `stats_favorites.json`, séparé de `favoris.json` (succès) et des autres données.
 - **Recherche instantanée**, filtrage par catégorie ou favoris uniquement.
