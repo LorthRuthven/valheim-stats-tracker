@@ -77,3 +77,9 @@ Les captures de validation comprennent un exemple avec un deuxième Viking **fic
 Les cartes de statistiques, les cartes de leur détail cumulatif, le menu latéral, les huit boss, les compétences et les indicateurs du tableau de bord n'utilisent plus de pictogrammes génériques dessinés. Ils utilisent une sélection embarquée de PNG issus de l'inventaire de Valheim (objets, ressources, équipements, trophées), validés image par image à la compilation. Les associations à une statistique sans icône dédiée sont thématiques, sans présenter l'image comme une récompense officielle.
 
 Les autres écrans privilégient toujours les vrais assets locaux extraits du jeu, puis les images wiki mises en cache lorsque c'est applicable. Lorsqu'aucune image vérifiée n'existe, aucun faux sprite n'est inventé. Le build Windows vérifie aussi les pixels depuis le véritable EXE PyInstaller. Les droits des images du jeu sont réservés à Iron Gate / Coffee Stain.
+
+
+### Page Activités : une galerie plutôt qu'un tableau
+Le menu **Activités** affiche désormais les objets sous forme de **cartes illustrées avec des sprites Valheim**. Choisis le type d'activité (récolte, ramassage, fabrication, pose, nourriture), une difficulté et une famille ; recherche ensuite une ressource ou un objet et trie les résultats. Les cartes sont organisées par 16 avec boutons Précédent / Suivant. Les tableaux techniques d'origine sont toujours disponibles via **Afficher les tableaux détaillés**.
+
+Pour le diagnostic du lecteur de fichiers `.fch`, les **205 compteurs bruts** et leurs indices sont conservés dans **Réglages → Diagnostic avancé**. Cette vue est en lecture seule. Les pages internes gardent leurs anciens indices pour préserver les tests et les raccourcis existants.
