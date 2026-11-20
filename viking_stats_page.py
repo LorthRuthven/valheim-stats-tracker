@@ -17,7 +17,7 @@ from desktop_v2 import label, panel
 from character_archive import aggregation_mode, character_key, combine_profiles
 from stat_breakdown import breakdown
 from real_assets import game_icon
-from stat_pictograms import pictogram
+from game_visuals import stat_game_icon
 from viking_stats import (
     CATEGORIES, STATS, change, favorites, pretty, save_favorites, value,
 )
@@ -60,12 +60,15 @@ class StatCard(QFrame):
         self.picture.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.picture.setFixedSize(55, 55)
         self.picture.setObjectName("statPicture")
-        image = game_icon(stat.icon) if stat.icon else None
-        if image is not None and not image.isNull():
+        image = stat_game_icon(stat)
+        if not image.isNull():
             self.picture.setPixmap(image.pixmap(QSize(53, 53)))
+            self.picture.setToolTip("Visuel authentique d'un objet Valheim associé à cette statistique.")
         else:
-            # Pictogramme vectoriel d'interface : jamais présenté comme un item Valheim.
-            self.picture.setPixmap(pictogram(stat.key,53).pixmap(QSize(53,53)))
+            self.picture.setText("Visuel Valheim indisponible")
+            self.picture.setWordWrap(True)
+            self.picture.setStyleSheet("color:#bbc7c9;font:8pt 'Segoe UI';")
+            self.picture.setToolTip("Aucune image de jeu valide n'est disponible.")
         top.addWidget(self.picture)
         name = label(stat.title, wrap=True)
         name.setStyleSheet("color:#f4e8d7;font:bold 10pt 'Segoe UI';")
@@ -179,10 +182,12 @@ class CumulativeStatDialog(QDialog):
         icon_holder = QLabel()
         icon_holder.setFixedSize(63, 63)
         icon_holder.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        game_image = game_icon(stat.icon) if stat.icon else None
-        picture = (game_image if game_image is not None and not game_image.isNull()
-                   else pictogram(stat.key, 57))
-        icon_holder.setPixmap(picture.pixmap(QSize(57, 57)))
+        picture = stat_game_icon(stat)
+        if not picture.isNull():
+            icon_holder.setPixmap(picture.pixmap(QSize(57, 57)))
+        else:
+            icon_holder.setText("Image\nindisponible")
+            icon_holder.setWordWrap(True)
         head.addWidget(icon_holder)
         titles = QVBoxLayout()
         main_title = label(stat.title, wrap=True)
