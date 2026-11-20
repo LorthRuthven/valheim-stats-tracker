@@ -185,8 +185,8 @@ def screenshot_gallery(fch: Path, dest: Path):
             "$item_coins":125.0, "$item_trophyboar":67.0,
             "$item_arrowwood":49.0, "$item_cultivator":24.0,
             "$item_wishbone":11.0, "$item_torche":7.0,
-            "$item_axeeiron":6.0, "$item_fishingrod":4.0,
-            "$item_capefeather":3.0, "$item_hammer":2.0,
+            "$item_axe_iron":6.0, "$item_fishingrod":4.0,
+            "$item_cape_feather":3.0, "$item_hammer":2.0,
         }
         store.profile=gallery_demo
         window.show_page(7)
