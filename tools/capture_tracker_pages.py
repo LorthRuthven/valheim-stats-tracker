@@ -118,30 +118,38 @@ def screenshot_gallery(fch: Path, dest: Path):
                 raise RuntimeError("Échec de la sauvegarde du mode")
             print(f"CAPTURE MODE : {output}", flush=True)
 
-        # Démonstration VISUELLE du détail avec deux Vikings : le deuxième
-        # est simulé en mémoire. Aucun faux fichier .fch n'est créé ou importé.
-        # Les captures précédentes restent 100 % issues du personnage public réel.
+        # Exemple 100 % simulé pour l'interface : deux profils temporaires
+        # fabriqués en mémoire, sans toucher au FCH public ou inventer des
+        # statistiques dans l'application elle-même.
         import copy
         from valheim_reader import STAT_INDEX
-        fictional = copy.deepcopy(store.profile)
-        fictional["name"] = "Viking Démo (fictif)"
-        fictional["player_id"] = 987654321
-        for group_data in fictional.get("groups", {}).values():
-            raw = group_data.get("stats")
-            if isinstance(raw, list) and len(raw) > STAT_INDEX["DistanceRun"]:
-                raw[STAT_INDEX["DistanceRun"]] = 1948292.0
-        stats.people.append({
-            "id": "id:987654321",
-            "name": "Viking Démo (fictif)",
-            "source": "archive",
-            "filename": "EXEMPLE-SIMULÉ.fch",
-            "profile": fictional,
-        })
+        samples = (("Viking 1 (démo)", 29492), ("Viking 2 (démo)", 1948292))
+        people = []
+        for index, (name, metres) in enumerate(samples):
+            demo = copy.deepcopy(store.profile)
+            identity = 987654321 + index
+            demo["name"] = name
+            demo["player_id"] = identity
+            for group_data in demo.get("groups", {}).values():
+                raw = group_data.get("stats")
+                if isinstance(raw, list) and len(raw) > STAT_INDEX["DistanceRun"]:
+                    raw[STAT_INDEX["DistanceRun"]] = float(metres)
+            people.append({
+                "id": "id:" + str(identity),
+                "name": name,
+                "source": "demo",
+                "filename": "",
+                "profile": demo,
+            })
+        stats.people = people
+        stats.character_selector.blockSignals(True)
+        stats.character_selector.clear()
         stats.character_selector.addItem(
-            "Viking Démo (fictif)  ·  Viking archivé", "id:987654321")
-        stats.character_selector.setItemText(
-            0, "Σ CUMUL DE TOUS LES VIKINGS (2)"
-        )
+            "Σ CUMUL DE TOUS LES VIKINGS (2) — DÉMO", "__total__")
+        for member in people:
+            stats.character_selector.addItem(
+                member["name"] + " · Démonstration", member["id"])
+        stats.character_selector.blockSignals(False)
         stats.show_total()
         stats.verticalScrollBar().setValue(0)
         app.processEvents()
@@ -151,11 +159,11 @@ def screenshot_gallery(fch: Path, dest: Path):
         print("CAPTURE DEMO CUMUL :", cumshot, flush=True)
 
         dialog = stats.open_stat_details("run")
-        if dialog is None:
-            raise RuntimeError("Impossible d'ouvrir le détail de la course")
+        if dialog is None or dialog.model.total != 1977784:
+            raise RuntimeError("Le détail fictif n'a pas le total exact 1 977 784 m")
         app.processEvents()
-        if len(dialog.rows) != 2:
-            raise RuntimeError("La fiche de démonstration doit contenir deux Vikings")
+        if [row.amount for row in dialog.rows] != [1948292, 29492]:
+            raise RuntimeError("Le détail doit montrer les deux valeurs exactes")
         popupshot = dest / "17_DEMONSTRATION-detail-course-par-viking.png"
         if not dialog.grab().save(str(popupshot), "PNG"):
             raise RuntimeError("Impossible de capturer le détail du cumul")
@@ -196,7 +204,7 @@ def screenshot_gallery(fch: Path, dest: Path):
         "Captures authentiques du rendu Qt de Valheim Stats Tracker V2.5.0 sur Windows.\n"
         "Résolution : 1650 x 960.\n"
         "Données : personnage public de test Nichael (.fch v46), jamais modifié.\n"
-        "Les 12 PNG montrent le début de chaque page ; quatre vues supplémentaires détaillent les statistiques et les modes cumul/individuel.\n"        "Les fichiers 16 et 17 sont des DEMONSTRATIONS : Viking Démo et ses chiffres sont fictifs,\n"
+        "Les 12 PNG montrent le début de chaque page ; quatre vues supplémentaires détaillent les statistiques et les modes cumul/individuel.\n"        "Les fichiers 16 et 17 sont des DEMONSTRATIONS : Vikings 1 et 2 sont fictifs,\n"
         "créés seulement en mémoire pour illustrer les deux lignes du détail du cumul.\n"
 
         "Une capture sur runner GitHub peut différer légèrement de la machine personnelle.\n",
