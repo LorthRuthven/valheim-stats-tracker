@@ -24,6 +24,15 @@
 - **Protection contre les régressions :** compilation Windows interdite si un des sprites requis est absent ou ne peut pas être chargé par le véritable EXE PyInstaller. Les tests Qt vérifient les pixels au lieu de compter les seuls fichiers.
 - Attributions et origine des images inscrites dans `assets/ATTRIBUTIONS.txt` ; droits des illustrations du jeu réservés à Iron Gate / Coffee Stain, compagnon non officiel.
 
+## Activités : véritable galerie d'objets Valheim
+- L'ancienne page **Activités**, principalement constituée de tableaux, devient une **galerie de cartes** avec les vraies images du jeu, le nom localisé, la famille et la quantité.
+- Barre de recherche, filtres **action / difficulté / famille**, tri **quantité décroissante / ordre alphabétique / quantité croissante**, et **pagination de 16 objets**.
+- Affichage en deux, trois ou quatre colonnes selon la taille de la fenêtre Windows. Chaque carte donne accès à l'identifiant exact dans son infobulle.
+- Un petit tableau de bord présente le **nombre de ressources distinctes**, la **quantité totale enregistrée** et la **famille dominante**. Les visuels thématiques sont explicitement signalés lorsque l'icône exacte n'est pas disponible.
+- Les tableaux d'origine sont conservés sous **« Afficher les tableaux détaillés »**, fermés par défaut, sans masquer aucune donnée.
+- **Compteurs bruts** n'occupe plus le menu latéral. La page des 205 indices est conservée, accessible dans **Réglages → Diagnostic avancé**, avec bouton de retour. Tous les index internes de pages restent compatibles.
+- Contrôles Qt supplémentaires : 25 objets fictifs, passage entre deux pages, recherche, tri, filtre, tableau repliable et accès au diagnostic.
+
 ## Améliorations de lisibilité et navigation
 - **Modes « CUMUL • Tous les Vikings » et « INDIVIDUEL • Un Viking »** directement visibles dans Statistiques du Viking, en complément du sélecteur par personnage.
 - **Détail cliquable de chaque statistique en mode Cumul** : valeur retenue, toutes les valeurs individuelles triées, source du personnage, pourcentage et barre de contribution pour les sommes. Pour les records, identification du meilleur Viking ; pour les objectifs, personnages ayant atteint la condition. Valeurs brutes précises disponibles pour distances et durées. Les règles des groupes de difficulté restent inchangées.
