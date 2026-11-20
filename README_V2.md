@@ -57,3 +57,7 @@ Le programme Windows fait maintenant contrôler son propre installateur sur un r
 
 ### V2.2.3 — meilleure lisibilité et diagnostic des icônes
 Dans Réglages, sélectionner Compact, Normal, Grand (défaut) ou Très grand. Le choix est immédiat et conservé dans appearance.json. Pour l'extraction, sélectionner le dossier contenant valheim.exe. Si aucune icône ne peut être extraite, ouvrir « Rapport de diagnostic » : `%LOCALAPPDATA%\\ValheimStatsTracker\\game_icons\\extraction-report.json`. L'extracteur couvre Sprite et Texture2D et n'ajoute aucune icône artificielle. Les fichiers du jeu et les sauvegardes restent intacts.
+
+
+## V2.5 — Archives et cumul des statistiques
+Dans **Statistiques du Viking**, choisir **Importer des .fch** pour sélectionner plusieurs sauvegardes d'anciens personnages. Le menu **Personnages** permet d'afficher la fiche de chacun ou **Tous les personnages**. Les archives restent en mémoire locale SQLite, sans copie des fichiers originaux ni modification de sauvegarde. Si le même identifiant Valheim est réimporté, sa fiche est remplacée et non additionnée. Le personnage actif supplante son ancienne archive dans le total. Utiliser **Retirer l'archive** pour cesser de compter un ancien personnage sans effacer son `.fch`. La fonction prend en charge les formats v46/v47 ; une ancienne version de fichier non décodable est affichée comme erreur individuelle.
