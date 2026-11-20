@@ -92,7 +92,11 @@ def _display_token(token):
     override = ACTIVITY_FRENCH_NAMES.get(raw.replace("_", "").casefold())
     if override:
         return override
-    if token.startswith('
+    if str(token).startswith(chr(36)):
+        return localized_name(token, prefab_label(token))
+    translated = localized_name(token)
+    return translated if translated != token else prefab_label(token)
+
 
 def _table_item(text, icon=None):
     cell = QTableWidgetItem(str(text))
