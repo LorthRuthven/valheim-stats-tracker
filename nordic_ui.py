@@ -340,7 +340,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.stack.addWidget(self.collection_page)
 
     def _make_viking_stats_page(self):
-        self.viking_stats_page=VikingStatsPage(self.store.directory, self)
+        self.viking_stats_page=VikingStatsPage(self.store.directory, self, store=self.store)
         self.stack.addWidget(self.viking_stats_page)
 
     def _make_achievements(self):
