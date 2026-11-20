@@ -73,7 +73,8 @@ class UpdatePanel(QWidget):
         answer=QMessageBox.question(self,"Mettre à jour Valheim Stats Tracker",
             "Télécharger la version Windows "+self.info['version']+" ?\n\n"
             "L'archive sera vérifiée par SHA-256, sans installer ni lancer de programme.\n"
-            "Après analyse antivirus, il faudra l'extraire manuellement dans un nouveau dossier.")
+            "Il faudra analyser le ZIP, l'extraire dans un nouveau dossier, "
+            "puis analyser l'EXE avant de l'exécuter.")
         if answer!=QMessageBox.StandardButton.Yes:return
         self.status.setText("Téléchargement et contrôle SHA-256…")
         self.bar.setRange(0,100);self.bar.setValue(0)
@@ -92,8 +93,8 @@ class UpdatePanel(QWidget):
         self.bar.setValue(100)
         self.check_button.setEnabled(True)
         self.status.setText(
-            "ZIP vérifié, non exécuté. Contrôle antivirus requis avant extraction. "
-            "Le tracker reste ouvert ; installation manuelle dans un nouveau dossier."
+            "ZIP vérifié, non exécuté. Installation manuelle : analyse Defender obligatoire "
+            "avant le lancement du nouvel exécutable."
         )
         try:
             open_download_folder(directory)
