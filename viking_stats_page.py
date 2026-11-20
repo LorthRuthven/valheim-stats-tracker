@@ -23,6 +23,18 @@ from viking_stats import (
 )
 
 
+
+def exact_measure(amount, unit):
+    """Affiche les chiffres exacts derrière les unités arrondies des cartes."""
+    if amount is None:
+        return ""
+    if unit == "distance":
+        return f"{amount:,.0f} m".replace(",", " ")
+    if unit == "duration":
+        return f"{amount:,.0f} secondes".replace(",", " ")
+    return ""
+
+
 class StatCard(QFrame):
     def __init__(self, stat, toggle, details=None):
         super().__init__()
@@ -200,6 +212,10 @@ class CumulativeStatDialog(QDialog):
             "color:#f6cc8b;font:bold 29pt 'Segoe UI';border:none;"
         )
         total_layout.addWidget(self.total_amount)
+        exact_total = exact_measure(self.model.total, stat.unit)
+        if exact_total:
+            raw_label = label("Valeur exacte : " + exact_total, muted=True)
+            total_layout.addWidget(raw_label)
         outer.addWidget(total)
 
         rule_name, rule_text = self.RULES[self.model.policy]
@@ -220,6 +236,7 @@ class CumulativeStatDialog(QDialog):
         list_layout.setContentsMargins(2, 3, 8, 3)
         list_layout.setSpacing(9)
         self.contribution_labels = {}
+        leaders = sum(row.leading for row in self.rows)
         for entry in self.rows:
             box = QFrame()
             box.setObjectName("contributionRow")
@@ -245,10 +262,13 @@ class CumulativeStatDialog(QDialog):
             elif self.model.policy == "sum" and entry.percentage is not None:
                 note += f" • {entry.percentage:.1f} % du total".replace(".", ",")
             elif entry.leading:
-                note += (" • Record partagé" if self.model.policy == "max"
-                         else " • Objectif atteint")
+                note += ((" • Record partagé" if leaders > 1 else " • Meilleur record")
+                         if self.model.policy == "max" else " • Objectif atteint")
             source_label = label(note, muted=True, wrap=True)
             row_layout.addWidget(source_label)
+            exact = exact_measure(entry.amount, stat.unit)
+            if exact:
+                row_layout.addWidget(label("Valeur exacte : " + exact, muted=True))
             if entry.percentage is not None:
                 progress = QProgressBar()
                 progress.setObjectName("characterContributionBar")
