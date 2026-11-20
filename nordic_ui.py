@@ -271,7 +271,14 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             btn.setMinimumHeight(35)
             btn.setIcon(rune_icon(nav_icons[idx]))
             btn.clicked.connect(lambda _=False,i=idx:self.show_page(i))
-            nav_layout.addWidget(btn);self.nav_buttons.append(btn)
+            # La page n°9 est conservée pour les anciens liens et les tests,
+            # mais accessible uniquement par Réglages > Diagnostic avancé.
+            if idx == 9:
+                btn.setParent(nav_container)
+                btn.hide()
+            else:
+                nav_layout.addWidget(btn)
+            self.nav_buttons.append(btn)
         nav_layout.addStretch(1)
         nav_scroller.setWidget(nav_container)
         menu.addWidget(nav_scroller,1)
@@ -505,6 +512,24 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
                 'Les téléchargements se font seulement au besoin ; maximum 20 par action. '
                 'Une attribution renvoie à chaque page du wiki.',muted=True,wrap=True))
             inner.layout().insertWidget(4,wiki)
+            diagnostics,diagnostic_layout=panel(
+                'DIAGNOSTIC AVANCÉ',
+                'Accès aux 205 compteurs techniques du fichier Valheim. '
+                'Cette vue ne modifie aucune sauvegarde.'
+            )
+            self.raw_diagnostic_button=QPushButton('Ouvrir les compteurs bruts')
+            self.raw_diagnostic_button.setObjectName('openRawDiagnostics')
+            self.raw_diagnostic_button.clicked.connect(
+                lambda _=False:self.show_page(9)
+            )
+            diagnostic_layout.addWidget(self.raw_diagnostic_button)
+            diagnostic_layout.addWidget(label(
+                'Les activités et statistiques utiles restent disponibles '
+                'dans leurs pages dédiées. Les noms et indices bruts '
+                'servent essentiellement au dépannage.',
+                muted=True, wrap=True
+            ))
+            inner.layout().insertWidget(5,diagnostics)
 
     def _open_collection_wiki(self):
         self.show_page(10)
@@ -634,6 +659,9 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
 
     def show_page(self,index):
         super().show_page(index)
+        if index == 9:
+            # La navigation visible reste sur Réglages pour le diagnostic.
+            self.nav_buttons[4].setChecked(True)
         if index == 10 and hasattr(self, 'collection_page'):
             self.collection_page.activate()
         if not self.motion:return
