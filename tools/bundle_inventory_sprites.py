@@ -58,7 +58,7 @@ def sprite_index(csv_content):
 def read_icon(item, sprite):
     address = SOURCE + "/sprites/" + urllib.parse.quote(sprite) + ".png"
     payload = fetch_bytes(address)
-    if not payload.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
+    if not payload.startswith(bytes.fromhex("89504e470d0a1a0a")):
         raise RuntimeError(f"Le sprite {sprite} n'est pas un PNG authentique")
     try:
         with Image.open(io.BytesIO(payload)) as image:
