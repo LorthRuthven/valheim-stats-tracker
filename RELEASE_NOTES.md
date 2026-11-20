@@ -18,6 +18,7 @@
 
 ## Améliorations de lisibilité et navigation
 - **Modes « CUMUL • Tous les Vikings » et « INDIVIDUEL • Un Viking »** directement visibles dans Statistiques du Viking, en complément du sélecteur par personnage.
+- **Détail cliquable de chaque statistique en mode Cumul** : valeur retenue, toutes les valeurs individuelles triées, source du personnage, pourcentage et barre de contribution pour les sommes. Pour les records, identification du meilleur Viking ; pour les objectifs, personnages ayant atteint la condition. Valeurs brutes précises disponibles pour distances et durées. Les règles des groupes de difficulté restent inchangées.
 - **Raccourci « Cumul des Vikings »** dans la barre latérale ; après import de plusieurs fichiers `.fch`, le cumul s'affiche automatiquement.
 - **Boss :** galerie des huit boss avec véritables icônes locales lorsqu'elles existent, nombre de victoires enregistrées et synthèse par difficulté.
 - **Combat :** trois indicateurs (éliminations, espèces et boss distincts) calculés à partir des compteurs du groupe choisi.
