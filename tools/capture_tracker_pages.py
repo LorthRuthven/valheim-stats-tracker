@@ -14,6 +14,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PIL import Image, ImageDraw, ImageFont
 from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QFont, QFontDatabase
 
 from nordic_ui import NordicWindow
 from v2_core import TrackerStore
@@ -40,6 +41,15 @@ def screenshot_gallery(fch: Path, dest: Path):
     dest.mkdir(parents=True, exist_ok=True)
     app = QApplication.instance() or QApplication([])
     app.setApplicationName("Valheim Stats Tracker — Captures de validation")
+    print("Plateforme Qt:", QApplication.platformName(), flush=True)
+    for filename in ("segoeui.ttf", "segoeuib.ttf", "georgia.ttf", "georgiab.ttf", "arial.ttf"):
+        font_file = Path("C:/Windows/Fonts") / filename
+        if font_file.is_file():
+            font_id = QFontDatabase.addApplicationFont(str(font_file))
+            families = QFontDatabase.applicationFontFamilies(font_id) if font_id >= 0 else []
+            print(f"Police enregistrée : {filename} -> {font_id} {families}", flush=True)
+    app.setFont(QFont("Segoe UI", 10))
+    print("Familles Qt disponibles :", len(QFontDatabase.families()), flush=True)
 
     shots = []
     with tempfile.TemporaryDirectory(prefix="valheim_tracker_screens_") as temp:
