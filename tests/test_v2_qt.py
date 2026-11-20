@@ -267,6 +267,15 @@ class QtWindowTests(unittest.TestCase):
             self.assertTrue(w.sidebar_cumulative_button.isEnabled())
             self.assertEqual(w.collection_page.preview.height(), 184)
             self.assertEqual(w.collection_page.preview.minimumHeight(), 184)
+            collection_layout=w.collection_page.detail_scroll.widget().layout()
+            visible_widgets=[collection_layout.itemAt(i).widget()
+                             for i in range(collection_layout.count())
+                             if collection_layout.itemAt(i).widget() is not None]
+            self.assertLess(
+                visible_widgets.index(w.collection_page.detail_title),
+                visible_widgets.index(w.collection_page.preview))
+            self.assertGreaterEqual(
+                w.collection_page.detail_scroll.widget().minimumHeight(),645)
             settings=w.stack.widget(4)
             text=' '.join(x.text() for x in settings.findChildren(QLabel))
             self.assertIn('installation manuelle sans PowerShell',text)
