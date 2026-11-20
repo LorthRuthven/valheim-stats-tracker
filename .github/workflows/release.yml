@@ -135,6 +135,18 @@ jobs:
           }
           Write-Host 'Mise à jour vérifiée et installée manuellement : aucune exécution PowerShell.'
 
+      - name: Contrôler chaque sprite Valheim depuis le véritable EXE compilé
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
+          $check = Start-Process -FilePath $exe -ArgumentList '--verify-real-icons' -Wait -PassThru
+          if ($check.ExitCode -ne 0) {
+            throw "Sprites du jeu absents du programme compilé (sortie : $($check.ExitCode))."
+          }
+          Write-Host 'Vraies icônes Valheim dans le programme compilé : OK'
+
       - name: Vérifier Defender sur l'exécutable si le service est actif
         shell: pwsh
         run: |
