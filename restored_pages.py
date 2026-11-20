@@ -258,6 +258,39 @@ class RestoredPagesMixin:
         self.activity_summary=label("",muted=True,wrap=True)
         fl.addWidget(self.activity_summary)
         page.addWidget(filt)
+        showcase, showcase_layout = panel(
+            "RESSOURCES ET OBJETS À LA UNE",
+            "Les trois activités les plus enregistrées dans les filtres actuels."
+        )
+        spotlight_row = QHBoxLayout()
+        spotlight_row.setSpacing(10)
+        self.activity_spotlights = []
+        for _ in range(3):
+            card = QFrame()
+            card.setObjectName("activitySpotlightCard")
+            card.setStyleSheet(
+                "QFrame#activitySpotlightCard {background:#162c37;"
+                "border:1px solid #42606a;border-radius:11px;}"
+            )
+            line = QHBoxLayout(card)
+            line.setContentsMargins(12, 10, 12, 10)
+            image = QLabel()
+            image.setFixedSize(48, 48)
+            image.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            line.addWidget(image)
+            details = QVBoxLayout()
+            name = label("—", wrap=True)
+            name.setStyleSheet("font-weight:700;color:#e7e2d8;")
+            quantity = label("—", muted=True)
+            details.addWidget(name)
+            details.addWidget(quantity)
+            line.addLayout(details, 1)
+            spotlight_row.addWidget(card, 1)
+            self.activity_spotlights.append((card, image, name, quantity))
+        showcase_layout.addLayout(spotlight_row)
+        self.activity_spotlight_panel = showcase
+        showcase.setVisible(False)
+        page.addWidget(showcase)
         row=QHBoxLayout()
         main,ml=panel("OBJETS", "Noms français lorsqu'ils sont connus ; véritables icônes si disponibles.")
         self.activity_items=table(["Catégorie", "Objet / ressource", "Quantité"])
@@ -529,6 +562,23 @@ class RestoredPagesMixin:
             rows.append((family,display,float(count),key))
             by_family[family]=by_family.get(family,0)+float(count)
         rows.sort(key=lambda r:(-r[2],r[1].casefold()))
+        self.activity_spotlight_panel.setVisible(bool(rows))
+        for index, (card, picture, name, quantity) in enumerate(self.activity_spotlights):
+            visible = index < len(rows)
+            card.setVisible(visible)
+            if not visible:
+                continue
+            family, display, count, key = rows[index]
+            picture.clear()
+            icon = game_icon(key)
+            if not icon.isNull():
+                picture.setPixmap(icon.pixmap(44, 44))
+            else:
+                picture.setText("✧")
+                picture.setStyleSheet("color:#c8ab82;font:bold 23pt Georgia;")
+                picture.setToolTip("Icône du jeu non disponible sur cette installation")
+            name.setText(display)
+            quantity.setText(f"{txt(count)} unité(s) · {family}")
         self.activity_summary.setText(
             (f"{len(rows)} types · {txt(sum(r[2] for r in rows))} unités affichées · "
              f"Catégorie dominante : {max(by_family,key=by_family.get)}")
