@@ -22,6 +22,9 @@ jobs:
       - name: Tester le moteur et le cumul des personnages
         run: python3 -m unittest discover -s tests -v
 
+      - name: Vérifier l'updater Windows sans scripts exécutables
+        run: python3 -m unittest discover -s tests -p test_windows_update_safe.py -v
+
       - name: Télécharger une vraie sauvegarde Valheim 1.0 v46 publique (source figée)
         env:
           FIXTURE_URL: https://raw.githubusercontent.com/lanchelms/fch-decoder/1a5ff4f767e1bbf2f7955d4dcd22e628eb318427/testdata/Steam_444444_nichael.fch
