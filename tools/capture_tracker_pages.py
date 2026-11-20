@@ -199,6 +199,9 @@ def screenshot_gallery(fch: Path, dest: Path):
             raise RuntimeError("Capture de la galerie impossible")
         print("CAPTURE DEMO ACTIVITES :",galleryshot,flush=True)
         window.activity_next.click()
+        for _ in range(3):
+            app.processEvents()
+        window.repaint()
         app.processEvents()
         galleryshot2=dest/"19_DEMONSTRATION-galerie-activites-page2.png"
         if not window.grab().save(str(galleryshot2),"PNG"):
