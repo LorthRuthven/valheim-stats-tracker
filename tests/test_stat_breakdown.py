@@ -102,6 +102,17 @@ class CharacterBreakdownTests(unittest.TestCase):
         self.assertEqual(len(result.rows), 2)
         self.assertTrue(any(r.source == "active" for r in result.rows))
 
+    def test_every_stat_agrees_with_existing_aggregate_engine(self):
+        from character_archive import combine_profiles
+        from viking_stats import value
+        aggregate = combine_profiles([self.a["profile"], self.b["profile"]])
+        for stat in STATS:
+            with self.subTest(stat=stat.key):
+                result = breakdown(stat, [self.a, self.b])
+                self.assertEqual(result.total, value(aggregate, stat, "Any"))
+                self.assertEqual(len(result.rows), 2)
+                self.assertTrue(all(row.name for row in result.rows))
+
     def test_zero_sum_does_not_invent_percentages(self):
         x = person(character("Zéro", 333, {"Deaths": 0}))
         result = breakdown(STAT_BY_KEY["deaths"], [x])
