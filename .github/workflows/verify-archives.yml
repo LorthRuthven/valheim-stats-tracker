@@ -153,6 +153,18 @@ jobs:
           $test = Start-Process -FilePath $exe -ArgumentList '--verify-safe-updater' -Wait -PassThru
           if ($test.ExitCode -ne 0) { throw "Vérification ZIP compilée échouée : $($test.ExitCode)" }
 
+      - name: Contrôler chaque sprite Valheim depuis le véritable EXE compilé
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
+          $check = Start-Process -FilePath $exe -ArgumentList '--verify-real-icons' -Wait -PassThru
+          if ($check.ExitCode -ne 0) {
+            throw "Sprites du jeu absents du programme compilé (sortie : $($check.ExitCode))."
+          }
+          Write-Host 'Vraies icônes Valheim dans le programme compilé : OK'
+
       - name: Scanner la version candidate avec Defender, si disponible
         shell: pwsh
         run: |
