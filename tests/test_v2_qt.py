@@ -234,6 +234,13 @@ class QtWindowTests(unittest.TestCase):
             stats = w.viking_stats_page
             stats.refresh(None)
             self.assertEqual(stats.character_selector.count(), 3)
+            self.assertTrue(stats.total_mode_button.isEnabled())
+            stats.show_total()
+            self.assertTrue(stats.total_mode_button.isChecked())
+            self.assertFalse(stats.remove_button.isEnabled())
+            stats.show_individual()
+            self.assertTrue(stats.individual_mode_button.isChecked())
+            self.assertTrue(stats.remove_button.isEnabled())
             stats.character_selector.setCurrentIndex(0)
             self.assertEqual(stats.cards["deaths"].amount.text(), "13")
             self.assertEqual(stats.cards["built"].amount.text(), "195")
@@ -244,6 +251,25 @@ class QtWindowTests(unittest.TestCase):
             self.assertFalse(stats.remove_button.isEnabled())
             self.assertEqual(w.stack.count(), 12)
             w.close()
+
+    def test_visual_review_widgets_and_security_update_text(self):
+        app=QApplication.instance() or QApplication([])
+        from PySide6.QtWidgets import QLabel
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            self.assertEqual(len(w.boss_cards), 8)
+            self.assertIsNotNone(w.boss_overview)
+            self.assertIsNotNone(w.skills_summary)
+            self.assertEqual(set(w.combat_summary_labels),
+                             {'kills','species','bosses'})
+            self.assertEqual(w.collection_page.preview.height(), 184)
+            self.assertEqual(w.collection_page.preview.minimumHeight(), 184)
+            settings=w.stack.widget(4)
+            text=' '.join(x.text() for x in settings.findChildren(QLabel))
+            self.assertIn('installation manuelle sans PowerShell',text)
+            self.assertNotIn('sauvegarde et redémarrage',text)
+            w.close()
+            w.store.close()
 
     def test_labels_have_transparent_background(self):
         # Régression visuelle V2.1 : les QLabel ne doivent pas devenir
