@@ -170,6 +170,42 @@ def screenshot_gallery(fch: Path, dest: Path):
         print("CAPTURE DEMO DETAIL :", popupshot, flush=True)
         dialog.close()
 
+        # Capture illustrative de la nouvelle GALERIE : exemples créés uniquement
+        # en mémoire pour montrer les cartes quand la vraie sauvegarde n'a pas
+        # ces objets. Jamais enregistrés dans un .fch ni dans SQLite.
+        real_profile=store.profile
+        gallery_demo=copy.deepcopy(real_profile)
+        gallery_demo["name"]="Viking (démonstration)"
+        gallery_demo["groups"]["Any"]["pickables"]={
+            "$item_wood":1234.0, "$item_iron":839.0,
+            "$item_finewood":615.0, "$item_carrot":458.0,
+            "$item_honey":407.0, "$item_raspberry":385.0,
+            "$item_mushroom":312.0, "$item_surtlingcore":281.0,
+            "$item_feathers":199.0, "$item_serpentscale":145.0,
+            "$item_coins":125.0, "$item_trophyboar":67.0,
+            "$item_arrowwood":49.0, "$item_cultivator":24.0,
+            "$item_wishbone":11.0, "$item_torche":7.0,
+            "$item_axeeiron":6.0, "$item_fishingrod":4.0,
+            "$item_capefeather":3.0, "$item_hammer":2.0,
+        }
+        store.profile=gallery_demo
+        window.show_page(7)
+        window._refresh_activity()
+        app.processEvents()
+        if len(window.activity_rows)!=20:
+            raise RuntimeError("Galerie : les 20 exemples doivent être présents")
+        galleryshot=dest/"18_DEMONSTRATION-galerie-activites.png"
+        if not window.grab().save(str(galleryshot),"PNG"):
+            raise RuntimeError("Capture de la galerie impossible")
+        print("CAPTURE DEMO ACTIVITES :",galleryshot,flush=True)
+        window.activity_next.click()
+        app.processEvents()
+        galleryshot2=dest/"19_DEMONSTRATION-galerie-activites-page2.png"
+        if not window.grab().save(str(galleryshot2),"PNG"):
+            raise RuntimeError("Capture de la seconde page impossible")
+        store.profile=real_profile
+        print("CAPTURE DEMO ACTIVITES PAGE 2 :",galleryshot2,flush=True)
+
         window.close()
         store.close()
         app.processEvents()
@@ -206,7 +242,8 @@ def screenshot_gallery(fch: Path, dest: Path):
         "Données : personnage public de test Nichael (.fch v46), jamais modifié.\n"
         "Les 12 PNG montrent le début de chaque page ; quatre vues supplémentaires détaillent les statistiques et les modes cumul/individuel.\n"        "Les fichiers 16 et 17 sont des DEMONSTRATIONS : Vikings 1 et 2 sont fictifs,\n"
         "créés seulement en mémoire pour illustrer les deux lignes du détail du cumul.\n"
-
+        "Les captures 18 et 19 sont des DEMONSTRATIONS de la galerie Activités.\n"
+        "Les objets et quantités sont fictifs, créés seulement en mémoire.\n"
         "Une capture sur runner GitHub peut différer légèrement de la machine personnelle.\n",
         encoding="utf-8")
     print(f"MONTAGE : {collage}", flush=True)
