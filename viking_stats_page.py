@@ -198,9 +198,10 @@ class CumulativeStatDialog(QDialog):
         outer.addLayout(head)
 
         total = QFrame()
+        total.setObjectName("breakdownTotalPanel")
         total.setStyleSheet(
-            "QFrame {background:#243a3c;border:1px solid #a48755;"
-            "border-radius:13px;}"
+            "QFrame#breakdownTotalPanel {background:#243a3c;"
+            "border:1px solid #a48755;border-radius:13px;}"
         )
         total_layout = QVBoxLayout(total)
         total_layout.setContentsMargins(19, 14, 19, 14)
