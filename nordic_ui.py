@@ -657,6 +657,15 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.show_page(11)
         self.viking_stats_page.show_total()
 
+    def resizeEvent(self,event):
+        super().resizeEvent(event)
+        if not hasattr(self,"activity_grid") or not hasattr(self,"activity_tiles"):
+            return
+        available=max(0,self.width()-300)
+        columns=4 if available>=1220 else 3 if available>=850 else 2
+        if self.activity_columns != columns:
+            self._render_activity_gallery()
+
     def show_page(self,index):
         super().show_page(index)
         if index == 9:
