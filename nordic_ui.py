@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 from desktop_v2 import TrackerWindow as BaseTracker, TrendChart, label, panel, txt
 from restored_pages import RestoredPagesMixin
 from real_assets import hero_photo, achievement_icon, game_icon, reset_icon_cache
+from game_visuals import nav_game_icon, boss_game_icon
 from collection_page import CollectionPage
 from viking_stats_page import VikingStatsPage
 from windows_update_ui import UpdatePanel
@@ -28,26 +29,14 @@ from valheim_reader import BOSSES, prefab_label
 
 BG='#0c1117'; SIDEBAR='#111b22'; PANEL='#17232c'
 BRONZE='#e9b77b'; FG='#f1eee8'; MUTED='#afc0bd'
-ICON_PATH={
- 'home': 'M3 11l9-8 9 8v10H4V11 M9 21v-8h6v8',
- 'trophy': 'M7 4h10v5a5 5 0 0 1-10 0V4 M7 6H4v3c0 2 2 4 5 4M17 6h3v3c0 2-2 4-5 4M12 14v5 M7 21h10',
- 'skull': 'M5 12a7 7 0 1 1 14 0c0 3-2 4-3 5v4H8v-4c-1-1-3-2-3-5z M9 12v2m6-2v2 M10 18h4',
- 'history': 'M12 3a9 9 0 1 1-9 9 M12 7v5l4 3 M3 5v6h6',
- 'settings': 'M12 2v4m0 12v4M2 12h4m12 0h4M5 5l3 3m8 8 3 3M5 19l3-3m8-8 3-3 M12 9a3 3 0 1 1 0 6a3 3 0 0 1 0-6',
- 'paw': 'M7 18c0-4 4-6 5-6s5 2 5 6c0 4-10 4-10 0 M5 9v2 M10 6v2 M15 6v2 M20 9v2',
- 'shield': 'M12 2l9 4v7c-1 7-9 10-9 10S4 20 3 13V6z M12 6v13 M7 12h10',
- 'clock': 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 6v7l4 2',
- 'compass': 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M15 9l-2 6-5 2 2-6z',
- 'axe': 'M5 21L17 3M15 4c8-2 8 7 2 10l-5-6',
- 'tree': 'M12 2L5 12h4l-6 7h18l-6-7h4z M12 19v4',
- 'flame': 'M13 2c2 6-3 6 0 10 2-1 3-3 3-5 7 8 4 15-4 15S2 15 8 9c0 3 2 3 2 5 3-5 0-7 3-12z',
-}
 def rune_icon(name, size=28, color=BRONZE):
-    path=ICON_PATH.get(name,ICON_PATH['shield'])
-    xml=f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="{path}" fill="none" stroke="{color}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-    pix=QPixmap(size,size);pix.fill(Qt.GlobalColor.transparent)
-    painter=QPainter(pix);QSvgRenderer(QByteArray(xml.encode())).render(painter);painter.end()
-    return QIcon(pix)
+    """Compatibilité UI : renvoie exclusivement une image authentique Valheim.
+
+    Le paramètre color est conservé pour les anciens appels, sans recolorer
+    la texture originale du jeu.
+    """
+    return nav_game_icon(name)
+
 
 EMBLEM="""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
 <circle cx="60" cy="60" r="55" fill="#15262c" stroke="#d6a36c" stroke-width="4"/>
@@ -315,7 +304,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.btn_file=QPushButton('Choisir un personnage');self.btn_file.setIcon(rune_icon('shield',23))
         self.btn_file.clicked.connect(self.choose_file);head.addWidget(self.btn_file)
         self.btn_refresh=QPushButton('Actualiser');self.btn_refresh.setObjectName('primary')
-        self.btn_refresh.setIcon(rune_icon('history',23,'#242b27'))
+        self.btn_refresh.setIcon(rune_icon('history',23))
         self.btn_refresh.clicked.connect(lambda:self.refresh_save(force=True));head.addWidget(self.btn_refresh)
         ml.addWidget(top)
         self.stack=QStackedWidget();ml.addWidget(self.stack,1)
@@ -464,7 +453,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             self.motion_checkbox.setChecked(True)
             self.motion_checkbox.toggled.connect(self.set_motion)
             layout.addWidget(self.motion_checkbox)
-            layout.addWidget(label('Illustrations vectorielles, pictogrammes et effets discrets.',muted=True,wrap=True))
+            layout.addWidget(label('Vrais sprites Valheim pour les menus et les statistiques, sans pictogrammes maison.',muted=True,wrap=True))
             inner.layout().insertWidget(0,frame)
             display_panel, display_layout=panel(
                 'TAILLE DE L’INTERFACE',
@@ -726,7 +715,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         # Correspondances exactes des prefabs du bestiaire et des boss.
         for i,(token,name) in enumerate(BOSSES.items()):
             cell=self.combat_bosses.item(i,0)
-            icon=game_icon(token)
+            icon=boss_game_icon(token)
             if cell is not None and not icon.isNull():cell.setIcon(icon)
         group=self.combat_group.currentData()
         kills=self.store.profile['groups'][group]['enemies'][0]
