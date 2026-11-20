@@ -62,8 +62,8 @@ Dans Réglages, sélectionner Compact, Normal, Grand (défaut) ou Très grand. L
 ## V2.5 — Archives et cumul des statistiques
 Dans **Statistiques du Viking**, choisir **Importer des .fch** pour sélectionner plusieurs sauvegardes d'anciens personnages. Le menu **Personnages** permet d'afficher la fiche de chacun ou **Tous les personnages**. Les archives restent en mémoire locale SQLite, sans copie des fichiers originaux ni modification de sauvegarde. Si le même identifiant Valheim est réimporté, sa fiche est remplacée et non additionnée. Le personnage actif supplante son ancienne archive dans le total. Utiliser **Retirer l'archive** pour cesser de compter un ancien personnage sans effacer son `.fch`. La fonction prend en charge les formats v46/v47 ; une ancienne version de fichier non décodable est affichée comme erreur individuelle.
 
-### V2.5 — Mise à jour Windows et sécurité
-L'outil Windows vérifie toujours la version officielle sur GitHub, télécharge le ZIP et vérifie son SHA-256, **sans lancer de script PowerShell ou de programme caché**. L'utilisateur ouvre ensuite les dossiers dans l'Explorateur Windows, ferme l'application, renomme l'ancien dossier en sauvegarde et copie le nouveau. Le redémarrage automatique de l'installeur a été retiré, pour privilégier un mécanisme transparent. Les données personnelles restent dans %LOCALAPPDATA%\\ValheimStatsTracker.
+### V2.5 — Téléchargement Windows sécurisé
+L'updater reprend le mécanisme de sécurité V2.4.1 : vérification de GitHub Releases et du SHA-256, puis conservation du ZIP officiel **sans extraction automatique, exécution de script ni remplacement de l'EXE en cours d'utilisation**. L'utilisateur ouvre son dossier, vérifie le fichier avec Defender, ferme l'ancienne application et extrait le ZIP dans un nouveau dossier. Les données locales restent dans `%LOCALAPPDATA%\\ValheimStatsTracker`.
 
-Depuis une installation V2.4, utiliser une fois le ZIP de GitHub Releases manuellement afin d'éviter que l'updater déjà installé déclenche son ancien script.
+Depuis une installation V2.4, utiliser une fois le ZIP officiel depuis le navigateur plutôt que son ancien bouton d'installation PowerShell. Aucune exception antivirus n'est requise ou recommandée.
 
