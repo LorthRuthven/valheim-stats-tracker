@@ -73,6 +73,8 @@ ACTIVITY_FRENCH_NAMES = {
     "torch": "Torche",
     "hammer": "Marteau",
     "fishingrod": "Canne à pêche",
+    "axeiron": "Hache en fer",
+    "capefeather": "Cape de plumes",
     "stone": "Pierre",
     "thistle": "Chardon",
     "dandelion": "Pissenlit",
