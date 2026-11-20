@@ -46,6 +46,18 @@ jobs:
           python-version: '3.11'
       - name: Installer les dépendances Windows
         run: python -m pip install -r requirements-windows.txt
+      - name: Préparer les images officielles pour les captures Qt
+        shell: pwsh
+        run: python -m tools.fetch_game_assets
+
+      - name: Embarquer les vrais sprites Valheim (selection verifiee)
+        shell: pwsh
+        run: |
+          python -m tools.bundle_inventory_sprites
+          if ($LASTEXITCODE -ne 0) { throw 'Sprites Valheim incomplets' }
+          python -m unittest discover -s tests -p test_real_game_icons.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Une image Valheim manque au paquet' }
+
       - name: Charger l'interface et tester le sélecteur
         env:
           QT_QPA_PLATFORM: offscreen
@@ -58,10 +70,6 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: python -m unittest discover -s tests -p test_v2_qt.py -k character_archive_selector_and_cumulative_cards -v
 
-
-      - name: Préparer les images officielles pour les captures Qt
-        shell: pwsh
-        run: python -m tools.fetch_game_assets
 
       - name: Télécharger une vraie sauvegarde publique pour le rendu
         shell: pwsh
@@ -100,6 +108,10 @@ jobs:
         run: python -m pip install -r requirements-windows.txt
       - name: Préparer les images officielles pour le paquet
         run: python -m tools.fetch_game_assets
+      - name: Ajouter les vrais objets Valheim au ZIP Windows
+        run: python -m tools.bundle_inventory_sprites
+      - name: Exiger la couverture des sprites de toutes les pages
+        run: python -m unittest discover -s tests -p test_real_game_icons.py -v
       - name: Construire l'application Windows autonome
         shell: pwsh
         run: |
