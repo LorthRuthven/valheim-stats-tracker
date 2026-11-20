@@ -292,6 +292,13 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.sidebar_character=label('Aucun personnage',wrap=True)
         self.sidebar_character.setStyleSheet('font-weight:bold;color:#f4d3a7;')
         menu.addWidget(self.sidebar_character)
+        self.sidebar_cumulative_button=QPushButton('Σ  Cumul des Vikings')
+        self.sidebar_cumulative_button.setObjectName('sidebarStatsShortcut')
+        self.sidebar_cumulative_button.setToolTip(
+            'Ouvrir les Statistiques du Viking en mode cumul de tous les personnages.'
+        )
+        self.sidebar_cumulative_button.clicked.connect(self.open_cumulative_stats)
+        menu.addWidget(self.sidebar_cumulative_button)
         row.addWidget(side)
         main=QWidget();ml=QVBoxLayout(main);ml.setContentsMargins(0,0,0,0);ml.setSpacing(0)
         top=QFrame();top.setObjectName('topbar')
@@ -632,6 +639,10 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         if 0<=index<len(ranked):
             self.selected_achievement=ranked[index]['key']
             self.show_page(1);self.draw_achievements()
+    def open_cumulative_stats(self):
+        self.show_page(11)
+        self.viking_stats_page.show_total()
+
     def show_page(self,index):
         super().show_page(index)
         if index == 10 and hasattr(self, 'collection_page'):
