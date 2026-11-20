@@ -10,11 +10,12 @@ from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget,
-    QFileDialog, QMessageBox,
+    QFileDialog, QMessageBox, QDialog, QProgressBar,
 )
 
 from desktop_v2 import label, panel
 from character_archive import aggregation_mode, character_key, combine_profiles
+from stat_breakdown import breakdown
 from real_assets import game_icon
 from stat_pictograms import pictogram
 from viking_stats import (
@@ -23,9 +24,10 @@ from viking_stats import (
 
 
 class StatCard(QFrame):
-    def __init__(self, stat, toggle):
+    def __init__(self, stat, toggle, details=None):
         super().__init__()
         self.stat = stat
+        self._details = details
         self.setObjectName("vikingStatCard")
         self.setMinimumHeight(154)
         self.setMinimumWidth(210)
@@ -74,12 +76,31 @@ class StatCard(QFrame):
         self.delta.setObjectName("statChange")
         self.delta.setStyleSheet("color:#9cd9bf;font:9pt 'Segoe UI';")
         outer.addWidget(self.delta)
+        self.detail_button = QPushButton("Voir le détail par Viking  ›")
+        self.detail_button.setObjectName("statBreakdownButton")
+        self.detail_button.setToolTip(
+            "Voir la contribution de chaque personnage au résultat cumulé"
+        )
+        self.detail_button.setStyleSheet(
+            "QPushButton#statBreakdownButton {"
+            "color:#f0c890;background:#24404a;border:1px solid #54747a;"
+            "border-radius:8px;padding:7px 11px;text-align:left;font-weight:700;}"
+            "QPushButton#statBreakdownButton:hover {"
+            "background:#35535b;border-color:#e5ba7b;}"
+        )
+        self.detail_button.clicked.connect(
+            lambda _=False: self._details(self.stat.key) if self._details else None
+        )
+        self.detail_button.setVisible(False)
+        outer.addWidget(self.detail_button)
 
     def set_favorite(self, favorite):
         self.star.setText("★" if favorite else "☆")
         self.star.setToolTip("Retirer des favoris" if favorite else "Épingler dans les favoris")
 
-    def set_values(self, profile, previous, group):
+    def set_values(self, profile, previous, group, cumulative=False):
+        self.detail_button.setVisible(bool(cumulative and self._details))
+        self.setMinimumHeight(185 if cumulative and self._details else 154)
         current = value(profile, self.stat, group)
         self.amount.setText(pretty(current, self.stat.unit))
         d = change(profile, previous, self.stat, group)
@@ -88,13 +109,154 @@ class StatCard(QFrame):
         else:
             self.delta.setText("↑ +" + pretty(d, self.stat.unit) + " depuis le dernier relevé")
         rule = ""
-        if profile and profile.get("aggregate"):
+        if cumulative or (profile and profile.get("aggregate")):
             policy = ("sum" if self.stat.counter == "@world_hours"
                       else aggregation_mode(self.stat.counter))
             rule = {"sum": "Somme des personnages", "max": "Meilleur record parmi les personnages",
                     "any": "Atteint par au moins un personnage"}[policy] + "\n"
         self.setToolTip(f"{self.stat.title}\nCompteur : {self.stat.counter}\n"
                         f"Groupe : {group}\n{rule}{self.stat.note}")
+
+
+
+class CumulativeStatDialog(QDialog):
+    """Fiche flottante : décompose un total sans cacher la page de statistiques."""
+
+    RULES = {
+        "sum": ("SOMME DES PERSONNAGES",
+                "Les compteurs d'activité de chaque Viking sont additionnés."),
+        "max": ("MEILLEUR RECORD",
+                "Le total conserve la meilleure valeur atteinte par un Viking."),
+        "any": ("AU MOINS UN VIKING",
+                "Cette étape est validée dès qu'un personnage l'a atteinte."),
+    }
+
+    def __init__(self, stat, people, group, group_label, parent=None):
+        super().__init__(parent)
+        self.stat = stat
+        self.model = breakdown(stat, people, group)
+        self.rows = self.model.rows
+        self.setObjectName("cumulativeStatDialog")
+        self.setWindowTitle("Détail du cumul — " + stat.title)
+        self.resize(750, 610)
+        self.setMinimumWidth(550)
+        self.setStyleSheet(
+            "QDialog#cumulativeStatDialog {background:#101c24;color:#f1e8db;}"
+            "QFrame#contributionRow {background:#192f39;"
+            "border:1px solid #46636c;border-radius:11px;}"
+            "QLabel {background:transparent;}"
+        )
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(22, 20, 22, 20)
+        outer.setSpacing(13)
+        head = QHBoxLayout()
+        icon_holder = QLabel()
+        icon_holder.setFixedSize(63, 63)
+        icon_holder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        game_image = game_icon(stat.icon) if stat.icon else None
+        picture = (game_image if game_image is not None and not game_image.isNull()
+                   else pictogram(stat.key, 57))
+        icon_holder.setPixmap(picture.pixmap(QSize(57, 57)))
+        head.addWidget(icon_holder)
+        titles = QVBoxLayout()
+        main_title = label(stat.title, wrap=True)
+        main_title.setObjectName("breakdownStatTitle")
+        main_title.setStyleSheet("font:bold 19pt 'Segoe UI';color:#f8e7ce;")
+        titles.addWidget(main_title)
+        level = label(
+            f"{len(self.rows)} personnage(s)  •  Difficulté : {group_label}",
+            muted=True, wrap=True,
+        )
+        titles.addWidget(level)
+        head.addLayout(titles, 1)
+        outer.addLayout(head)
+
+        total = QFrame()
+        total.setStyleSheet(
+            "QFrame {background:#243a3c;border:1px solid #a48755;"
+            "border-radius:13px;}"
+        )
+        total_layout = QVBoxLayout(total)
+        total_layout.setContentsMargins(19, 14, 19, 14)
+        total_label = label("TOTAL CUMULÉ", muted=True)
+        total_layout.addWidget(total_label)
+        self.total_amount = label(pretty(self.model.total, stat.unit))
+        self.total_amount.setObjectName("breakdownTotal")
+        self.total_amount.setStyleSheet(
+            "color:#f6cc8b;font:bold 29pt 'Segoe UI';border:none;"
+        )
+        total_layout.addWidget(self.total_amount)
+        outer.addWidget(total)
+
+        rule_name, rule_text = self.RULES[self.model.policy]
+        rule_label = label(rule_name, section=True, wrap=True)
+        rule_label.setStyleSheet("font:bold 12pt Segoe UI;color:#f3cd91;")
+        outer.addWidget(rule_label)
+        rule_description = label(rule_text + " " + stat.note, muted=True, wrap=True)
+        outer.addWidget(rule_description)
+
+        section = label("DÉTAIL PAR PERSONNAGE", section=True)
+        outer.addWidget(section)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        list_widget = QWidget()
+        list_layout = QVBoxLayout(list_widget)
+        list_layout.setContentsMargins(2, 3, 8, 3)
+        list_layout.setSpacing(9)
+        self.contribution_labels = {}
+        for entry in self.rows:
+            box = QFrame()
+            box.setObjectName("contributionRow")
+            row_layout = QVBoxLayout(box)
+            row_layout.setContentsMargins(15, 11, 15, 11)
+            row_layout.setSpacing(7)
+            first = QHBoxLayout()
+            person = label(entry.name, wrap=True)
+            person.setStyleSheet("font:bold 12pt Segoe UI;color:#eee5db;")
+            first.addWidget(person, 1)
+            displayed = label(pretty(entry.amount, stat.unit))
+            displayed.setObjectName("contributionAmount")
+            displayed.setStyleSheet("font:bold 14pt Segoe UI;color:#f2c486;")
+            first.addWidget(displayed)
+            self.contribution_labels[entry.identity] = displayed
+            row_layout.addLayout(first)
+            source = "Personnage actif" if entry.source == "active" else "Archive importée"
+            if entry.filename and entry.source != "active":
+                source += " • " + entry.filename
+            note = source
+            if entry.amount is None:
+                note += " • Compteur non disponible"
+            elif self.model.policy == "sum" and entry.percentage is not None:
+                note += f" • {entry.percentage:.1f} % du total".replace(".", ",")
+            elif entry.leading:
+                note += (" • Record partagé" if self.model.policy == "max"
+                         else " • Objectif atteint")
+            source_label = label(note, muted=True, wrap=True)
+            row_layout.addWidget(source_label)
+            if entry.percentage is not None:
+                progress = QProgressBar()
+                progress.setObjectName("characterContributionBar")
+                progress.setRange(0, 1000)
+                progress.setValue(round(min(100.0, max(0.0, entry.percentage)) * 10))
+                progress.setTextVisible(False)
+                progress.setFixedHeight(10)
+                row_layout.addWidget(progress)
+            list_layout.addWidget(box)
+        list_layout.addStretch(1)
+        scroll.setWidget(list_widget)
+        outer.addWidget(scroll, 1)
+
+        hint = label(
+            "Une valeur « — » signifie que le compteur est absent du fichier. "
+            "Les difficultés ne sont jamais additionnées entre elles.",
+            muted=True, wrap=True,
+        )
+        outer.addWidget(hint)
+        close_button = QPushButton("Fermer le détail")
+        close_button.clicked.connect(self.close)
+        outer.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignRight)
 
 
 class VikingStatsPage(QScrollArea):
@@ -111,6 +273,7 @@ class VikingStatsPage(QScrollArea):
         self._favorites = set()
         self._columns = 0
         self.visible_stat_keys = []
+        self._detail_dialog = None
         self.setWidgetResizable(True)
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -218,7 +381,10 @@ class VikingStatsPage(QScrollArea):
         favorites_layout.addLayout(self.favorite_grid)
         self.layout.addWidget(self.favorite_panel)
         self.favorite_cards = {}
-        self.cards = {stat.key: StatCard(stat, self.toggle_favorite) for stat in STATS}
+        self.cards = {
+            stat.key: StatCard(stat, self.toggle_favorite, self.open_stat_details)
+            for stat in STATS
+        }
         self.sections = {}
         for category in CATEGORIES:
             frame, group_layout = panel(category.upper(), "")
@@ -229,6 +395,25 @@ class VikingStatsPage(QScrollArea):
             self.layout.addWidget(frame)
         self.layout.addStretch(1)
         self.refresh(None)
+
+    def open_stat_details(self, stat_key):
+        """Affiche le panneau de contribution d'une carte du mode Cumul."""
+        if self.character_selector.currentData() != "__total__" or not self.people:
+            return None
+        stat = next((item for item in STATS if item.key == stat_key), None)
+        if stat is None:
+            return None
+        if self._detail_dialog is not None:
+            self._detail_dialog.close()
+        dialog = CumulativeStatDialog(
+            stat, self.people,
+            self.difficulty.currentData(), self.difficulty.currentText(), self
+        )
+        self._detail_dialog = dialog
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+        return dialog
 
     def import_archives(self):
         if self.store is None:
@@ -331,10 +516,10 @@ class VikingStatsPage(QScrollArea):
         self._favorites = favorites(self._favorite_target, self.directory)
         for key, card in self.cards.items():
             card.set_favorite(key in self._favorites)
-            card.set_values(self.profile, self.previous, self.difficulty.currentData())
+            card.set_values(self.profile, self.previous, self.difficulty.currentData(), is_total)
         for key, card in self.favorite_cards.items():
             card.set_favorite(key in self._favorites)
-            card.set_values(self.profile, self.previous, self.difficulty.currentData())
+            card.set_values(self.profile, self.previous, self.difficulty.currentData(), self.character_selector.currentData() == "__total__")
         self.summary.setText(
             f"{description}  •  {len(STATS)} statistiques  •  "
             f"{len(self._favorites)} favoris épinglés"
@@ -374,9 +559,13 @@ class VikingStatsPage(QScrollArea):
     def update_values(self, *_):
         if not self.cards:
             return
+        if self._detail_dialog is not None:
+            self._detail_dialog.close()
+            self._detail_dialog = None
         group = self.difficulty.currentData()
+        is_total = self.character_selector.currentData() == "__total__"
         for card in (*self.cards.values(), *self.favorite_cards.values()):
-            card.set_values(self.profile, self.previous, group)
+            card.set_values(self.profile, self.previous, group, is_total)
 
     def toggle_favorite(self, key):
         if key not in self.cards:
@@ -420,7 +609,7 @@ class VikingStatsPage(QScrollArea):
         for index, stat in enumerate(favorites_visible):
             card=self.favorite_cards.get(stat.key)
             if card is None:
-                card=StatCard(stat, self.toggle_favorite)
+                card=StatCard(stat, self.toggle_favorite, self.open_stat_details)
                 self.favorite_cards[stat.key]=card
             card.set_favorite(True)
             card.set_values(self.profile, self.previous, self.difficulty.currentData())
