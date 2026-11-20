@@ -251,7 +251,7 @@ def decode(raw: bytes):
     if r.pos != len(body):
         raise SaveError(f'Données de sauvegarde supplémentaires inattendues : {len(body)-r.pos} octets')
     player = _read_player(player_data)
-    return {'name':name, 'version':version, 'created':created,
+    return {'name':name, 'version':version, 'created':created, 'player_id':player_id,
             'worlds_count':nw, 'first_spawn':first_spawn,
             'groups':groups, **player}
 
