@@ -120,7 +120,7 @@ jobs:
             $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
             Start-MpScan -ScanType CustomScan -ScanPath $exe -ErrorAction Stop
             if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
-              throw 'Defender a retiré l’exécutable candidat du dossier.'
+              throw 'Defender: programme candidat retire du dossier.'
             }
             Write-Host 'Defender disponible : analyse locale du candidat effectuée.'
           } else {
