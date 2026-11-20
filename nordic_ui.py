@@ -442,7 +442,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             ))
             inner.layout().insertWidget(1,display_panel)
             updates, update_layout=panel('MISES À JOUR WINDOWS',
-                'Vérification GitHub, SHA-256, sauvegarde et redémarrage.')
+                'Téléchargement officiel vérifié (SHA-256) ; installation manuelle sans PowerShell.')
             self.update_controller=UpdatePanel(self)
             update_layout.addWidget(self.update_controller)
             inner.layout().insertWidget(2,updates)
