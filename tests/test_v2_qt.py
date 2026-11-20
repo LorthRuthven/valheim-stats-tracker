@@ -311,6 +311,10 @@ class QtWindowTests(unittest.TestCase):
             self.assertEqual(w.activity_page_number,1)
             self.assertEqual(sum(not tile[0].isHidden()
                                  for tile in w.activity_tiles),9)
+            # Le passage à la dernière page ne doit pas générer
+            # d'énorme espace vide au-dessus du titre de la galerie.
+            gallery_heading=w.activity_gallery_panel.layout().itemAt(0).widget()
+            self.assertLess(gallery_heading.geometry().y(),90)
             self.assertTrue(w.activity_prev.isEnabled())
             self.assertFalse(w.activity_next.isEnabled())
             w.activity_sort.setCurrentText("Les moins nombreux")
