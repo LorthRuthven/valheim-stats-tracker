@@ -71,7 +71,7 @@ jobs:
 
       - name: Capturer toutes les pages de la vraie interface Windows
         env:
-          QT_QPA_PLATFORM: offscreen
+          QT_QPA_PLATFORM: windows
         shell: pwsh
         run: |
           python -m tools.capture_tracker_pages "$env:RUNNER_TEMP/nichael.fch" "captures/v2.5"
