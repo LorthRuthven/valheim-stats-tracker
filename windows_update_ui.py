@@ -106,9 +106,10 @@ class UpdatePanel(QWidget):
             "Le ZIP téléchargé se trouve dans ce dossier :\n"
             +str(directory)+"\n\n"
             "Par sécurité, l'application n'exécute plus de mise à jour silencieuse.\n"
-            "Fais analyser l'EXE par Defender et attends un verdict avant de le lancer.\n"
-            "Si le fichier est confirmé sûr, ferme le tracker, extrais le ZIP dans "
-            "un NOUVEAU dossier et lance son EXE.\n\n"
+            "Fais analyser le ZIP avec Defender, puis extrais-le dans un NOUVEAU dossier.\n"
+            "Fais ensuite analyser l'EXE extrait avec Defender AVANT de l'exécuter.\n"
+            "Si aucune menace n'est détectée, ferme l'ancienne application et "
+            "lance la nouvelle version.\n\n"
             "Aucune sauvegarde ni configuration n'a été modifiée."
         )
 
