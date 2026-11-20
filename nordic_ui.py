@@ -355,7 +355,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.combat_summary_labels={}
         for key, heading in (
             ('kills','CRÉATURES ÉLIMINÉES'),
-            ('species','ESPÈCES RENCONTRÉES AU COMBAT'),
+            ('species','ESPÈCES AVEC ÉLIMINATIONS'),
             ('bosses','BOSS VAINCUS'),
         ):
             card=QFrame()
