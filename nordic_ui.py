@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QPushButton, QStackedWidget, QWidget, QSizePolicy,
     QGraphicsOpacityEffect, QProgressBar, QCheckBox, QComboBox, QScrollArea
 )
-from desktop_v2 import TrackerWindow as BaseTracker, TrendChart, label, panel
+from desktop_v2 import TrackerWindow as BaseTracker, TrendChart, label, panel, txt
 from restored_pages import RestoredPagesMixin
 from real_assets import hero_photo, achievement_icon, game_icon, reset_icon_cache
 from collection_page import CollectionPage
