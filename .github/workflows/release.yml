@@ -136,6 +136,12 @@ jobs:
             $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
             $scanStart = Get-Date
             Start-MpScan -ScanType CustomScan -ScanPath $exe -ErrorAction Stop
+            $zip = (Get-ChildItem -Path dist -Filter '*_Windows.zip' | Select-Object -First 1).FullName
+            if (-not $zip) { throw 'Archive Windows ZIP absente.' }
+            Start-MpScan -ScanType CustomScan -ScanPath $zip -ErrorAction Stop
+            if (-not (Test-Path -LiteralPath $zip -PathType Leaf)) {
+              throw 'Defender a retire le ZIP du dossier.'
+            }
             $recent = @(Get-MpThreatDetection -ErrorAction SilentlyContinue | Where-Object {
               $_.InitialDetectionTime -ge $scanStart.AddMinutes(-1)
             })
