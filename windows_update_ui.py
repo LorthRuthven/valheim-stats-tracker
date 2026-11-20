@@ -2,13 +2,11 @@
 from __future__ import annotations
 
 import threading
-import os
-from pathlib import Path
 from PySide6.QtCore import QObject, Signal, Qt, QTimer
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QMessageBox, QProgressBar, QPushButton, QVBoxLayout, QWidget
 
 from v2_core import VERSION, app_dir
-from windows_update import check_release, stage_release, manual_update_instructions
+from windows_update import check_release, stage_release, open_download_folder
 
 class Events(QObject):
     checked=Signal(object)
@@ -28,13 +26,13 @@ class UpdatePanel(QWidget):
         self.events.failure.connect(self._failed)
         layout=QVBoxLayout(self)
         layout.setContentsMargins(8,8,8,8)
-        self.status=QLabel("Version Windows "+VERSION+" • Vérification automatique disponible")
+        self.status=QLabel("Version Windows "+VERSION+" • Mise à jour manuelle sécurisée")
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
         row=QHBoxLayout()
         self.check_button=QPushButton("Vérifier les mises à jour")
         self.check_button.clicked.connect(self.check)
-        self.install_button=QPushButton("Télécharger la mise à jour")
+        self.install_button=QPushButton("Télécharger le ZIP vérifié")
         self.install_button.setEnabled(False)
         self.install_button.clicked.connect(self.install)
         row.addWidget(self.check_button);row.addWidget(self.install_button)
@@ -73,10 +71,9 @@ class UpdatePanel(QWidget):
     def install(self):
         if not self.info or not self.info['available']:return
         answer=QMessageBox.question(self,"Mettre à jour Valheim Stats Tracker",
-            "Télécharger la version Windows "+self.info['version']+" ?\n"
-            "Le fichier sera contrôlé par SHA-256. "
-            "Pour réduire les alertes de sécurité, aucun installateur automatique "
-            "ni script caché ne sera lancé. Le remplacement se fera manuellement.")
+            "Télécharger la version Windows "+self.info['version']+" ?\n\n"
+            "L'archive sera vérifiée par SHA-256, sans installer ni lancer de programme.\n"
+            "Après analyse antivirus, il faudra l'extraire manuellement dans un nouveau dossier.")
         if answer!=QMessageBox.StandardButton.Yes:return
         self.status.setText("Téléchargement et contrôle SHA-256…")
         self.bar.setRange(0,100);self.bar.setValue(0)
@@ -93,35 +90,26 @@ class UpdatePanel(QWidget):
     def _downloaded(self,directory):
         self.busy=False
         self.bar.setValue(100)
-        self.status.setText("Version vérifiée et téléchargée. Installation manuelle.")
+        self.check_button.setEnabled(True)
+        self.status.setText(
+            "ZIP vérifié, non exécuté. Contrôle antivirus requis avant extraction. "
+            "Le tracker reste ouvert ; installation manuelle dans un nouveau dossier."
+        )
         try:
-            info=manual_update_instructions(directory)
+            open_download_folder(directory)
         except Exception as exc:
-            self._failed(str(exc))
+            self.status.setText("ZIP contrôlé : "+str(directory)+" • "+str(exc))
             return
-        text=(
-            "La mise à jour a été téléchargée et contrôlée (SHA-256).\n\n"
-            "Pour éviter tout script d'installation caché :\n"
-            "1. Ferme complètement Valheim Stats Tracker.\n"
-            "2. Renomme le dossier ACTUEL ValheimStatsTracker en "
-            "ValheimStatsTracker_ancien pour garder une sauvegarde.\n"
-            "3. Copie le dossier NOUVEAU ValheimStatsTracker à sa place.\n"
-            "4. Relance ValheimStatsTracker.exe.\n\n"
-            "Tes historiques et favoris restent dans le dossier de données "
-            "Windows, séparé de l'application.\n\n"
-            "Ouvrir les deux dossiers dans l'Explorateur Windows maintenant ?"
+        QMessageBox.information(
+            self, "Archive Windows vérifiée",
+            "Le ZIP téléchargé se trouve dans ce dossier :\n"
+            +str(directory)+"\n\n"
+            "Par sécurité, l'application n'exécute plus de mise à jour silencieuse.\n"
+            "Fais analyser l'EXE par Defender et attends un verdict avant de le lancer.\n"
+            "Si le fichier est confirmé sûr, ferme le tracker, extrais le ZIP dans "
+            "un NOUVEAU dossier et lance son EXE.\n\n"
+            "Aucune sauvegarde ni configuration n'a été modifiée."
         )
-        answer=QMessageBox.question(
-            self,"Mise à jour vérifiée — installation manuelle",text,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes,
-        )
-        if answer==QMessageBox.StandardButton.Yes:
-            try:
-                os.startfile(str(Path(info['source']).parent))
-                os.startfile(str(Path(info['target']).parent))
-            except OSError as exc:
-                self._failed("Impossible d'ouvrir les dossiers : "+str(exc))
 
     def _failed(self,message):
         self.busy=False
