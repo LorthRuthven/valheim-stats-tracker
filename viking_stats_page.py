@@ -164,7 +164,7 @@ class CumulativeStatDialog(QDialog):
         self.rows = self.model.rows
         self.setObjectName("cumulativeStatDialog")
         self.setWindowTitle("Détail du cumul — " + stat.title)
-        self.resize(750, 610)
+        self.resize(750, 790)
         self.setMinimumWidth(550)
         self.setStyleSheet(
             "QDialog#cumulativeStatDialog {background:#101c24;color:#f1e8db;}"
@@ -253,8 +253,10 @@ class CumulativeStatDialog(QDialog):
             first.addWidget(displayed)
             self.contribution_labels[entry.identity] = displayed
             row_layout.addLayout(first)
-            source = "Personnage actif" if entry.source == "active" else "Archive importée"
-            if entry.filename and entry.source != "active":
+            source = ("Personnage actif" if entry.source == "active"
+                      else "Données fictives de démonstration" if entry.source == "demo"
+                      else "Archive importée")
+            if entry.filename and entry.source == "archive":
                 source += " • " + entry.filename
             note = source
             if entry.amount is None:
