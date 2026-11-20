@@ -15,6 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from character_archive import CharacterArchive
 from valheim_reader import (
     BOSSES, SPECS, STAT_INDEX, SaveError, decode, evaluate_all,
     metrics, prefab_label,
@@ -230,6 +231,7 @@ class TrackerStore:
     def __init__(self, directory: Path | None = None):
         self.directory = Path(directory) if directory is not None else app_dir()
         self.db = db_open(self.directory)
+        self.archive = CharacterArchive(self.db)
         config = read_config(self.directory)
         configured = config.get("path", "")
         self.path = str(configured) if configured and Path(str(configured)).is_file() else default_save()
