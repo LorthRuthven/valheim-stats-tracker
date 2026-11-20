@@ -450,8 +450,9 @@ class RestoredPagesMixin:
         self.activity_prev.setEnabled(self.activity_page_number>0)
         self.activity_next.setEnabled(self.activity_page_number+1<total_pages)
         self.activity_empty.setVisible(not rows)
-        viewport=self.stack.widget(7)
-        available=(viewport.width() if viewport is not None else 1300)-55
+        # La largeur réelle de la fenêtre est stable avant la disposition
+        # des pages ; le panneau conserve deux colonnes sur petit écran.
+        available=max(0,self.width()-300)
         columns=4 if available>=1220 else 3 if available>=850 else 2
         self.activity_columns=columns
 
