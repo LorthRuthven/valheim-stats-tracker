@@ -9,7 +9,7 @@ import csv
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import (
     QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QHeaderView, QLabel,
@@ -22,7 +22,7 @@ from valheim_reader import (
     localized_name, prefab_label,
 )
 from v2_core import progress_ranking, pending_actions, session_report
-from real_assets import achievement_icon, game_icon
+from real_assets import achievement_icon, game_icon, collection_icon
 from game_visuals import boss_game_icon, skill_game_icon, THEMATIC_BOSS_ICONS
 
 GROUP_CHOICES = (
@@ -248,66 +248,255 @@ class RestoredPagesMixin:
         il.addWidget(self.boss_info);page.addWidget(info)
 
     def _make_activity_detail(self):
+        """Galerie d'objets Valheim en premier, données brutes facultatives."""
         page=self._scroll_page()
-        filt, fl=panel("ACTIVITÉS ET COLLECTIONS", "Ressources, objets, constructions et nourritures réellement enregistrés.")
+        intro, body=panel(
+            "TON AVENTURE, OBJET PAR OBJET",
+            "Tout ce que ton Viking a réellement collecté, ramassé, fabriqué, "
+            "placé ou consommé. Les quantités proviennent de sa sauvegarde."
+        )
+        self.activity_metrics={}
+        summary_row=QHBoxLayout()
+        summary_row.setSpacing(12)
+        for key, heading in (
+            ("types", "OBJETS DIFFÉRENTS"),
+            ("total", "ACTIONS ENREGISTRÉES"),
+            ("family", "FAMILLE DOMINANTE"),
+        ):
+            box=QFrame()
+            box.setObjectName("activitySummaryTile")
+            box.setStyleSheet(
+                "QFrame#activitySummaryTile {background:#172f38;"
+                "border:1px solid #526b6c;border-radius:12px;}"
+            )
+            inner=QVBoxLayout(box)
+            inner.setContentsMargins(16,12,16,12)
+            inner.setSpacing(6)
+            headline=label(heading,muted=True,wrap=True)
+            number=label("—",wrap=True)
+            number.setStyleSheet("color:#f4cb8d;font:bold 19pt 'Segoe UI';")
+            inner.addWidget(headline)
+            inner.addWidget(number)
+            summary_row.addWidget(box,1)
+            self.activity_metrics[key]=number
+        body.addLayout(summary_row)
+        body.addSpacing(5)
+
         controls=QHBoxLayout()
         self.activity_choice=QComboBox()
         for title,field in ACTIVITY_CHOICES:self.activity_choice.addItem(title,field)
+        self.activity_choice.setToolTip("Quelle action souhaites-tu examiner ?")
         self.activity_difficulty=group_control()
+        self.activity_difficulty.setToolTip("Les niveaux de difficulté se recouvrent.")
+        controls.addWidget(label("Activité :",muted=True))
+        controls.addWidget(self.activity_choice,3)
+        controls.addWidget(label("Difficulté :",muted=True))
+        controls.addWidget(self.activity_difficulty,2)
+        body.addLayout(controls)
+
+        filters=QHBoxLayout()
         self.activity_search=QLineEdit()
-        self.activity_search.setPlaceholderText("Rechercher un objet…")
-        for x in (self.activity_choice,self.activity_difficulty):x.currentIndexChanged.connect(self._refresh_activity)
-        self.activity_search.textChanged.connect(self._refresh_activity)
-        controls.addWidget(self.activity_choice);controls.addWidget(self.activity_difficulty)
-        controls.addWidget(self.activity_search,1)
-        fl.addLayout(controls)
-        self.activity_summary=label("",muted=True,wrap=True)
-        fl.addWidget(self.activity_summary)
-        page.addWidget(filt)
-        showcase, showcase_layout = panel(
-            "RESSOURCES ET OBJETS À LA UNE",
-            "Les trois activités les plus enregistrées dans les filtres actuels."
+        self.activity_search.setPlaceholderText("Chercher une ressource ou un objet Valheim…")
+        self.activity_search.setClearButtonEnabled(True)
+        self.activity_family=QComboBox()
+        self.activity_family.addItem("Toutes les familles","")
+        for heading,_ in ACTIVITY_CATEGORIES:
+            self.activity_family.addItem(heading,heading)
+        self.activity_family.addItem("Autres","Autres")
+        self.activity_sort=QComboBox()
+        self.activity_sort.addItem("Les plus nombreux","most")
+        self.activity_sort.addItem("Ordre alphabétique","az")
+        self.activity_sort.addItem("Les moins nombreux","least")
+        filters.addWidget(self.activity_search,5)
+        filters.addWidget(self.activity_family,3)
+        filters.addWidget(self.activity_sort,3)
+        body.addLayout(filters)
+        self.activity_summary=label("Charge un Viking pour consulter ses activités.",muted=True,wrap=True)
+        body.addWidget(self.activity_summary)
+        page.addWidget(intro)
+
+        self.activity_gallery_panel, gallery_layout=panel(
+            "GALERIE DES OBJETS",
+            "Une carte par objet : sprite du jeu, nom, famille et quantité exacte. "
+            "Les images thématiques sont signalées."
         )
-        spotlight_row = QHBoxLayout()
-        spotlight_row.setSpacing(10)
-        self.activity_spotlights = []
-        for _ in range(3):
-            card = QFrame()
-            card.setObjectName("activitySpotlightCard")
-            card.setStyleSheet(
-                "QFrame#activitySpotlightCard {background:#162c37;"
-                "border:1px solid #42606a;border-radius:11px;}"
+        nav=QHBoxLayout()
+        self.activity_gallery_count=label("Aucune activité",muted=True,wrap=True)
+        nav.addWidget(self.activity_gallery_count,1)
+        self.activity_prev=QPushButton("‹ Précédent")
+        self.activity_next=QPushButton("Suivant ›")
+        self.activity_prev.setObjectName("activityPrevPage")
+        self.activity_next.setObjectName("activityNextPage")
+        self.activity_prev.clicked.connect(lambda _=False:self._activity_move_page(-1))
+        self.activity_next.clicked.connect(lambda _=False:self._activity_move_page(1))
+        nav.addWidget(self.activity_prev)
+        nav.addWidget(self.activity_next)
+        gallery_layout.addLayout(nav)
+
+        self.activity_empty=label(
+            "Aucune activité enregistrée pour ce choix. Essaie un autre filtre "
+            "ou un autre niveau de difficulté.",muted=True,wrap=True)
+        gallery_layout.addWidget(self.activity_empty)
+        self.activity_grid=QGridLayout()
+        self.activity_grid.setSpacing(13)
+        gallery_layout.addLayout(self.activity_grid)
+        self.activity_tiles=[]
+        self.activity_page_size=16
+        self.activity_page_number=0
+        self.activity_rows=[]
+        self.activity_columns=0
+        for _ in range(self.activity_page_size):
+            tile=QFrame()
+            tile.setObjectName("activityGalleryCard")
+            tile.setMinimumWidth(220)
+            tile.setFixedHeight(143)
+            tile.setStyleSheet(
+                "QFrame#activityGalleryCard {background:#182e38;"
+                "border:1px solid #415f65;border-radius:12px;}"
+                "QFrame#activityGalleryCard:hover {background:#263e46;"
+                "border:1px solid #cca274;}"
             )
-            line = QHBoxLayout(card)
-            line.setContentsMargins(12, 10, 12, 10)
-            image = QLabel()
-            image.setFixedSize(48, 48)
-            image.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            line.addWidget(image)
-            details = QVBoxLayout()
-            name = label("—", wrap=True)
-            name.setStyleSheet("font-weight:700;color:#e7e2d8;")
-            quantity = label("—", muted=True)
-            details.addWidget(name)
-            details.addWidget(quantity)
-            line.addLayout(details, 1)
-            spotlight_row.addWidget(card, 1)
-            self.activity_spotlights.append((card, image, name, quantity))
-        showcase_layout.addLayout(spotlight_row)
-        self.activity_spotlight_panel = showcase
-        showcase.setVisible(False)
-        page.addWidget(showcase)
-        row=QHBoxLayout()
-        main,ml=panel("OBJETS", "Noms français lorsqu'ils sont connus ; véritables icônes si disponibles.")
+            inner=QHBoxLayout(tile)
+            inner.setContentsMargins(12,12,12,12)
+            inner.setSpacing(12)
+            picture=QLabel()
+            picture.setObjectName("activityGameImage")
+            picture.setFixedSize(65,65)
+            picture.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            inner.addWidget(picture)
+            column=QVBoxLayout()
+            column.setSpacing(4)
+            family=label("—",muted=True,wrap=True)
+            name=label("—",wrap=True)
+            name.setStyleSheet("color:#f1e7d9;font:bold 11pt 'Segoe UI';")
+            quantity=label("—")
+            quantity.setStyleSheet("color:#f7c483;font:bold 18pt 'Segoe UI';")
+            hint=label("",muted=True,wrap=True)
+            hint.setStyleSheet("color:#a8bcbc;font:8pt 'Segoe UI';")
+            column.addWidget(family)
+            column.addWidget(name)
+            column.addWidget(quantity)
+            column.addWidget(hint)
+            column.addStretch(1)
+            inner.addLayout(column,1)
+            self.activity_tiles.append((tile,picture,family,name,quantity,hint))
+            self.activity_grid.addWidget(tile,0,0)
+            tile.hide()
+        page.addWidget(self.activity_gallery_panel)
+
+        detail,detail_layout=panel(
+            "DÉTAIL TECHNIQUE",
+            "Tableaux complets des objets et des familles : pour vérifier les données "
+            "ou rechercher un identifiant spécifique."
+        )
+        self.activity_technical_button=QPushButton("Afficher les tableaux détaillés")
+        self.activity_technical_button.setObjectName("activityTechnicalToggle")
+        self.activity_technical_button.setCheckable(True)
+        self.activity_technical_button.setChecked(False)
+        self.activity_technical_button.toggled.connect(self._toggle_activity_technical)
+        detail_layout.addWidget(self.activity_technical_button)
+        self.activity_technical_content=QWidget()
+        technical_layout=QHBoxLayout(self.activity_technical_content)
+        technical_layout.setContentsMargins(0,10,0,0)
+        main,ml=panel("OBJETS", "Toutes les lignes, sans limite de pagination.")
         self.activity_items=table(["Catégorie", "Objet / ressource", "Quantité"])
-        self.activity_items.setIconSize(__import__('PySide6.QtCore',fromlist=['QSize']).QSize(34,34))
+        self.activity_items.setIconSize(QSize(34,34))
         self.activity_items.verticalHeader().setDefaultSectionSize(42)
         ml.addWidget(self.activity_items)
-        row.addWidget(main,3)
-        side,sl=panel("RÉPARTITION", "Familles d'objets après filtrage.")
+        technical_layout.addWidget(main,3)
+        side,sl=panel("RÉPARTITION", "Familles présentes dans les filtres.")
         self.activity_families=table(["Famille", "Quantité", "Part"])
         sl.addWidget(self.activity_families)
-        row.addWidget(side,2);page.addLayout(row,1)
+        technical_layout.addWidget(side,2)
+        detail_layout.addWidget(self.activity_technical_content)
+        self.activity_technical_content.hide()
+        page.addWidget(detail)
+        page.addStretch(1)
+
+        for widget in (self.activity_choice,self.activity_difficulty,
+                       self.activity_family,self.activity_sort):
+            widget.currentIndexChanged.connect(self._refresh_activity)
+        self.activity_search.textChanged.connect(self._refresh_activity)
+
+    def _toggle_activity_technical(self, enabled):
+        self.activity_technical_content.setVisible(enabled)
+        self.activity_technical_button.setText(
+            "Masquer les tableaux détaillés" if enabled else
+            "Afficher les tableaux détaillés"
+        )
+
+    def _activity_move_page(self, offset):
+        total_pages=max(1,(len(self.activity_rows)+self.activity_page_size-1)
+                        //self.activity_page_size)
+        self.activity_page_number=max(
+            0,min(total_pages-1,self.activity_page_number+offset)
+        )
+        self._render_activity_gallery()
+
+    def _render_activity_gallery(self):
+        if not hasattr(self,"activity_tiles"):
+            return
+        rows=self.activity_rows
+        total_pages=max(1,(len(rows)+self.activity_page_size-1)
+                        //self.activity_page_size)
+        self.activity_page_number=max(0,min(self.activity_page_number,total_pages-1))
+        first=self.activity_page_number*self.activity_page_size
+        visible=rows[first:first+self.activity_page_size]
+        self.activity_gallery_count.setText(
+            (f"{first+1}–{first+len(visible)} sur {len(rows)} objets"
+             f"  •  Page {self.activity_page_number+1}/{total_pages}")
+            if rows else "Aucun objet dans cette sélection"
+        )
+        self.activity_prev.setEnabled(self.activity_page_number>0)
+        self.activity_next.setEnabled(self.activity_page_number+1<total_pages)
+        self.activity_empty.setVisible(not rows)
+        viewport=self.stack.widget(7)
+        available=(viewport.width() if viewport is not None else 1300)-55
+        columns=4 if available>=1220 else 3 if available>=850 else 2
+        self.activity_columns=columns
+
+        thematic={
+            "Bois et arbres":"Wood",
+            "Métaux et minerais":"Iron",
+            "Pierre et minéraux":"Wishbone",
+            "Cuisine et nourriture":"CarrotSoup",
+            "Plantes et graines":"Cultivator",
+            "Matériel et armes":"SwordIron",
+            "Constructions":"Hammer",
+            "Autres":"Wishbone",
+        }
+        for index,(tile,picture,family,name,quantity,hint) in enumerate(self.activity_tiles):
+            self.activity_grid.removeWidget(tile)
+            if index>=len(visible):
+                tile.hide()
+                continue
+            group,display,count,key=visible[index]
+            image=game_icon(key)
+            exact=not image.isNull()
+            if not exact:
+                image=collection_icon(key)
+                exact=not image.isNull()
+            if image.isNull():
+                image=game_icon(thematic[group])
+            picture.clear()
+            if not image.isNull():
+                picture.setPixmap(image.pixmap(QSize(62,62)))
+                picture.setToolTip(
+                    "Vrai sprite de cet objet Valheim" if exact
+                    else "Sprite Valheim thématique : l'objet exact n'a pas d'image locale"
+                )
+            else:
+                picture.setText("Image\nabsente")
+                picture.setWordWrap(True)
+                picture.setStyleSheet("color:#b8c6c7;font:8pt 'Segoe UI';")
+            family.setText(group.upper())
+            name.setText(display)
+            quantity.setText(txt(count))
+            hint.setText("UNITÉS ENREGISTRÉES" if exact else "IMAGE THÉMATIQUE VALHEIM")
+            tile.setToolTip(f"{display}\n{txt(count)} unité(s)\n{group}\n"
+                            f"Identifiant : {key}")
+            self.activity_grid.addWidget(tile,index//columns,index%columns)
+            tile.show()
 
     def _make_skill_detail(self):
         page=self._scroll_page()
@@ -557,55 +746,73 @@ class RestoredPagesMixin:
         )
 
     def _refresh_activity(self):
-        if not self.store.profile or not hasattr(self,'activity_items'):return
-        g=self.activity_difficulty.currentData()
-        field=self.activity_choice.currentData()
-        data=self.store.profile['groups'][g][field]
+        if not hasattr(self,"activity_items"):
+            return
+        if not self.store.profile:
+            self.activity_rows=[]
+            self.activity_metrics["types"].setText("0")
+            self.activity_metrics["total"].setText("0")
+            self.activity_metrics["family"].setText("—")
+            self.activity_summary.setText(
+                "Charge une sauvegarde .fch pour afficher ses activités."
+            )
+            self._render_activity_gallery()
+            return
+        group=self.activity_difficulty.currentData()
+        action=self.activity_choice.currentData()
+        data=self.store.profile.get("groups",{}).get(group,{}).get(action,{})
         needle=self.activity_search.text().strip().casefold()
+        group_filter=self.activity_family.currentData()
         rows=[]
-        by_family={}
-        for key,count in data.items():
-            if count<=0:continue
-            display=_display_token(key)
-            if needle not in display.casefold() and needle not in key.casefold():continue
-            family=activity_category(key)
-            rows.append((family,display,float(count),key))
-            by_family[family]=by_family.get(family,0)+float(count)
-        rows.sort(key=lambda r:(-r[2],r[1].casefold()))
-        self.activity_spotlight_panel.setVisible(bool(rows))
-        for index, (card, picture, name, quantity) in enumerate(self.activity_spotlights):
-            visible = index < len(rows)
-            card.setVisible(visible)
-            if not visible:
+        families={}
+        for key,amount in data.items():
+            try:
+                number=float(amount)
+            except (ValueError,TypeError,OverflowError):
                 continue
-            family, display, count, key = rows[index]
-            picture.clear()
-            icon = game_icon(key)
-            if not icon.isNull():
-                picture.setPixmap(icon.pixmap(44, 44))
-            else:
-                picture.setText("Image\nabsente")
-                picture.setWordWrap(True)
-                picture.setStyleSheet("color:#bac6c9;font:8pt 'Segoe UI';")
-                picture.setToolTip("Ce prefab n'a pas d'illustration disponible.")
-            name.setText(display)
-            quantity.setText(f"{txt(count)} unité(s) · {family}")
+            if not 0<number<float("inf"):
+                continue
+            display=_display_token(key)
+            if needle not in display.casefold() and needle not in key.casefold():
+                continue
+            family=activity_category(key)
+            if group_filter and family!=group_filter:
+                continue
+            rows.append((family,display,number,key))
+            families[family]=families.get(family,0)+number
+        sorting=self.activity_sort.currentData()
+        if sorting=="az":
+            rows.sort(key=lambda r:(r[1].casefold(),-r[2]))
+        elif sorting=="least":
+            rows.sort(key=lambda r:(r[2],r[1].casefold()))
+        else:
+            rows.sort(key=lambda r:(-r[2],r[1].casefold()))
+        self.activity_rows=rows
+        self.activity_page_number=0
+        total=sum(families.values())
+        dominant=(max(families,key=families.get) if families else "—")
+        self.activity_metrics["types"].setText(txt(len(rows)))
+        self.activity_metrics["total"].setText(txt(total))
+        self.activity_metrics["family"].setText(dominant)
         self.activity_summary.setText(
-            (f"{len(rows)} types · {txt(sum(r[2] for r in rows))} unités affichées · "
-             f"Catégorie dominante : {max(by_family,key=by_family.get)}")
-            if by_family else
-            "Aucune activité correspondante dans cette sauvegarde et ces filtres. "
-            "Un compteur absent ne signifie pas que l'action n'a jamais été réalisée."
+            (f"{len(rows)} objets distincts  •  {txt(total)} actions enregistrées  •  "
+             "Les groupes de difficulté sont des ensembles qui se recouvrent.")
+            if rows else
+            "Aucun objet correspondant aux filtres. Les anciens compteurs "
+            "absents ne signifient pas qu'aucune action n'a été réalisée."
         )
+        self._render_activity_gallery()
+        # Tableau inchangé pour le contrôle de toutes les lignes. Il reste
+        # entièrement accessible sans envahir la galerie.
         self.activity_items.setRowCount(len(rows))
         for idx,(family,display,count,key) in enumerate(rows):
             self.activity_items.setItem(idx,0,_table_item(family))
             self.activity_items.setItem(idx,1,_table_item(display,game_icon(key)))
             self.activity_items.setItem(idx,2,_table_item(txt(count)))
-        total=sum(by_family.values())
         _fill_table(self.activity_families,[
-            (name,txt(count),f"{(100*count/total if total else 0):.0f} %")
-            for name,count in sorted(by_family.items(),key=lambda p:-p[1])])
+            (family,txt(amount),f"{100*amount/total:.0f} %" if total else "—")
+            for family,amount in sorted(families.items(),key=lambda pair:-pair[1])
+        ])
 
     def _refresh_skills(self):
         if not self.store.profile or not hasattr(self,'skills_table'):return
