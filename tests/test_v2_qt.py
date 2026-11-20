@@ -207,6 +207,175 @@ class QtWindowTests(unittest.TestCase):
             self.assertFalse(w.grab().isNull())
             w.close()
 
+    def test_character_archive_selector_and_cumulative_cards(self):
+        from unittest.mock import patch
+        from valheim_reader import PLAYER_STAT_NAMES, STAT_INDEX
+        app = QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as root:
+            w = NordicWindow(TrackerStore(root))
+            archive = w.store.archive
+            from pathlib import Path
+            def profile(name, identity, deaths, builds):
+                arr = [0.0] * len(PLAYER_STAT_NAMES)
+                arr[STAT_INDEX["Deaths"]] = deaths
+                arr[STAT_INDEX["Builds"]] = builds
+                return {"name": name, "player_id": identity, "created": 42,
+                        "groups": {"Any": {"stats": arr},
+                                   "RawStats": {"stats": arr.copy(), "worlds": {}}}}
+            first = Path(root) / "ancien1.fch"
+            second = Path(root) / "ancien2.fch"
+            first.write_bytes(b"one")
+            second.write_bytes(b"two")
+            with patch("character_archive.decode",
+                       side_effect=[profile("Ulf", 1, 5, 80),
+                                    profile("Ragna", 2, 8, 115)]):
+                report = archive.import_files([first, second])
+            self.assertEqual(report["added"], 2)
+            stats = w.viking_stats_page
+            stats.refresh(None)
+            self.assertEqual(stats.character_selector.count(), 3)
+            self.assertTrue(stats.total_mode_button.isEnabled())
+            stats.show_total()
+            self.assertTrue(stats.total_mode_button.isChecked())
+            self.assertFalse(stats.remove_button.isEnabled())
+            stats.show_individual()
+            self.assertTrue(stats.individual_mode_button.isChecked())
+            self.assertTrue(stats.remove_button.isEnabled())
+            stats.character_selector.setCurrentIndex(0)
+            self.assertEqual(stats.cards["deaths"].amount.text(), "13")
+            self.assertEqual(stats.cards["built"].amount.text(), "195")
+            self.assertFalse(stats.cards["deaths"].detail_button.isHidden())
+            stats.cards["deaths"].detail_button.click()
+            app.processEvents()
+            dialog=stats._detail_dialog
+            self.assertIsNotNone(dialog)
+            self.assertEqual(dialog.model.total, 13)
+            self.assertEqual([r.name for r in dialog.rows], ["Ragna", "Ulf"])
+            self.assertEqual([r.amount for r in dialog.rows], [8, 5])
+            self.assertEqual(dialog.total_amount.text(), "13")
+            self.assertAlmostEqual(sum(r.percentage for r in dialog.rows),100)
+            self.assertEqual(dialog.contribution_labels["id:2"].text(), "8")
+            dialog.close()
+            stats.character_selector.setCurrentIndex(1)
+            self.assertTrue(stats.cards["deaths"].detail_button.isHidden())
+            self.assertIsNone(stats.open_stat_details("deaths"))
+            self.assertEqual(stats.cards["deaths"].amount.text(), "8")
+            self.assertTrue(stats.remove_button.isEnabled())
+            stats.character_selector.setCurrentIndex(0)
+            self.assertFalse(stats.remove_button.isEnabled())
+            self.assertEqual(w.stack.count(), 12)
+            w.close()
+
+    def test_activity_gallery_cards_filters_pagination_and_advanced_tables(self):
+        """La galerie est le rendu principal ; le tableau reste optionnel."""
+        app=QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            w.show()
+            w.set_motion(False)
+            w.store.profile={
+                "name":"Viking de test",
+                "groups":{
+                    "Any":{
+                        "pickables":{f"$item_wood_{i:02d}":float(i+1)
+                                     for i in range(25)},
+                        "picked_up":{},"crafted":{},
+                        "pieces_built":{},"foods_eaten":{}
+                    }
+                }
+            }
+            w.show_page(7)
+            w._refresh_activity()
+            app.processEvents()
+            from restored_pages import _display_token
+            self.assertEqual(_display_token("$item_raspberry"),"Framboise")
+            self.assertEqual(_display_token("$item_mushroom"),"Champignon")
+            self.assertEqual(len(w.activity_rows),25)
+            self.assertEqual(w.activity_page_number,0)
+            self.assertEqual(len(w.activity_tiles),16)
+            self.assertEqual(sum(not tile[0].isHidden()
+                                 for tile in w.activity_tiles),16)
+            self.assertTrue(w.activity_next.isEnabled())
+            self.assertFalse(w.activity_prev.isEnabled())
+            self.assertTrue(w.activity_technical_content.isHidden())
+            self.assertEqual(w.activity_items.rowCount(),25)
+            self.assertEqual(w.activity_metrics["types"].text(),"25")
+            w.resize(1100,800)
+            app.processEvents()
+            self.assertEqual(w.activity_columns,2)
+            w.resize(1650,940)
+            app.processEvents()
+            self.assertEqual(w.activity_columns,4)
+            w.activity_next.click()
+            app.processEvents()
+            self.assertEqual(w.activity_page_number,1)
+            self.assertEqual(sum(not tile[0].isHidden()
+                                 for tile in w.activity_tiles),9)
+            # Le passage à la dernière page ne doit pas générer
+            # d'énorme espace vide au-dessus du titre de la galerie.
+            gallery_heading=w.activity_gallery_panel.layout().itemAt(0).widget()
+            self.assertLess(gallery_heading.geometry().y(),90)
+            self.assertTrue(w.activity_prev.isEnabled())
+            self.assertFalse(w.activity_next.isEnabled())
+            w.activity_sort.setCurrentText("Les moins nombreux")
+            self.assertEqual(w.activity_page_number,0)
+            self.assertEqual(w.activity_rows[0][2],1.0)
+            w.activity_search.setText("wood_1")
+            self.assertEqual(len(w.activity_rows),10)
+            w.activity_family.setCurrentText("Métaux et minerais")
+            self.assertFalse(w.activity_rows)
+            self.assertFalse(w.activity_empty.isHidden())
+            w.activity_family.setCurrentText("Toutes les familles")
+            w.activity_search.clear()
+            w.activity_technical_button.click()
+            self.assertTrue(w.activity_technical_button.isChecked())
+            self.assertFalse(w.activity_technical_content.isHidden())
+            self.assertEqual(w.activity_items.rowCount(),25)
+
+            self.assertTrue(w.nav_buttons[9].isHidden())
+            w.show_page(4)
+            w.raw_diagnostic_button.click()
+            self.assertEqual(w.stack.currentIndex(),9)
+            self.assertTrue(w.nav_buttons[4].isChecked())
+            from PySide6.QtWidgets import QPushButton
+            back=w.stack.widget(9).findChild(QPushButton,"rawBackToSettings")
+            self.assertIsNotNone(back)
+            back.click()
+            self.assertEqual(w.stack.currentIndex(),4)
+            w.close()
+            w.store.close()
+
+    def test_visual_review_widgets_and_security_update_text(self):
+        app=QApplication.instance() or QApplication([])
+        from PySide6.QtWidgets import QLabel
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            self.assertEqual(len(w.boss_cards), 8)
+            self.assertIsNotNone(w.boss_overview)
+            self.assertIsNotNone(w.skills_summary)
+            self.assertEqual(set(w.combat_summary_labels),
+                             {'kills','species','bosses'})
+            w.open_cumulative_stats()
+            self.assertEqual(w.stack.currentIndex(),11)
+            self.assertTrue(w.sidebar_cumulative_button.isEnabled())
+            self.assertEqual(w.collection_page.preview.height(), 184)
+            self.assertEqual(w.collection_page.preview.minimumHeight(), 184)
+            collection_layout=w.collection_page.detail_scroll.widget().layout()
+            visible_widgets=[collection_layout.itemAt(i).widget()
+                             for i in range(collection_layout.count())
+                             if collection_layout.itemAt(i).widget() is not None]
+            self.assertLess(
+                visible_widgets.index(w.collection_page.detail_title),
+                visible_widgets.index(w.collection_page.preview))
+            self.assertGreaterEqual(
+                w.collection_page.detail_scroll.widget().minimumHeight(),645)
+            settings=w.stack.widget(4)
+            text=' '.join(x.text() for x in settings.findChildren(QLabel))
+            self.assertIn('installation manuelle sans PowerShell',text)
+            self.assertNotIn('sauvegarde et redémarrage',text)
+            w.close()
+            w.store.close()
+
     def test_labels_have_transparent_background(self):
         # Régression visuelle V2.1 : les QLabel ne doivent pas devenir
         # des rectangles opaques autour de chaque texte.

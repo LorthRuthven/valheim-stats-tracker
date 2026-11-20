@@ -1,0 +1,203 @@
+name: Vérifier les archives de personnages
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  archives:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Tkinter pour les tests historiques
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y python3-tk
+      - name: Vérifier les fichiers Python
+        run: python3 -m py_compile character_archive.py viking_stats_page.py nordic_ui.py valheim_reader.py v2_core.py
+      - name: Tester le moteur et le cumul des personnages
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Vérifier l'updater Windows sans scripts exécutables
+        run: python3 -m unittest discover -s tests -p test_windows_update_safe.py -v
+
+      - name: Télécharger une vraie sauvegarde Valheim 1.0 v46 publique (source figée)
+        env:
+          FIXTURE_URL: https://raw.githubusercontent.com/lanchelms/fch-decoder/1a5ff4f767e1bbf2f7955d4dcd22e628eb318427/testdata/Steam_444444_nichael.fch
+        run: |
+          curl --fail --location --retry 3 --silent --show-error \
+            "$FIXTURE_URL" --output "$RUNNER_TEMP/nichael.fch"
+          test -s "$RUNNER_TEMP/nichael.fch"
+          echo "VALHEIM_TEST_FCH=$RUNNER_TEMP/nichael.fch" >> "$GITHUB_ENV"
+
+      - name: Valider le décodage, l'import, le re-import et la déduplication réels
+        run: python3 -m unittest discover -s tests -p test_public_fch_fixture.py -v
+
+  qt:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les dépendances Windows
+        run: python -m pip install -r requirements-windows.txt
+      - name: Préparer les images officielles pour les captures Qt
+        shell: pwsh
+        run: python -m tools.fetch_game_assets
+
+      - name: Embarquer les vrais sprites Valheim (selection verifiee)
+        shell: pwsh
+        run: |
+          python -m tools.bundle_inventory_sprites
+          if ($LASTEXITCODE -ne 0) { throw 'Sprites Valheim incomplets' }
+          python -m unittest discover -s tests -p test_real_game_icons.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Une image Valheim manque au paquet' }
+
+      - name: Charger l'interface et tester le sélecteur
+        env:
+          QT_QPA_PLATFORM: offscreen
+        shell: pwsh
+        run: |
+          python -c "from PySide6.QtWidgets import QApplication; from nordic_ui import NordicWindow; from v2_core import TrackerStore; from tempfile import TemporaryDirectory; app=QApplication([]); tmp=TemporaryDirectory(); w=NordicWindow(TrackerStore(tmp.name)); assert w.stack.count()==12; assert w.viking_stats_page.character_selector is not None; assert w.viking_stats_page.import_button.isEnabled(); w.close(); w.store.close(); tmp.cleanup(); print('V2.5 Qt archives OK')"
+
+      - name: Tester les cartes et la sélection Qt par personnage
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m unittest discover -s tests -p test_v2_qt.py -k character_archive_selector_and_cumulative_cards -v
+
+
+      - name: Télécharger une vraie sauvegarde publique pour le rendu
+        shell: pwsh
+        run: |
+          curl.exe --fail --location --retry 3 --silent --show-error "https://raw.githubusercontent.com/lanchelms/fch-decoder/1a5ff4f767e1bbf2f7955d4dcd22e628eb318427/testdata/Steam_444444_nichael.fch" --output "$env:RUNNER_TEMP/nichael.fch"
+          if (-not (Test-Path -LiteralPath "$env:RUNNER_TEMP/nichael.fch" -PathType Leaf)) { throw 'Fichier FCH public non téléchargé' }
+
+      - name: Capturer toutes les pages de la vraie interface Windows
+        env:
+          QT_QPA_PLATFORM: windows
+        shell: pwsh
+        run: |
+          python -m tools.capture_tracker_pages "$env:RUNNER_TEMP/nichael.fch" "captures/v2.5"
+          if ($LASTEXITCODE -ne 0) { throw 'Erreur : captures interface Qt' }
+          $screens = @(Get-ChildItem "captures/v2.5" -Filter "*.png")
+          if ($screens.Count -lt 12) { throw "Il manque des pages dans les captures : $($screens.Count)" }
+
+      - name: Joindre les 12 captures et le montage
+        uses: actions/upload-artifact@v4
+        with:
+          name: valheim-v2-5-captures-12-pages
+          path: captures/v2.5/
+          if-no-files-found: error
+          retention-days: 30
+
+  defender-candidate:
+    name: Compiler et analyser l'EXE Windows candidat
+    runs-on: windows-latest
+    needs: [archives, qt]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les dépendances Windows
+        run: python -m pip install -r requirements-windows.txt
+      - name: Préparer les images officielles pour le paquet
+        run: python -m tools.fetch_game_assets
+      - name: Ajouter les vrais objets Valheim au ZIP Windows
+        run: python -m tools.bundle_inventory_sprites
+      - name: Exiger la couverture des sprites de toutes les pages
+        run: python -m unittest discover -s tests -p test_real_game_icons.py -v
+      - name: Construire l'application Windows autonome
+        shell: pwsh
+        run: |
+          # UnityPy utilise fmod_toolkit, dont la DLL native n'est pas embarquee par --collect-all UnityPy.
+          # Verifier explicitement la dependance a la construction avant de produire le ZIP.
+          $fmodDll = & python -c 'from pathlib import Path; from importlib.util import find_spec; spec=find_spec("fmod_toolkit"); assert spec and spec.submodule_search_locations, "fmod_toolkit non installe"; path=Path(next(iter(spec.submodule_search_locations)))/"libfmod"/"Windows"/"x64"/"fmod.dll"; assert path.is_file(), f"DLL FMOD absente du package : {path}"; print(path)'
+          if ($LASTEXITCODE -ne 0) { throw 'Dependance FMOD absente avant construction.' }
+          # Le decodeur charge archspec/json/cpu/microarchitectures.json a la premiere lecture de sprite.
+          $archspecCpu = & python -c 'from pathlib import Path; from importlib.util import find_spec; s=find_spec("archspec"); assert s and s.submodule_search_locations, "archspec introuvable"; p=Path(next(iter(s.submodule_search_locations)))/"json"/"cpu"; assert (p/"microarchitectures.json").is_file(), f"Ressources archspec absentes : {p}"; print(p)'
+          if ($LASTEXITCODE -ne 0) { throw 'Ressources JSON archspec introuvables avant construction.' }
+          python -m PyInstaller --noconfirm --clean --windowed --onedir --name ValheimStatsTracker --add-data 'fr_names.json;.' --add-data 'assets;assets' --hidden-import localization_fr --collect-all UnityPy --collect-all fmod_toolkit --add-binary "$fmodDll;fmod_toolkit/libfmod/Windows/x64" --collect-all archspec --add-data "$archspecCpu;archspec/json/cpu" --hidden-import PySide6.QtSvg nordic_ui.py
+          if ($LASTEXITCODE -ne 0) { throw 'Construction PyInstaller echouee.' }
+          $bundledFmod = 'dist/ValheimStatsTracker/_internal/fmod_toolkit/libfmod/Windows/x64/fmod.dll'
+          if (-not (Test-Path -LiteralPath $bundledFmod -PathType Leaf)) {
+            throw "fmod.dll absente de l'application construite : $bundledFmod"
+          }
+          Write-Host "FMOD native presente dans le bundle Windows : $bundledFmod"
+          $bundledArchspec = 'dist/ValheimStatsTracker/_internal/archspec/json/cpu/microarchitectures.json'
+          if (-not (Test-Path -LiteralPath $bundledArchspec -PathType Leaf)) {
+            throw "Base JSON archspec absente du programme construit : $bundledArchspec"
+          }
+          Write-Host "Archspec JSON present dans le bundle Windows : $bundledArchspec"
+          $version = (Get-Content version.json | ConvertFrom-Json).version
+          $archive = "dist/Valheim_Stats_Tracker_v${version}_Windows.zip"
+          Compress-Archive -Path dist/ValheimStatsTracker -DestinationPath $archive -CompressionLevel Optimal
+          if (-not (Test-Path $archive)) { throw "ZIP Windows introuvable" }
+          Write-Host "Archive Windows : $archive"
+      - name: Vérifier l'EXE compilé et ses DLL
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
+          $process = Start-Process -FilePath $exe -ArgumentList '--verify-unitypy-bundle' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Validation exécutable compilé échouée : $($process.ExitCode)" }
+
+      - name: Vérifier le ZIP dans le vrai EXE Windows compilé
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
+          $test = Start-Process -FilePath $exe -ArgumentList '--verify-safe-updater' -Wait -PassThru
+          if ($test.ExitCode -ne 0) { throw "Vérification ZIP compilée échouée : $($test.ExitCode)" }
+
+      - name: Contrôler chaque sprite Valheim depuis le véritable EXE compilé
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
+          $check = Start-Process -FilePath $exe -ArgumentList '--verify-real-icons' -Wait -PassThru
+          if ($check.ExitCode -ne 0) {
+            throw "Sprites du jeu absents du programme compilé (sortie : $($check.ExitCode))."
+          }
+          Write-Host 'Vraies icônes Valheim dans le programme compilé : OK'
+
+      - name: Scanner la version candidate avec Defender, si disponible
+        shell: pwsh
+        run: |
+          $defender = Get-MpComputerStatus -ErrorAction SilentlyContinue
+          if ($defender -and $defender.AntivirusEnabled -and $defender.AMServiceEnabled) {
+            $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
+            $scanStart = Get-Date
+            Start-MpScan -ScanType CustomScan -ScanPath $exe -ErrorAction Stop
+            $zip = (Get-ChildItem -Path dist -Filter '*_Windows.zip' | Select-Object -First 1).FullName
+            if (-not $zip) { throw 'Archive Windows ZIP absente.' }
+            Start-MpScan -ScanType CustomScan -ScanPath $zip -ErrorAction Stop
+            if (-not (Test-Path -LiteralPath $zip -PathType Leaf)) {
+              throw 'Defender a retire le ZIP du dossier.'
+            }
+            $recent = @(Get-MpThreatDetection -ErrorAction SilentlyContinue | Where-Object {
+              $_.InitialDetectionTime -ge $scanStart.AddMinutes(-1)
+            })
+            if ($recent.Count -gt 0) {
+              $ids = ($recent | ForEach-Object { $_.ThreatID }) -join ','
+              throw ("Defender signale une detection recente lors du controle: " + $ids)
+            }
+            if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+              throw 'Defender: programme candidat retire du dossier.'
+            }
+            Write-Host 'Defender disponible : analyse locale du candidat effectuée.'
+          } else {
+            Write-Warning 'Defender est désactivé sur le runner GitHub : analyse réelle non réalisée.'
+          }
+
+      - name: Conserver l'archive candidate uniquement si les tests et le scan reussissent
+        uses: actions/upload-artifact@v4
+        with:
+          name: valheim-v2-5-candidate-security-review
+          path: dist/*_Windows.zip
+          if-no-files-found: error
+          retention-days: 7

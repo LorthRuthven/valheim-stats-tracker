@@ -1,3 +1,66 @@
+# Valheim Stats Tracker V2.5.0 — Archives de personnages et statistiques cumulées
+
+## Mes personnages dans « Statistiques du Viking »
+- Importer plusieurs anciens fichiers `.fch` simultanément, sans les modifier.
+- Choisir dans la même page le Viking actif, chacun des personnages archivés, ou **Tous les personnages**.
+- Afficher les 47 cartes existantes et les filtres par catégorie/difficulté, avec favoris indépendants par personnage et pour le total.
+- Stockage local des profils décodés dans la base SQLite existante, indépendant des fichiers originaux ; les archives restent consultables après redémarrage.
+- Réimporter le même personnage actualise son archive : les fichiers d'un seul Viking ne sont jamais additionnés entre eux, même si leurs noms de fichier diffèrent. Deux personnages homonymes restent distincts grâce à leur identifiant Valheim.
+- Possibilité de retirer une archive du tracker sans effacer la sauvegarde originale.
+
+## Précision des totaux
+- **Somme entre personnages** pour les activités, distances, temps et éliminations.
+- **Maximum** pour les records (confort, hauteur de construction, série de jours).
+- **Union** pour les critères binaires d'exploration.
+- Les difficultés `Any`, `Default`, `Hard`, `VeryHard`, `Hardcore` ne sont jamais additionnées entre elles.
+- Le personnage actif prévaut sur une archive portant le même identifiant : aucun double comptage.
+- La progression des succès Steam et celle du personnage actif ne sont pas affectées par la somme du tracker.
+
+## Visuels 100 % issus du jeu — sprites Valheim
+- Tous les anciens **pictogrammes dessinés** des cartes Statistiques du Viking et de la fenêtre de détail du cumul sont remplacés par des **objets et ressources authentiques du jeu**. Les associations sont thématiques pour les statistiques sans icône officielle dédiée.
+- La barre latérale, les boutons et les cartes du tableau de bord utilisent maintenant des sprites du jeu à la place des icônes SVG maison.
+- Les pages **Boss** (trophées réels), **Compétences** (armes, outils et équipements réels), **Combat** et **Activités** utilisent les vrais sprites lorsqu'ils existent. Kall Mandefimbul dispose actuellement d'une illustration Valheim thématique signalée comme telle, sans prétendre être son trophée officiel.
+- Le ZIP Windows embarque un jeu de PNG originaux vérifiés, sélectionnés depuis la bibliothèque publique de sprites de Valheim (révision épinglée), avec un index et un inventaire SHA-256. L'application privilégie toujours les visuels extraits localement du jeu par l'utilisateur.
+- **Protection contre les régressions :** compilation Windows interdite si un des sprites requis est absent ou ne peut pas être chargé par le véritable EXE PyInstaller. Les tests Qt vérifient les pixels au lieu de compter les seuls fichiers.
+- Attributions et origine des images inscrites dans `assets/ATTRIBUTIONS.txt` ; droits des illustrations du jeu réservés à Iron Gate / Coffee Stain, compagnon non officiel.
+
+## Activités : véritable galerie d'objets Valheim
+- L'ancienne page **Activités**, principalement constituée de tableaux, devient une **galerie de cartes** avec les vraies images du jeu, le nom localisé, la famille et la quantité.
+- Barre de recherche, filtres **action / difficulté / famille**, tri **quantité décroissante / ordre alphabétique / quantité croissante**, et **pagination de 16 objets**.
+- Affichage en deux, trois ou quatre colonnes selon la taille de la fenêtre Windows. Chaque carte donne accès à l'identifiant exact dans son infobulle.
+- Un petit tableau de bord présente le **nombre de ressources distinctes**, la **quantité totale enregistrée** et la **famille dominante**. Les visuels thématiques sont explicitement signalés lorsque l'icône exacte n'est pas disponible.
+- Les tableaux d'origine sont conservés sous **« Afficher les tableaux détaillés »**, fermés par défaut, sans masquer aucune donnée.
+- **Compteurs bruts** n'occupe plus le menu latéral. La page des 205 indices est conservée, accessible dans **Réglages → Diagnostic avancé**, avec bouton de retour. Tous les index internes de pages restent compatibles.
+- Contrôles Qt supplémentaires : 25 objets fictifs, passage entre deux pages, recherche, tri, filtre, tableau repliable et accès au diagnostic.
+
+## Améliorations de lisibilité et navigation
+- **Modes « CUMUL • Tous les Vikings » et « INDIVIDUEL • Un Viking »** directement visibles dans Statistiques du Viking, en complément du sélecteur par personnage.
+- **Détail cliquable de chaque statistique en mode Cumul** : valeur retenue, toutes les valeurs individuelles triées, source du personnage, pourcentage et barre de contribution pour les sommes. Pour les records, identification du meilleur Viking ; pour les objectifs, personnages ayant atteint la condition. Valeurs brutes précises disponibles pour distances et durées. Les règles des groupes de difficulté restent inchangées.
+- **Raccourci « Cumul des Vikings »** dans la barre latérale ; après import de plusieurs fichiers `.fch`, le cumul s'affiche automatiquement.
+- **Boss :** galerie des huit boss avec véritables icônes locales lorsqu'elles existent, nombre de victoires enregistrées et synthèse par difficulté.
+- **Combat :** trois indicateurs (éliminations, espèces et boss distincts) calculés à partir des compteurs du groupe choisi.
+- **Activités :** trois objets ou ressources les plus comptabilisés dans la sélection, avec icônes locales réelles, et message explicatif si le filtre ne renvoie rien.
+- **Compétences :** barres de maîtrise (niveau / 100) et compétence la plus élevée ; les XP enregistrés restent affichés séparément.
+- **Encyclopédie :** zone d'illustration à hauteur fixe et espacement renforcé pour éviter tout chevauchement.
+- **Réglages :** texte mis en conformité avec la mise à jour par ZIP vérifié et installation manuelle sans PowerShell.
+- Tests Qt et captures de chaque page sous Windows pour vérifier ces changements.
+
+## Mise à jour Windows sans exécution silencieuse
+Le mécanisme de sécurité **V2.4.1**, déjà testé sur Windows, est repris dans V2.5.0. L'application vérifie la version GitHub, télécharge le ZIP officiel et contrôle l'empreinte SHA-256, **sans décompresser, exécuter, ni remplacer elle-même un EXE**, et sans lancer PowerShell. Elle ouvre le dossier de téléchargement. L'utilisateur peut faire analyser le ZIP puis l'extraire **dans un nouveau dossier**, fermer l'ancienne version et lancer la nouvelle.
+
+**Transition depuis V2.4 :** le bouton d'installation de V2.4 utilise encore son ancien mécanisme PowerShell. Pour éviter ce mécanisme, télécharger une fois le ZIP de la V2.5 depuis GitHub Releases, et l'installer manuellement après vérification.
+
+**Diffusion contrôlée :** la compilation et les tests automatiques ne garantissent pas un verdict antivirus. La publication reste bloquée tant que `VALHEIM_WINDOWS_APPROVED_VERSION` n'est pas explicitement défini à `2.5.0` après revue.
+
+**Aucune garantie antivirus absolue :** les EXE restent non signés et la réputation Defender/SmartScreen varie selon les machines et les mises à jour Microsoft. Ne pas désactiver de protections pour installer.
+
+## Compatibilité
+Le lecteur intégré accepte les sauvegardes Valheim `.fch` **v46 et v47** avec 205 compteurs et validation SHA-512 ; les fichiers d'éditions plus anciennes non compatibles sont signalés individuellement, sans bloquer les autres imports. La fonction est intégrée à l'application **Windows Qt** ; le ZIP Python historique conserve son interface sans nouvelle page.
+
+Les 12 pages existantes, l'historique, les favoris des succès, la collection, les médias, l'extraction des icônes et l'updater sont conservés. Les données d'archives ne quittent jamais le PC.
+
+---
+
 # Valheim Stats Tracker V2.4.0 — Statistiques du Viking
 
 ## Nouvelle page « Statistiques du Viking »
@@ -11,7 +74,7 @@ La **12ᵉ page** du tracker s'inspire des statistiques de Minecraft, avec **47 
 - **Exploration** : poissons pêchés/perdus, trésors enfouis, temps en jeu et les quatre directions du succès Exploration.
 
 ### Présentation
-- **47 cartes illustrées** avec les vraies icônes du jeu lorsqu'un prefab exact convient ; sinon, pictogrammes vectoriels d'interface (jamais présentés comme des images officielles).
+- **47 cartes illustrées** avec des sprites authentiques de l'inventaire Valheim, y compris pour les statistiques sans icône officielle dédiée (association thématique explicite). Aucun pictogramme vectoriel de substitution n'est utilisé.
 - **Favoris en haut de page**, possibilité d'épingler ou retirer chaque statistique par l'étoile ★.
 - **Favoris par personnage** dans le nouveau fichier `stats_favorites.json`, séparé de `favoris.json` (succès) et des autres données.
 - **Recherche instantanée**, filtrage par catégorie ou favoris uniquement.

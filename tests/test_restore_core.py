@@ -45,15 +45,19 @@ class RestoredFeatureTests(unittest.TestCase):
         code=(ROOT/'restored_pages.py').read_text(encoding='utf8')
         self.assertIn('max(0, value-previous)',code)
 
-    def test_windows_installer_logs_and_relaunch_check(self):
-        from windows_update import INSTALL_PS1
+    def test_windows_updater_download_is_manually_installed(self):
+        import windows_update
+        self.assertTrue(callable(windows_update.open_download_folder))
+        self.assertTrue(callable(windows_update.stage_release))
         workflow=(ROOT/'.github/workflows/release.yml').read_text(encoding='utf8')
-        for marker in ('BACKUP_OK', 'COPY_OK', 'RELAUNCH_OK',
-                       'RELAUNCH_TEST_OK', 'ROLLBACK_OK', 'INSTALL_ERROR'):
-            self.assertIn(marker, INSTALL_PS1)
-        self.assertIn('if ($process.HasExited)', INSTALL_PS1)
-        self.assertIn('Wait-Process -Id $ParentPid -Timeout', INSTALL_PS1)
-        self.assertIn('Tester remplacement et redémarrage Windows', workflow)
+        source=(ROOT/'windows_update.py').read_text(encoding='utf8')
+        ui=(ROOT/'windows_update_ui.py').read_text(encoding='utf8')
+        for unsafe in ('INSTALL_PS1', 'ExecutionPolicy', 'subprocess', 'extractall',
+                       'install_and_restart', 'launch_powershell'):
+            self.assertNotIn(unsafe, source)
+        self.assertIn('validate_archive(partial)', source)
+        self.assertIn("Vérifier l'updater sans processus caché", workflow)
+        self.assertIn('open_download_folder', ui)
 
     def test_windows_updater_archive_security(self):
         from windows_update import validate_archive, UpdateError, version_tuple
