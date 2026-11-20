@@ -1,3 +1,28 @@
+# Valheim Stats Tracker V2.5.0 — Archives de personnages et statistiques cumulées
+
+## Mes personnages dans « Statistiques du Viking »
+- Importer plusieurs anciens fichiers `.fch` simultanément, sans les modifier.
+- Choisir dans la même page le Viking actif, chacun des personnages archivés, ou **Tous les personnages**.
+- Afficher les 47 cartes existantes et les filtres par catégorie/difficulté, avec favoris indépendants par personnage et pour le total.
+- Stockage local des profils décodés dans la base SQLite existante, indépendant des fichiers originaux ; les archives restent consultables après redémarrage.
+- Réimporter le même personnage actualise son archive : les fichiers d'un seul Viking ne sont jamais additionnés entre eux, même si leurs noms de fichier diffèrent. Deux personnages homonymes restent distincts grâce à leur identifiant Valheim.
+- Possibilité de retirer une archive du tracker sans effacer la sauvegarde originale.
+
+## Précision des totaux
+- **Somme entre personnages** pour les activités, distances, temps et éliminations.
+- **Maximum** pour les records (confort, hauteur de construction, série de jours).
+- **Union** pour les critères binaires d'exploration.
+- Les difficultés `Any`, `Default`, `Hard`, `VeryHard`, `Hardcore` ne sont jamais additionnées entre elles.
+- Le personnage actif prévaut sur une archive portant le même identifiant : aucun double comptage.
+- La progression des succès Steam et celle du personnage actif ne sont pas affectées par la somme du tracker.
+
+## Compatibilité
+Le lecteur intégré accepte les sauvegardes Valheim `.fch` **v46 et v47** avec 205 compteurs et validation SHA-512 ; les fichiers d'éditions plus anciennes non compatibles sont signalés individuellement, sans bloquer les autres imports. La fonction est intégrée à l'application **Windows Qt** ; le ZIP Python historique conserve son interface sans nouvelle page.
+
+Les 12 pages existantes, l'historique, les favoris des succès, la collection, les médias, l'extraction des icônes et l'updater sont conservés. Les données d'archives ne quittent jamais le PC.
+
+---
+
 # Valheim Stats Tracker V2.4.0 — Statistiques du Viking
 
 ## Nouvelle page « Statistiques du Viking »
