@@ -28,6 +28,7 @@ class StatCard(QFrame):
         super().__init__()
         self.stat = stat
         self._details = details
+        self._cumulative = False
         self.setObjectName("vikingStatCard")
         self.setMinimumHeight(154)
         self.setMinimumWidth(210)
@@ -94,11 +95,24 @@ class StatCard(QFrame):
         self.detail_button.setVisible(False)
         outer.addWidget(self.detail_button)
 
+    def mouseReleaseEvent(self, event):
+        if (event.button() == Qt.MouseButton.LeftButton
+                and self._cumulative and self._details):
+            self._details(self.stat.key)
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
     def set_favorite(self, favorite):
         self.star.setText("★" if favorite else "☆")
         self.star.setToolTip("Retirer des favoris" if favorite else "Épingler dans les favoris")
 
     def set_values(self, profile, previous, group, cumulative=False):
+        self._cumulative = bool(cumulative and self._details)
+        self.setCursor(
+            Qt.CursorShape.PointingHandCursor if self._cumulative
+            else Qt.CursorShape.ArrowCursor
+        )
         self.detail_button.setVisible(bool(cumulative and self._details))
         self.setMinimumHeight(185 if cumulative and self._details else 154)
         current = value(profile, self.stat, group)
@@ -471,6 +485,9 @@ class VikingStatsPage(QScrollArea):
             self.select_character()
 
     def select_character(self, *_):
+        if self._detail_dialog is not None:
+            self._detail_dialog.close()
+            self._detail_dialog = None
         identity = self.character_selector.currentData()
         entry = next((p for p in self.people if p["id"] == identity), None)
         if identity == "__total__":
@@ -519,7 +536,7 @@ class VikingStatsPage(QScrollArea):
             card.set_values(self.profile, self.previous, self.difficulty.currentData(), is_total)
         for key, card in self.favorite_cards.items():
             card.set_favorite(key in self._favorites)
-            card.set_values(self.profile, self.previous, self.difficulty.currentData(), self.character_selector.currentData() == "__total__")
+            card.set_values(self.profile, self.previous, self.difficulty.currentData(), is_total)
         self.summary.setText(
             f"{description}  •  {len(STATS)} statistiques  •  "
             f"{len(self._favorites)} favoris épinglés"
@@ -612,7 +629,7 @@ class VikingStatsPage(QScrollArea):
                 card=StatCard(stat, self.toggle_favorite, self.open_stat_details)
                 self.favorite_cards[stat.key]=card
             card.set_favorite(True)
-            card.set_values(self.profile, self.previous, self.difficulty.currentData())
+            card.set_values(self.profile, self.previous, self.difficulty.currentData(), self.character_selector.currentData() == "__total__")
             self.favorite_grid.addWidget(card,index//columns,index%columns)
             card.show()
         visible = []
