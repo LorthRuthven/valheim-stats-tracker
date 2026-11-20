@@ -99,6 +99,25 @@ def screenshot_gallery(fch: Path, dest: Path):
                     raise RuntimeError("Capture de défilement ratée")
                 print(f"CAPTURE BONUS : {path}", flush=True)
 
+        # Deux captures supplémentaires du même vrai Viking, sans données fabriquées :
+        # seuls les modes d'affichage diffèrent.
+        window.show_page(11)
+        stats = window.viking_stats_page
+        for slug, switch in (
+            ("14_statistiques-mode-cumul", stats.show_total),
+            ("15_statistiques-mode-individuel", stats.show_individual),
+        ):
+            switch()
+            stats.verticalScrollBar().setValue(0)
+            app.processEvents()
+            picture = window.grab()
+            if picture.isNull():
+                raise RuntimeError("La comparaison des modes ne peut pas être capturée")
+            output = dest / (slug + ".png")
+            if not picture.save(str(output), "PNG"):
+                raise RuntimeError("Échec de la sauvegarde du mode")
+            print(f"CAPTURE MODE : {output}", flush=True)
+
         window.close()
         store.close()
         app.processEvents()
@@ -133,7 +152,7 @@ def screenshot_gallery(fch: Path, dest: Path):
         "Captures authentiques du rendu Qt de Valheim Stats Tracker V2.5.0 sur Windows.\n"
         "Résolution : 1650 x 960.\n"
         "Données : personnage public de test Nichael (.fch v46), jamais modifié.\n"
-        "Les 12 PNG montrent le début de chaque page ; deux PNG détaillent la page des statistiques.\n"
+        "Les 12 PNG montrent le début de chaque page ; quatre vues supplémentaires détaillent les statistiques et les modes cumul/individuel.\n"
         "Une capture sur runner GitHub peut différer légèrement de la machine personnelle.\n",
         encoding="utf-8")
     print(f"MONTAGE : {collage}", flush=True)
