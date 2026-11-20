@@ -137,11 +137,23 @@ class VikingStatsPage(QScrollArea):
         self.total_mode_button = QPushButton("CUMUL • Tous les Vikings")
         self.total_mode_button.setObjectName("statsTotalMode")
         self.total_mode_button.setCheckable(True)
+        self.total_mode_button.setStyleSheet(
+            "QPushButton {background:#172f3a;border:1px solid #4b6670;"
+            "border-radius:10px;padding:11px 15px;color:#e2ddd2;font-weight:700;}"
+            "QPushButton:checked {background:#54432e;border:2px solid #e7b677;"
+            "color:#fff0d5;} QPushButton:disabled {color:#778b91;}"
+        )
         self.total_mode_button.clicked.connect(self.show_total)
         view_row.addWidget(self.total_mode_button)
         self.individual_mode_button = QPushButton("INDIVIDUEL • Un Viking")
         self.individual_mode_button.setObjectName("statsIndividualMode")
         self.individual_mode_button.setCheckable(True)
+        self.individual_mode_button.setStyleSheet(
+            "QPushButton {background:#172f3a;border:1px solid #4b6670;"
+            "border-radius:10px;padding:11px 15px;color:#e2ddd2;font-weight:700;}"
+            "QPushButton:checked {background:#54432e;border:2px solid #e7b677;"
+            "color:#fff0d5;} QPushButton:disabled {color:#778b91;}"
+        )
         self.individual_mode_button.clicked.connect(self.show_individual)
         view_row.addWidget(self.individual_mode_button)
         view_row.addStretch(1)
