@@ -1,0 +1,35 @@
+name: Vérifier les archives de personnages
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  archives:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier les fichiers Python
+        run: python3 -m py_compile character_archive.py viking_stats_page.py nordic_ui.py valheim_reader.py v2_core.py
+      - name: Tester le moteur et le cumul des personnages
+        run: python3 -m unittest discover -s tests -v
+
+  qt:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les dépendances Windows
+        run: python -m pip install -r requirements-windows.txt
+      - name: Charger l'interface et tester le sélecteur
+        env:
+          QT_QPA_PLATFORM: offscreen
+        shell: pwsh
+        run: |
+          python -c "from PySide6.QtWidgets import QApplication; from nordic_ui import NordicWindow; from v2_core import TrackerStore; from tempfile import TemporaryDirectory; app=QApplication([]); tmp=TemporaryDirectory(); w=NordicWindow(TrackerStore(tmp.name)); assert w.stack.count()==12; assert w.viking_stats_page.character_selector is not None; assert w.viking_stats_page.import_button.isEnabled(); w.close(); w.store.close(); tmp.cleanup(); print('V2.5 Qt archives OK')"
