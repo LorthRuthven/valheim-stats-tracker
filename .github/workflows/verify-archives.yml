@@ -118,7 +118,15 @@ jobs:
           $defender = Get-MpComputerStatus -ErrorAction SilentlyContinue
           if ($defender -and $defender.AntivirusEnabled -and $defender.AMServiceEnabled) {
             $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
+            $scanStart = Get-Date
             Start-MpScan -ScanType CustomScan -ScanPath $exe -ErrorAction Stop
+            $recent = @(Get-MpThreatDetection -ErrorAction SilentlyContinue | Where-Object {
+              $_.InitialDetectionTime -ge $scanStart.AddMinutes(-1)
+            })
+            if ($recent.Count -gt 0) {
+              $ids = ($recent | ForEach-Object { $_.ThreatID }) -join ','
+              throw ("Defender signale une detection recente lors du controle: " + $ids)
+            }
             if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
               throw 'Defender: programme candidat retire du dossier.'
             }
@@ -126,3 +134,11 @@ jobs:
           } else {
             Write-Warning 'Defender est désactivé sur le runner GitHub : analyse réelle non réalisée.'
           }
+
+      - name: Conserver l'archive candidate uniquement si les tests et le scan reussissent
+        uses: actions/upload-artifact@v4
+        with:
+          name: valheim-v2-5-candidate-security-review
+          path: dist/*_Windows.zip
+          if-no-files-found: error
+          retention-days: 7
