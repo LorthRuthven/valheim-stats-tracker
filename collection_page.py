@@ -346,7 +346,8 @@ class CollectionPage(QWidget):
         from wiki_images import WIKI_NAMES
         targets = [
             entry for entry in self.filtered_entries
-            if (self.image_state(entry["token"]) == "missing"
+            if (game_icon(entry["token"]).isNull()
+                and self.wiki_cache.cached_image(entry["token"]) is None
                 and wiki_title(entry["token"]) is not None
                 and self.wiki_cache.can_attempt(entry["token"]))
         ]
