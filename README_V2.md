@@ -91,3 +91,12 @@ Les autres écrans privilégient toujours les vrais assets locaux extraits du je
 Le menu **Activités** affiche désormais les objets sous forme de **cartes illustrées avec des sprites Valheim**. Choisis le type d'activité (récolte, ramassage, fabrication, pose, nourriture), une difficulté et une famille ; recherche ensuite une ressource ou un objet et trie les résultats. Les cartes sont organisées par 16 avec boutons Précédent / Suivant. Les tableaux techniques d'origine sont toujours disponibles via **Afficher les tableaux détaillés**.
 
 Pour le diagnostic du lecteur de fichiers `.fch`, les **205 compteurs bruts** et leurs indices sont conservés dans **Réglages → Diagnostic avancé**. Cette vue est en lecture seule. Les pages internes gardent leurs anciens indices pour préserver les tests et les raccourcis existants.
+
+
+### V2.5.2 — Mise à jour Windows directement dans l'application
+
+Depuis V2.5.2, Réglages → Mises à jour Windows → Télécharger et installer effectue le téléchargement SHA-256, l'extraction dans un répertoire versionné, l'analyse Defender et un contrôle de démarrage, puis propose de redémarrer. Aucun remplacement d'EXE en cours ni script PowerShell. Une installation dont l'analyse ou le contrôle de lancement échoue n'est pas activée.
+
+Le nouveau programme se trouve dans %LOCALAPPDATA%\Programs\ValheimStatsTracker\versions, les données dans %LOCALAPPDATA%\ValheimStatsTracker. L'ancienne version reste disponible. Le raccourci vers V2.5.2 ou une version suivante redirige automatiquement vers la nouvelle version validée.
+
+Une dernière installation manuelle est nécessaire depuis V2.5.1. Si Defender est indisponible, le ZIP vérifié reste accessible via « Ouvrir le dossier du ZIP », mais l'application refuse de l'exécuter automatiquement. Aucun contournement de Defender n'est recommandé.
