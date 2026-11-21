@@ -58,6 +58,11 @@ jobs:
           python -m unittest discover -s tests -p test_real_game_icons.py -v
           if ($LASTEXITCODE -ne 0) { throw 'Une image Valheim manque au paquet' }
 
+      - name: Diagnostiquer les images du Wiki (facultatif, sans donnees utilisateur)
+        shell: pwsh
+        run: |
+          python -m tools.probe_wiki_images
+
       - name: Charger l'interface et tester le sélecteur
         env:
           QT_QPA_PLATFORM: offscreen
