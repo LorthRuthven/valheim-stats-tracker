@@ -791,6 +791,7 @@ def _verify_update_ready(expected_version):
     if VERSION != expected_version:
         raise RuntimeError("La version du programme ne correspond pas au ZIP.")
     from tempfile import TemporaryDirectory
+    from v2_core import TrackerStore
     app = QApplication.instance() or QApplication([])
     with TemporaryDirectory() as folder:
         store = TrackerStore(folder)
