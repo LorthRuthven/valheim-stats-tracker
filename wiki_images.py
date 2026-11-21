@@ -33,7 +33,7 @@ ALLOWED_HOSTS = frozenset((
     "valheim.wiki", "valheim.weirdgloop.org",
     "upload.wikimedia.org", "static.wikia.nocookie.net",
 ))
-USER_AGENT = "ValheimStatsTracker/2.3.1 (personal image cache; MediaWiki API)"
+USER_AGENT = "ValheimStatsTracker/2.7.0 (personal image cache; MediaWiki API)"
 
 # Correspondances explicitement contrôlées. Pas de supposition à partir du français.
 WIKI_NAMES = {
@@ -59,6 +59,45 @@ WIKI_NAMES = {
     "stone": "Stone",
     "resin": "Resin",
     "honey": "Honey",
+}
+
+
+# Constructions dont l'identifiant correspond à un objet identifié.
+# Le MediaWiki vérifie ensuite le titre EXACT et sa vraie image. Une erreur
+# de correspondance ne crée jamais de portrait de remplacement.
+WIKI_PIECES = {
+    "artisanstation": "Artisan table",
+    "armorstand": "Armor stand",
+    "bed": "Bed",
+    "beehive": "Beehive",
+    "blackforge": "Black forge",
+    "blastfurnace": "Blast furnace",
+    "bonfire": "Bonfire",
+    "cauldron": "Cauldron",
+    "cartographytable": "Cartography table",
+    "charcoalkiln": "Charcoal kiln",
+    "chest": "Chest",
+    "cookingstation": "Cooking station",
+    "cookingstation_iron": "Iron cooking station",
+    "eitrrefinery": "Eitr refinery",
+    "fermenter": "Fermenter",
+    "forge": "Forge",
+    "hearth": "Hearth",
+    "incinerator": "Obliterator",
+    "magetable": "Galdr table",
+    "meadcauldron": "Mead cauldron",
+    "oven": "Stone oven",
+    "portal": "Portal",
+    "portal_stone": "Stone portal",
+    "preptable": "Food preparation table",
+    "sapcollector": "Sap extractor",
+    "shieldgenerator": "Shield generator",
+    "smelter": "Smelter",
+    "spinningwheel": "Spinning wheel",
+    "stonecutter": "Stonecutter",
+    "turret": "Ballista",
+    "windmill": "Windmill",
+    "workbench": "Workbench",
 }
 
 
@@ -97,7 +136,7 @@ def wiki_title(token):
         return WIKI_NAMES[name]
     # Constructions à noms internes opaques : ne jamais confondre deux pages.
     if group.lower() == "piece":
-        return None
+        return WIKI_PIECES.get(name)
     if not re.fullmatch(r"[a-z0-9_]{3,70}", name):
         return None
     # Correspondance stricte, sans déduire de noms localisés ni inverser les mots.

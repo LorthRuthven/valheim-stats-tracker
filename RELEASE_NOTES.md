@@ -1,3 +1,25 @@
+# Valheim Stats Tracker V2.7.0 — Encyclopédie fluide, vraie largeur d'écran
+
+## Galerie entièrement repensée
+- **Aucune pagination** : défilement vertical sur l'intégralité du catalogue, avec rendu Qt virtualisé (seules les cartes visibles sont peintes).
+- **Galerie pleine largeur par défaut** : la fiche latérale reste repliée, puis s'ouvre à la sélection d'une carte ; on peut la masquer à volonté.
+- Trois tailles de cartes : **Compact / Normal / Grand** ; leur disposition s'adapte à la largeur libre.
+- Bandeau supérieur condensé, recherche et filtres conservés, ancien mode Liste détaillée toujours accessible.
+- Le défilement reste en place lorsque les données d'un même catalogue sont actualisées.
+
+## Images réelles, sans faux visuels
+- Les véritables sprites Valheim extraits et les images Wiki attribuées restent prioritaires.
+- Plusieurs postes de construction identifiés (établis, forges, portails, stations) disposent désormais d'une recherche de page Wiki à titre exact et image vérifiée. Les requêtes échouent sans résultat en l'absence d'image fiable.
+- Pour certaines pièces sans image exacte, une véritable icône du matériau Valheim peut servir d'illustration **explicitement étiquetée « Matériau associé »** ; elle n'est jamais comptée dans la couverture des images exactes.
+- Les entrées sans véritable illustration restent visibles, sans image artificielle prétendant provenir du jeu.
+- L'extraction depuis le jeu est accessible directement dans la nouvelle barre compacte.
+
+## Sécurité et compatibilité
+- Le moteur des 53 succès actifs et 2 entrées internes, les activités, les statistiques cumulées, les 12 pages, les favoris et les archives de personnages sont conservés.
+- Une sauvegarde indépendante de l'historique SQLite et des JSON est réalisée avant le premier lancement V2.7.0, dans `%LOCALAPPDATA%\ValheimStatsTracker\backups\avant_v2.7.0`.
+- Les fichiers Valheim `.fch` restent en lecture seule et la mise à jour intégrée introduite en V2.5.2 reste utilisable.
+
+---
 # Valheim Stats Tracker V2.6.0 — Encyclopédie en galerie, activités illustrées et cumul amélioré
 
 ## Encyclopédie : naviguer par les images du jeu

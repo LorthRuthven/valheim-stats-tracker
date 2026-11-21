@@ -129,48 +129,63 @@ class QtWindowTests(unittest.TestCase):
             self.assertEqual(w.stack.currentIndex(),10)
             w.close()
 
-    def test_encyclopedia_image_gallery_pagination_source_and_list_compatibility(self):
-        """Le catalogue entier est consultable, pas seulement les 350 du tableau."""
+    def test_encyclopedia_continuous_gallery_full_width_and_details(self):
+        """Pas de pages : tout le catalogue dans un scroll Qt virtualisé."""
+        from PySide6.QtWidgets import QListView
         app = QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as temp:
             window = NordicWindow(TrackerStore(temp))
+            window.resize(1550, 900)
+            window.show()
+            window.show_page(10)
+            app.processEvents()
             book = window.collection_page
             gallery = book.gallery
             self.assertIs(book.list_stack.currentWidget(), gallery)
             self.assertTrue(book.gallery_button.isChecked())
+            self.assertGreater(len(gallery.entries), 350)
+            self.assertEqual(gallery.model.rowCount(), len(gallery.entries))
+            self.assertIsInstance(gallery.list, QListView)
+            self.assertFalse(hasattr(gallery, "page_number"))
+            self.assertTrue(book.detail_scroll.isHidden())
             self.assertEqual(book.coverage_bar.maximum(), 1000)
             self.assertGreater(book.coverage_bar.value(), 0)
             self.assertIsNotNone(book.game_import_button)
             self.assertGreaterEqual(book.image_filter.count(), 6)
-            self.assertGreater(len(gallery.entries), 350)
-            self.assertEqual(len(gallery.cards), 18)
             self.assertEqual(book.table.rowCount(), 350)
-            self.assertEqual(gallery.cards[0].picture.objectName(), "collectionGalleryImage")
-            gallery.move_page(21)
-            self.assertEqual(gallery.page_number, 21)
-            entry = gallery.entries[21 * 18]
-            gallery.cards[0].inspect.click()
+            self.assertGreater(gallery.list.verticalScrollBar().maximum(), 0)
+            gallery.list.verticalScrollBar().setValue(
+                gallery.list.verticalScrollBar().maximum() // 2)
             app.processEvents()
+            middle_scroll = gallery.list.verticalScrollBar().value()
+            book.refresh(None)
+            app.processEvents()
+            self.assertGreater(middle_scroll, 0)
+            self.assertGreater(gallery.list.verticalScrollBar().value(), 0)
+            self.assertEqual(gallery.size_mode, "normal")
+            book.card_size.setCurrentText("Compact")
+            self.assertEqual(gallery.size_mode, "compact")
+            book.card_size.setCurrentText("Grand")
+            self.assertEqual(gallery.size_mode, "large")
+            entry = gallery.entries[400]
+            self.assertTrue(gallery.select_token(entry["token"], emit=True))
+            app.processEvents()
+            self.assertTrue(book.detail_scroll.isVisible())
+            self.assertTrue(book.detail_toggle.isChecked())
             self.assertEqual(book._selected_token(), entry["token"])
             self.assertIn(entry["token"], book.detail_category.text())
-            self.assertIn(gallery.cards[0].origin.text(), (
-                "SPRITE DU JEU", "IMAGE DU WIKI",
-                "TROPHÉE ASSOCIÉ", "SANS ILLUSTRATION"
-            ))
+            book.detail_close_button.click()
+            self.assertTrue(book.detail_scroll.isHidden())
             book.list_button.click()
             self.assertIs(book.list_stack.currentWidget(), book.table)
-            self.assertTrue(book.list_button.isChecked())
             book.search.setText(entry["token"])
             app.processEvents()
             self.assertTrue(any(
-                e["token"] == entry["token"] for e in book.visible_entries
-            ))
+                e["token"] == entry["token"] for e in book.visible_entries))
             book.gallery_button.click()
             self.assertIs(book.list_stack.currentWidget(), gallery)
-            self.assertIn(entry["token"], [e["token"] for e in gallery.entries])
-            self.assertTrue(gallery.cards[0].token in
-                            {item["token"] for item in gallery.entries})
-            self.assertEqual(len(gallery.cards), 18)
+            self.assertEqual(gallery.model.rowCount(), 1)
+            self.assertFalse(book.detail_toggle.isChecked())
             window.close()
             window.store.close()
 
