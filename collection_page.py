@@ -39,6 +39,9 @@ class CollectionPage(QWidget):
         self.wiki_timer.timeout.connect(self._fetch_selected)
         self.entries = []
         self.visible_entries = []
+        self.filtered_entries = []
+        self._image_state_cache = {}
+        self._wiki_targets = []
         outer = QVBoxLayout(self)
         outer.setContentsMargins(7, 7, 8, 10)
         outer.setSpacing(13)
@@ -81,6 +84,13 @@ class CollectionPage(QWidget):
         self.activity.addItems(("Toutes les activités", "Activité enregistrée", "Statut inconnu"))
         self.activity.currentIndexChanged.connect(self.render)
         filters.addWidget(self.activity, 2)
+        self.image_filter = QComboBox()
+        self.image_filter.setObjectName("collectionImageFilter")
+        self.image_filter.addItem("Toutes les images", "all")
+        self.image_filter.addItem("Avec illustration", "available")
+        self.image_filter.addItem("Sans illustration", "missing")
+        self.image_filter.currentIndexChanged.connect(self.render)
+        filters.addWidget(self.image_filter, 2)
         outer.addLayout(filters)
 
         split = QSplitter(Qt.Orientation.Horizontal)
@@ -170,6 +180,27 @@ class CollectionPage(QWidget):
                     self.table.selectRow(index)
                     break
 
+    def invalidate_image_cache(self, token=None):
+        """Invalide le bilan après un téléchargement ou une extraction locale."""
+        if token is None:
+            self._image_state_cache.clear()
+        else:
+            self._image_state_cache.pop(token, None)
+
+    def image_state(self, token):
+        """Distingue un vrai sprite Valheim, une image Wiki et une absence."""
+        state = self._image_state_cache.get(token)
+        if state is not None:
+            return state
+        if not game_icon(token).isNull():
+            state = "game"
+        elif self.wiki_cache.cached_image(token) is not None:
+            state = "wiki"
+        else:
+            state = "missing"
+        self._image_state_cache[token] = state
+        return state
+
     def _selected_token(self):
         row = self.table.currentRow()
         if 0 <= row < len(self.visible_entries):
@@ -181,20 +212,33 @@ class CollectionPage(QWidget):
         needle = self.search.text().casefold().strip()
         category = self.category.currentText()
         status = self.activity.currentText()
+        picture_filter = self.image_filter.currentData()
         filtered = [
             e for e in self.entries
             if (not needle or needle in e["name"].casefold()
                 or needle in e["token"].casefold())
             and (category == CATEGORIES[0] or e["category"] == category)
             and (status == "Toutes les activités" or e["status"] == status)
+            and (
+                picture_filter == "all"
+                or (picture_filter == "available" and self.image_state(e["token"]) != "missing")
+                or (picture_filter == "missing" and self.image_state(e["token"]) == "missing")
+            )
         ]
+        self.filtered_entries = filtered
         shown = filtered[:MAX_VISIBLE]
         self.visible_entries = shown
         observed = sum(1 for e in self.entries if e["observed"])
+        stats = {"game": 0, "wiki": 0, "missing": 0}
+        for entry in self.entries:
+            stats[self.image_state(entry["token"])] += 1
         self.summary.setText(
-            f"{len(self.entries)} entrées référencées  •  {observed} avec activité enregistrée  •  "
-            f"{len(filtered)} correspondent aux filtres"
-            + (f"  •  {MAX_VISIBLE} premières affichées (affine ta recherche)" if len(filtered) > MAX_VISIBLE else "")
+            f"{len(self.entries)} entrées référencées  •  {observed} avec activité enregistrée"
+            f"  •  {len(filtered)} correspondent aux filtres"
+            + (f"  •  {MAX_VISIBLE} premières affichées (affine ta recherche)"
+               if len(filtered) > MAX_VISIBLE else "")
+            + f"\\nIllustrations : {stats['game']} sprites du jeu  •  "
+              f"{stats['wiki']} images Wiki  •  {stats['missing']} sans image"
         )
         self.table.blockSignals(True)
         self.table.setUpdatesEnabled(False)
@@ -288,21 +332,34 @@ class CollectionPage(QWidget):
     def _fetch_missing(self):
         if self._wiki_busy:
             return
-        targets=[
-            entry["token"] for entry in self.visible_entries
-            if (wiki_title(entry["token"]) is not None
-                and game_icon(entry["token"]).isNull()
-                and self.wiki_cache.cached_image(entry["token"]) is None)
-        ][:20]
+        # Les erreurs ne doivent pas bloquer le catalogue : on saute les
+        # échecs récents et on explore aussi après les 350 premières lignes.
+        from wiki_images import WIKI_NAMES
+        targets = [
+            entry for entry in self.filtered_entries
+            if (self.image_state(entry["token"]) == "missing"
+                and wiki_title(entry["token"]) is not None
+                and self.wiki_cache.can_attempt(entry["token"]))
+        ]
+        def priority(entry):
+            raw = entry["token"].lstrip("$").split("_", 1)[-1].lower()
+            return (raw not in WIKI_NAMES, not entry["observed"],
+                    entry["name"].casefold())
+        targets.sort(key=priority)
         if not targets:
-            self.wiki_status.setText("Aucune image wiki manquante exploitable parmi les entrées affichées.")
+            self.wiki_status.setText(
+                "Aucune nouvelle recherche utile : les images restantes sont "
+                "sans page Wiki fiable ou ont été tentées récemment. "
+                "Les échecs sont réessayables après six heures."
+            )
             return
-        self._start_wiki_download(targets)
+        self._start_wiki_download([entry["token"] for entry in targets[:20]])
 
     def _start_wiki_download(self,tokens):
         if self._wiki_busy or not tokens:
             return
         self._wiki_busy=True
+        self._wiki_targets=list(tokens)
         self.wiki_timer.stop()
         self.wiki_button.setEnabled(False)
         self.wiki_clear.setEnabled(False)
@@ -332,6 +389,7 @@ class CollectionPage(QWidget):
 
     def _wiki_received(self,token):
         # Une image ajoutée doit apparaître dans la ligne et la fiche sans recharger tout.
+        self.invalidate_image_cache(token)
         reset_icon_cache()
         visual=collection_icon(token)
         if not visual.isNull():
@@ -347,15 +405,21 @@ class CollectionPage(QWidget):
         self._wiki_busy=False
         self.wiki_button.setEnabled(True)
         self.wiki_clear.setEnabled(True)
-        missing_reason = self.wiki_cache.last_error(self._selected_token() or "")
+        self.invalidate_image_cache()
+        problems = [
+            self.wiki_cache.last_error(token)
+            for token in self._wiki_targets
+            if self.wiki_cache.last_error(token)
+        ]
+        example = ("\\nExemple d'échec : " + problems[0]
+                   if problems and found < total else "")
         self.wiki_status.setText(
             f"Valheim Wiki : {found} nouvelle(s) image(s) sur {total} tentative(s). "
-            "Les pages sans correspondance exacte restent sans illustration. "
-            f"Cache : {self.wiki_cache.count()} image(s)."
-            + ("\nDernier diagnostic : " + missing_reason if missing_reason and found == 0 else "")
+            f"{len(problems)} échec(s) diagnostiqué(s). "
+            f"Cache Wiki : {self.wiki_cache.count()} image(s)."
+            + example
         )
-        if self._wiki_active:
-            self.show_selected()
+        self.render()
 
     def _clear_wiki_cache(self):
         if self._wiki_busy:
@@ -368,6 +432,7 @@ class CollectionPage(QWidget):
             return
         removed=self.wiki_cache.clear()
         reset_icon_cache()
+        self.invalidate_image_cache()
         self.wiki_status.setText(f"Cache wiki vidé ({removed} fichier(s)). Icônes du jeu conservées.")
         self.render()
 
