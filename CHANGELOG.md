@@ -1,3 +1,9 @@
+## V2.6.0 — Galerie encyclopédie et activités plus lisibles
+- Encyclopédie : galerie paginée par images authentiques, provenance visible, sélection des fiches, bascule vers le tableau.
+- Activités : répartition graphique des familles selon les filtres, conservant cartes, détails et données brutes.
+- Cumul : mise en avant de la plus forte contribution et copie locale de chaque décomposition.
+- Tous les anciens écrans et succès conservés, nouvelles sauvegardes préalables et updater V2.5.2 compatible.
+
 ## V2.5.2 — retour de l'installation Windows intégrée
 - ZIP vérifié, extraction versionnée, scan Defender, contrôle du démarrage, activation atomique et redémarrage après confirmation.
 - Ancienne installation préservée, sans PowerShell ni remplacement de l'EXE en cours ; données du joueur protégées.
