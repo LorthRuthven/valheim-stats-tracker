@@ -10,7 +10,7 @@ from PySide6.QtGui import QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QAbstractItemView, QComboBox, QHBoxLayout, QLabel, QLineEdit,
     QMessageBox, QPushButton, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
-    QScrollArea, QFrame, QStackedWidget,
+    QScrollArea, QFrame, QStackedWidget, QProgressBar,
 )
 import threading
 import time
@@ -56,6 +56,13 @@ class CollectionPage(QWidget):
         self.summary = label("Chargement du catalogue…", muted=True, wrap=True)
         self.summary.setObjectName("collectionSummary")
         summary_layout.addWidget(self.summary)
+        self.coverage_bar=QProgressBar()
+        self.coverage_bar.setObjectName("collectionCoverageBar")
+        self.coverage_bar.setRange(0,1000)
+        self.coverage_bar.setValue(0)
+        self.coverage_bar.setMinimumHeight(21)
+        self.coverage_bar.setFormat("Illustrations disponibles : %p %")
+        summary_layout.addWidget(self.coverage_bar)
         wiki_controls=QHBoxLayout()
         self.wiki_button=QPushButton("Compléter 20 images via Valheim Wiki")
         self.wiki_button.setObjectName("wikiImportButton")
@@ -299,6 +306,13 @@ class CollectionPage(QWidget):
         stats = {"game": 0, "wiki": 0, "trophy": 0, "missing": 0}
         for entry in self.entries:
             stats[self.image_state(entry["token"])] += 1
+        illustrated=len(self.entries)-stats["missing"]
+        ratio=1000*illustrated/len(self.entries) if self.entries else 0
+        self.coverage_bar.setValue(round(ratio))
+        self.coverage_bar.setToolTip(
+            f"{illustrated} illustrations du jeu, du Wiki ou trophées associés "
+            f"sur {len(self.entries)} entrées."
+        )
         self.summary.setText(
             f"{len(self.entries)} entrées référencées  •  {observed} avec activité enregistrée"
             f"  •  {len(filtered)} correspondent aux filtres"
