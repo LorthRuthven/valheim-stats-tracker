@@ -378,6 +378,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.dash_priority.cellDoubleClicked.connect(self._jump_to_achievement)
     def _make_collection_page(self):
         self.collection_page=CollectionPage(self)
+        self.collection_page.game_import_requested.connect(self._import_game_icons)
         self.stack.addWidget(self.collection_page)
 
     def _make_viking_stats_page(self):

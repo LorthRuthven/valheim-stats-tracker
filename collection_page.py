@@ -10,12 +10,13 @@ from PySide6.QtGui import QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QAbstractItemView, QComboBox, QHBoxLayout, QLabel, QLineEdit,
     QMessageBox, QPushButton, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
-    QScrollArea, QFrame,
+    QScrollArea, QFrame, QStackedWidget, QProgressBar,
 )
 import threading
 import time
 
 from collection_catalog import CATEGORIES, catalogue
+from collection_gallery import CollectionGallery
 from desktop_v2 import label, panel
 from real_assets import game_icon, collection_icon, creature_trophy_icon, reset_icon_cache
 from wiki_images import WikiImageCache, wiki_title
@@ -26,6 +27,7 @@ MAX_VISIBLE = 350
 class CollectionPage(QWidget):
     wiki_item_done = Signal(str)
     wiki_batch_done = Signal(int, int)
+    game_import_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -54,12 +56,24 @@ class CollectionPage(QWidget):
         self.summary = label("Chargement du catalogue…", muted=True, wrap=True)
         self.summary.setObjectName("collectionSummary")
         summary_layout.addWidget(self.summary)
+        self.coverage_bar=QProgressBar()
+        self.coverage_bar.setObjectName("collectionCoverageBar")
+        self.coverage_bar.setRange(0,1000)
+        self.coverage_bar.setValue(0)
+        self.coverage_bar.setMinimumHeight(21)
+        self.coverage_bar.setFormat("Illustrations disponibles : %p %")
+        summary_layout.addWidget(self.coverage_bar)
         wiki_controls=QHBoxLayout()
         self.wiki_button=QPushButton("Compléter 20 images via Valheim Wiki")
         self.wiki_button.setObjectName("wikiImportButton")
         self.wiki_button.setToolTip("Télécharge uniquement les images manquantes des éléments affichés, au maximum 20 par action.")
         self.wiki_button.clicked.connect(self._fetch_missing)
         wiki_controls.addWidget(self.wiki_button)
+        self.game_import_button = QPushButton("Importer les images depuis Valheim installé")
+        self.game_import_button.setObjectName("collectionImportRealImages")
+        self.game_import_button.setToolTip("Ouvre l'extracteur existant : uniquement des sprites de ton jeu, aucun mod.")
+        self.game_import_button.clicked.connect(self.game_import_requested.emit)
+        wiki_controls.addWidget(self.game_import_button)
         self.wiki_clear=QPushButton("Vider les images wiki")
         self.wiki_clear.clicked.connect(self._clear_wiki_cache)
         wiki_controls.addWidget(self.wiki_clear)
@@ -89,6 +103,9 @@ class CollectionPage(QWidget):
         self.image_filter.addItem("Toutes les images", "all")
         self.image_filter.addItem("Avec illustration", "available")
         self.image_filter.addItem("Sans illustration", "missing")
+        self.image_filter.addItem("Sprites exacts du jeu", "game")
+        self.image_filter.addItem("Images du Wiki", "wiki")
+        self.image_filter.addItem("Trophées associés", "trophy")
         self.image_filter.currentIndexChanged.connect(self.render)
         filters.addWidget(self.image_filter, 2)
         outer.addLayout(filters)
@@ -115,7 +132,28 @@ class CollectionPage(QWidget):
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.table.itemSelectionChanged.connect(self.show_selected)
-        list_layout.addWidget(self.table)
+        modes = QHBoxLayout()
+        self.gallery_button = QPushButton("Galerie illustrée")
+        self.gallery_button.setObjectName("collectionGalleryMode")
+        self.gallery_button.setCheckable(True)
+        self.list_button = QPushButton("Liste détaillée")
+        self.list_button.setObjectName("collectionListMode")
+        self.list_button.setCheckable(True)
+        self.gallery_button.clicked.connect(lambda: self._set_view("gallery"))
+        self.list_button.clicked.connect(lambda: self._set_view("list"))
+        modes.addWidget(self.gallery_button)
+        modes.addWidget(self.list_button)
+        modes.addStretch(1)
+        list_layout.addLayout(modes)
+        self.gallery = CollectionGallery(self.image_state)
+        self.gallery.setObjectName("collectionGallery")
+        self.gallery.selected.connect(self._select_gallery_entry)
+        self.list_stack = QStackedWidget()
+        self.list_stack.addWidget(self.gallery)
+        self.list_stack.addWidget(self.table)
+        self.list_stack.setCurrentWidget(self.gallery)
+        self.gallery_button.setChecked(True)
+        list_layout.addWidget(self.list_stack)
         split.addWidget(list_frame)
 
         details, detail_layout = panel(
@@ -211,10 +249,34 @@ class CollectionPage(QWidget):
         return state
 
     def _selected_token(self):
+        if self.list_stack.currentWidget() is self.gallery:
+            return self.gallery.selected_token
         row = self.table.currentRow()
         if 0 <= row < len(self.visible_entries):
             return self.visible_entries[row]["token"]
         return None
+
+    def _set_view(self, mode):
+        selected = self._selected_token()
+        use_gallery = mode == "gallery"
+        self.list_stack.setCurrentWidget(self.gallery if use_gallery else self.table)
+        self.gallery_button.setChecked(use_gallery)
+        self.list_button.setChecked(not use_gallery)
+        if use_gallery:
+            self.gallery.set_entries(self.filtered_entries, selected)
+        elif selected:
+            index = next((i for i, entry in enumerate(self.visible_entries)
+                          if entry["token"] == selected), 0)
+            if self.visible_entries:
+                self.table.selectRow(index)
+        self.show_selected()
+
+    def _select_gallery_entry(self, token):
+        for index, entry in enumerate(self.visible_entries):
+            if entry["token"] == token:
+                self.table.selectRow(index)
+                break
+        self.show_selected()
 
     def render(self, *_):
         selected = self._selected_token()
@@ -232,19 +294,29 @@ class CollectionPage(QWidget):
                 picture_filter == "all"
                 or (picture_filter == "available" and self.image_state(e["token"]) != "missing")
                 or (picture_filter == "missing" and self.image_state(e["token"]) == "missing")
+                or (picture_filter in ("game", "wiki", "trophy")
+                    and self.image_state(e["token"]) == picture_filter)
             )
         ]
         self.filtered_entries = filtered
         shown = filtered[:MAX_VISIBLE]
         self.visible_entries = shown
+        self.gallery.set_entries(filtered, selected)
         observed = sum(1 for e in self.entries if e["observed"])
         stats = {"game": 0, "wiki": 0, "trophy": 0, "missing": 0}
         for entry in self.entries:
             stats[self.image_state(entry["token"])] += 1
+        illustrated=len(self.entries)-stats["missing"]
+        ratio=1000*illustrated/len(self.entries) if self.entries else 0
+        self.coverage_bar.setValue(round(ratio))
+        self.coverage_bar.setToolTip(
+            f"{illustrated} illustrations du jeu, du Wiki ou trophées associés "
+            f"sur {len(self.entries)} entrées."
+        )
         self.summary.setText(
             f"{len(self.entries)} entrées référencées  •  {observed} avec activité enregistrée"
             f"  •  {len(filtered)} correspondent aux filtres"
-            + (f"  •  {MAX_VISIBLE} premières affichées (affine ta recherche)"
+            + (f"  •  {MAX_VISIBLE} premières dans la liste ; toutes les pages en galerie"
                if len(filtered) > MAX_VISIBLE else "")
             + f"\nIllustrations : {stats['game']} sprites du jeu  •  "
               f"{stats['wiki']} images Wiki  •  {stats['trophy']} trophées associés  •  "
@@ -278,8 +350,15 @@ class CollectionPage(QWidget):
         self.show_selected()
 
     def show_selected(self):
-        index = self.table.currentRow()
-        if index < 0 or index >= len(self.visible_entries):
+        if self.list_stack.currentWidget() is self.gallery:
+            token = self.gallery.selected_token
+            entry = next((item for item in self.filtered_entries
+                          if item["token"] == token), None)
+        else:
+            index = self.table.currentRow()
+            entry = (self.visible_entries[index]
+                     if 0 <= index < len(self.visible_entries) else None)
+        if entry is None:
             self.detail_title.setText("Aucun résultat")
             self.detail_category.clear()
             self.detail_status.clear()
@@ -288,7 +367,6 @@ class CollectionPage(QWidget):
             self.preview.setText("Aucune icône à afficher")
             self.wiki_selected_button.hide()
             return
-        entry = self.visible_entries[index]
         self.detail_title.setText(entry["name"])
         self.detail_category.setText(f"{entry['category']}  •  {entry['token']}")
         self.detail_status.setText(entry["status"])
@@ -428,6 +506,7 @@ class CollectionPage(QWidget):
                     item=self.table.item(index,0)
                     if item is not None:
                         item.setIcon(visual)
+        self.gallery.update_token(token)
         if token==self._selected_token():
             self.show_selected()
 

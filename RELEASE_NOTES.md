@@ -1,3 +1,27 @@
+# Valheim Stats Tracker V2.6.0 — Encyclopédie en galerie, activités illustrées et cumul amélioré
+
+## Encyclopédie : naviguer par les images du jeu
+- **Galerie illustrée par défaut**, avec cartes lisibles en Full HD et une présentation inspirée de l'encyclopédie du jeu ; chaque carte affiche sa provenance : sprite exact du jeu, image du Wiki, vrai trophée associé ou absence d'illustration.
+- Pagination de 18 cartes : toutes les entrées filtrées sont accessibles, même au-delà des 350 premières lignes du tableau historique.
+- Clic sur « Voir la fiche » : ouvre le panneau de détail avec identifiant, catégorie, activité observée et attribution éventuelle de l'image.
+- Bascule entre **Galerie illustrée** et **Liste détaillée** ; filtres, recherche, cache d'images Wiki, icônes extraites localement et diagnostics conservés.
+- Aucun visuel de substitution inventé ; les entrées sans image restent visibles et identifiables.
+
+## Activités : lecture visuelle des quantités
+- Nouveau panneau **Répartition des ressources** avec cinq premières familles et barres de part relative, recalculées pour la difficulté, l'activité et les filtres actifs.
+- Galerie d'objets existante, ses sprites authentiques, sa pagination et les tableaux techniques facultatifs conservés.
+
+## Statistiques cumulées
+- Dans chaque fiche cumul, une synthèse immédiate indique le Viking qui contribue le plus, le détenteur du record ou les personnages ayant validé une condition.
+- Nouveau bouton **Copier le détail des Vikings** pour conserver localement un relevé textuel incluant les valeurs individuelles et les pourcentages, sans toucher aux fichiers .fch ni envoyer de données.
+
+## Compatibilité et sécurité
+- Les 12 pages, la progression des succès, l'historique SQLite, les archives de personnages, les favoris et la mise à jour intégrée de la V2.5.2 restent présents.
+- Avant la première ouverture V2.6.0, une nouvelle sauvegarde SQLite transactionnelle et des fichiers JSON est conservée indépendamment dans `%LOCALAPPDATA%\\ValheimStatsTracker\\backups\\avant_v2.6.0`.
+- Le flux d'installation Windows versionné avec SHA-256, contrôle antivirus Windows Security et redémarrage sur confirmation est conservé. Aucune exception Defender ni script PowerShell masqué.
+
+---
+
 # Valheim Stats Tracker V2.5.2 — Retour des mises à jour intégrées
 
 ## Mise à jour Windows : installation et redémarrage

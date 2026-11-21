@@ -347,6 +347,40 @@ class RestoredPagesMixin:
         body.addLayout(filters)
         self.activity_summary=label("Charge un Viking pour consulter ses activités.",muted=True,wrap=True)
         body.addWidget(self.activity_summary)
+
+        # Une lecture visuelle de la répartition, et non une deuxième table Excel.
+        self.activity_family_chart, distribution_layout=panel(
+            "RÉPARTITION DES RESSOURCES",
+            "Part de chaque famille dans les quantités affichées. "
+            "Le graphique suit les filtres et la difficulté choisis."
+        )
+        self.activity_family_bars=[]
+        for _ in range(5):
+            line=QWidget()
+            columns=QHBoxLayout(line)
+            columns.setContentsMargins(0,1,0,1)
+            heading=label("—",wrap=True)
+            heading.setMinimumWidth(155)
+            columns.addWidget(heading,2)
+            progress=QProgressBar()
+            progress.setObjectName("activityFamilyBar")
+            progress.setRange(0,1000)
+            progress.setValue(0)
+            progress.setTextVisible(False)
+            progress.setMinimumHeight(17)
+            columns.addWidget(progress,5)
+            percentage=label("—",wrap=True)
+            percentage.setObjectName("activityFamilyPercentage")
+            percentage.setMinimumWidth(65)
+            columns.addWidget(percentage,1)
+            distribution_layout.addWidget(line)
+            line.hide()
+            self.activity_family_bars.append((line,heading,progress,percentage))
+        self.activity_family_empty=label(
+            "Aucune donnée à répartir pour cette sélection.",muted=True,wrap=True
+        )
+        distribution_layout.addWidget(self.activity_family_empty)
+        body.addWidget(self.activity_family_chart)
         page.addWidget(intro)
 
         self.activity_gallery_panel, gallery_layout=panel(
@@ -462,6 +496,22 @@ class RestoredPagesMixin:
             "Masquer les tableaux détaillés" if enabled else
             "Afficher les tableaux détaillés"
         )
+
+    def _draw_activity_family_chart(self, families):
+        total=sum(families.values())
+        ranked=sorted(families.items(), key=lambda item:(-item[1],item[0]))
+        for index,(line,heading,progress,percentage) in enumerate(self.activity_family_bars):
+            if index>=len(ranked) or total<=0:
+                line.hide()
+                continue
+            family,amount=ranked[index]
+            share=100*amount/total
+            heading.setText(family)
+            progress.setValue(round(share*10))
+            percentage.setText(f"{share:.1f} %".replace(".",","))
+            progress.setToolTip(f"{family} : {txt(amount)} unités sur {txt(total)}")
+            line.show()
+        self.activity_family_empty.setVisible(not bool(ranked))
 
     def _activity_move_page(self, offset):
         total_pages=max(1,(len(self.activity_rows)+self.activity_page_size-1)
@@ -800,6 +850,7 @@ class RestoredPagesMixin:
             self.activity_summary.setText(
                 "Charge une sauvegarde .fch pour afficher ses activités."
             )
+            self._draw_activity_family_chart({})
             self._render_activity_gallery()
             return
         group=self.activity_difficulty.currentData()
@@ -838,6 +889,7 @@ class RestoredPagesMixin:
         self.activity_metrics["types"].setText(txt(len(rows)))
         self.activity_metrics["total"].setText(txt(total))
         self.activity_metrics["family"].setText(dominant)
+        self._draw_activity_family_chart(families)
         self.activity_summary.setText(
             (f"{len(rows)} objets distincts  •  {txt(total)} actions enregistrées  •  "
              "Les groupes de difficulté sont des ensembles qui se recouvrent.")

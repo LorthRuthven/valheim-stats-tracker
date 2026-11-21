@@ -129,6 +129,51 @@ class QtWindowTests(unittest.TestCase):
             self.assertEqual(w.stack.currentIndex(),10)
             w.close()
 
+    def test_encyclopedia_image_gallery_pagination_source_and_list_compatibility(self):
+        """Le catalogue entier est consultable, pas seulement les 350 du tableau."""
+        app = QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as temp:
+            window = NordicWindow(TrackerStore(temp))
+            book = window.collection_page
+            gallery = book.gallery
+            self.assertIs(book.list_stack.currentWidget(), gallery)
+            self.assertTrue(book.gallery_button.isChecked())
+            self.assertEqual(book.coverage_bar.maximum(), 1000)
+            self.assertGreater(book.coverage_bar.value(), 0)
+            self.assertIsNotNone(book.game_import_button)
+            self.assertGreaterEqual(book.image_filter.count(), 6)
+            self.assertGreater(len(gallery.entries), 350)
+            self.assertEqual(len(gallery.cards), 18)
+            self.assertEqual(book.table.rowCount(), 350)
+            self.assertEqual(gallery.cards[0].picture.objectName(), "collectionGalleryImage")
+            gallery.move_page(21)
+            self.assertEqual(gallery.page_number, 21)
+            entry = gallery.entries[21 * 18]
+            gallery.cards[0].inspect.click()
+            app.processEvents()
+            self.assertEqual(book._selected_token(), entry["token"])
+            self.assertIn(entry["token"], book.detail_category.text())
+            self.assertIn(gallery.cards[0].origin.text(), (
+                "SPRITE DU JEU", "IMAGE DU WIKI",
+                "TROPHÉE ASSOCIÉ", "SANS ILLUSTRATION"
+            ))
+            book.list_button.click()
+            self.assertIs(book.list_stack.currentWidget(), book.table)
+            self.assertTrue(book.list_button.isChecked())
+            book.search.setText(entry["token"])
+            app.processEvents()
+            self.assertTrue(any(
+                e["token"] == entry["token"] for e in book.visible_entries
+            ))
+            book.gallery_button.click()
+            self.assertIs(book.list_stack.currentWidget(), gallery)
+            self.assertIn(entry["token"], [e["token"] for e in gallery.entries])
+            self.assertTrue(gallery.cards[0].token in
+                            {item["token"] for item in gallery.entries})
+            self.assertEqual(len(gallery.cards), 18)
+            window.close()
+            window.store.close()
+
     def test_local_sprite_aliases_match_real_prefabs(self):
         app=QApplication.instance() or QApplication([])
         import json
@@ -284,6 +329,10 @@ class QtWindowTests(unittest.TestCase):
             self.assertEqual([r.amount for r in dialog.rows], [8, 5])
             self.assertEqual(dialog.total_amount.text(), "13")
             self.assertAlmostEqual(sum(r.percentage for r in dialog.rows),100)
+            self.assertIn("Plus forte contribution",dialog.highlight.text())
+            dialog.copy_button.click()
+            self.assertIn("Ragna",app.clipboard().text())
+            self.assertIn("Ulf",app.clipboard().text())
             self.assertEqual(dialog.contribution_labels["id:2"].text(), "8")
             dialog.close()
             stats.character_selector.setCurrentIndex(1)
@@ -330,6 +379,9 @@ class QtWindowTests(unittest.TestCase):
             self.assertTrue(w.activity_technical_content.isHidden())
             self.assertEqual(w.activity_items.rowCount(),25)
             self.assertEqual(w.activity_metrics["types"].text(),"25")
+            self.assertEqual(len(w.activity_family_bars),5)
+            self.assertEqual(w.activity_family_bars[0][1].text(),"Bois et arbres")
+            self.assertEqual(w.activity_family_bars[0][2].value(),1000)
             w.resize(1100,800)
             app.processEvents()
             self.assertEqual(w.activity_columns,2)
