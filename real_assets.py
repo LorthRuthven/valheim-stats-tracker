@@ -116,9 +116,16 @@ def game_icon(prefab):
         icon=_find_asset('items',variant)
         if not icon.isNull():
             return icon
-    # L'atlas Jötunn fournit un secours AUTHENTIQUE pour les entrées d'objets
-    # que l'ancien pack d'inventaire ne couvrait pas. Aucun match approximatif.
-    is_item = (not prefab.startswith('
+    # Atlas Jötunn authentique en recours pour les objets non couverts.
+    is_item = (not prefab.startswith("$") or
+               prefab.casefold().startswith(("$item_", "$pickable_")))
+    if is_item:
+        for variant in variants:
+            icon = _find_asset("jotunn_items", variant)
+            if not icon.isNull():
+                return icon
+    return QIcon()
+
 
 def piece_icon(prefab):
     """Image authentique d'une construction Valheim référencée par le prefab exact.
