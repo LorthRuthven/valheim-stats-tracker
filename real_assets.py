@@ -112,13 +112,28 @@ def game_icon(prefab):
             return icon
     return QIcon()
 
+def creature_trophy_icon(prefab):
+    """Trophée exact du monstre (jamais présenté comme une photo de lui)."""
+    if not isinstance(prefab, str):
+        return QIcon()
+    raw = prefab.strip().lstrip("$")
+    if not raw.startswith(("enemy_", "animal_")):
+        return QIcon()
+    creature = raw.split("_", 1)[-1]
+    return game_icon("Trophy" + creature)
+
+
 def collection_icon(prefab):
-    """Ordre strict : sprite extrait > illustration officielle > image wiki cachée."""
+    """Sprite exact > Wiki attribué > véritable trophée du même monstre."""
     icon=game_icon(prefab)
     if not icon.isNull():
         return icon
     image=_wiki_cache().cached_image(prefab)
-    return _qicon(image) if image is not None else QIcon()
+    if image is not None:
+        image_icon = _qicon(image)
+        if not image_icon.isNull():
+            return image_icon
+    return creature_trophy_icon(prefab)
 
 
 @lru_cache(maxsize=1)
