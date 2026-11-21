@@ -119,7 +119,7 @@ class IntegratedUpdateTests(unittest.TestCase):
         executable = self.install(info, archive)
         executable.write_bytes(b"remplacement malveillant")
         self.assertIsNone(active_executable("2.5.1", program_root=self.versions, marker=self.state))
-        with self.assertRaisesRegex(UpdateError, "non vérifiable"):
+        with self.assertRaisesRegex(UpdateError, "pas vérifiable"):
             self.install(info, archive)
         self.assertEqual(self.original.read_bytes(), b"ANCIEN EXE")
 
