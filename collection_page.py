@@ -17,7 +17,7 @@ import time
 
 from collection_catalog import CATEGORIES, catalogue
 from desktop_v2 import label, panel
-from real_assets import game_icon, collection_icon, reset_icon_cache
+from real_assets import game_icon, collection_icon, creature_trophy_icon, reset_icon_cache
 from wiki_images import WikiImageCache, wiki_title
 
 MAX_VISIBLE = 350
@@ -196,6 +196,8 @@ class CollectionPage(QWidget):
             state = "game"
         elif self.wiki_cache.cached_image(token) is not None:
             state = "wiki"
+        elif not creature_trophy_icon(token).isNull():
+            state = "trophy"
         else:
             state = "missing"
         self._image_state_cache[token] = state
@@ -229,7 +231,7 @@ class CollectionPage(QWidget):
         shown = filtered[:MAX_VISIBLE]
         self.visible_entries = shown
         observed = sum(1 for e in self.entries if e["observed"])
-        stats = {"game": 0, "wiki": 0, "missing": 0}
+        stats = {"game": 0, "wiki": 0, "trophy": 0, "missing": 0}
         for entry in self.entries:
             stats[self.image_state(entry["token"])] += 1
         self.summary.setText(
@@ -238,7 +240,8 @@ class CollectionPage(QWidget):
             + (f"  •  {MAX_VISIBLE} premières affichées (affine ta recherche)"
                if len(filtered) > MAX_VISIBLE else "")
             + f"\nIllustrations : {stats['game']} sprites du jeu  •  "
-              f"{stats['wiki']} images Wiki  •  {stats['missing']} sans image"
+              f"{stats['wiki']} images Wiki  •  {stats['trophy']} trophées associés  •  "
+              f"{stats['missing']} sans image"
         )
         self.table.blockSignals(True)
         self.table.setUpdatesEnabled(False)
@@ -302,10 +305,16 @@ class CollectionPage(QWidget):
             )
             self.image_link.setEnabled(True)
         else:
-            self.image_source.setText(
-                "Icône provenant des fichiers du jeu." if not visual.isNull()
-                else "Aucune image confirmée pour ce prefab."
-            )
+            if self.image_state(entry["token"]) == "trophy":
+                description = (
+                    "Illustration : véritable trophée Valheim correspondant à cette créature. "
+                    "Ce n'est pas un portrait officiel du monstre."
+                )
+            elif not visual.isNull():
+                description = "Sprite authentique Valheim (pack inclus ou installation locale)."
+            else:
+                description = "Aucune illustration exacte ou liée à cette entrée n'est disponible."
+            self.image_source.setText(description)
             self.image_link.setEnabled(False)
         if (self._wiki_active and visual.isNull() and not self._wiki_busy
                 and self.wiki_cache.can_attempt(entry["token"])):
