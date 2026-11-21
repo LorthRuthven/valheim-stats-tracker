@@ -2,10 +2,12 @@
 
 Application Windows sans mod pour suivre les statistiques de personnages **Valheim** via leurs sauvegardes `.fch`. Les informations sont relevées à chaque sauvegarde, et non à chaque seconde de jeu.
 
-## Installation
-1. Télécharger la dernière archive dans [Releases](https://github.com/LorthRuthven/valheim-stats-tracker/releases/latest).
-2. Décompresser l'archive puis lancer `Lancer_Tracker.bat` avec Python 3.10+ installé.
-3. Sélectionner le personnage si la détection automatique ne trouve pas le fichier.
+## Installation Windows 10/11 (sans Python)
+1. Dans [GitHub Releases](https://github.com/LorthRuthven/valheim-stats-tracker/releases/latest), télécharger l'archive portant le suffixe **`_Windows.zip`**.
+2. L'analyser avec Windows Security, extraire **tout le dossier** `ValheimStatsTracker` puis lancer `ValheimStatsTracker.exe` sans séparer le sous-dossier `_internal`.
+3. Sélectionner le personnage si la détection automatique ne trouve pas le fichier. Depuis V2.5.2, les prochaines versions s'installent depuis **Réglages → Mises à jour Windows** après confirmation.
+
+Le ZIP **sans** suffixe `_Windows` est réservé à l'ancienne interface Python/Tkinter et à son mécanisme de mise à jour.
 
 **Confidentialité :** aucune sauvegarde personnelle ou historique n'est stocké dans ce dépôt. Les fichiers `.fch` sont lus en lecture seule ; l'historique local est conservé dans `%LOCALAPPDATA%\ValheimStatsTracker`.
 
