@@ -89,12 +89,42 @@ class QtWindowTests(unittest.TestCase):
                                 or 'boar' in item['name'].casefold()
                                 for item in collection.visible_entries))
             collection.search.clear()
+            self.assertIn('Illustrations :', collection.summary.text())
+            collection.image_filter.setCurrentIndex(1)
+            from real_assets import collection_icon
+            self.assertTrue(all(
+                not collection_icon(e['token']).isNull()
+                for e in collection.visible_entries
+            ))
+            collection.image_filter.setCurrentIndex(2)
+            self.assertTrue(all(
+                collection_icon(e['token']).isNull()
+                for e in collection.visible_entries
+            ))
+            collection.image_filter.setCurrentIndex(0)
             collection.activity.setCurrentText('Activité enregistrée')
             character={'groups':{'Any':{'enemies':[{'$enemy_boar':1}]}}}
             collection.refresh(character)
             self.assertTrue(collection.visible_entries)
             self.assertTrue(all(x['observed'] for x in collection.visible_entries))
             collection.activity.setCurrentText('Toutes les activités')
+            from unittest.mock import patch
+            from wiki_images import wiki_title
+            eligible = next((
+                e['token'] for e in collection.filtered_entries
+                if (wiki_title(e['token']) is not None
+                    and collection.image_state(e['token']) == 'missing')
+            ), None)
+            self.assertIsNotNone(eligible)
+            pending = []
+            with patch.object(collection.wiki_cache, 'can_attempt',
+                              side_effect=lambda token: token != eligible), patch.object(
+                         collection, '_start_wiki_download',
+                         side_effect=lambda tokens: pending.extend(tokens)):
+                collection._fetch_missing()
+            self.assertTrue(pending)
+            self.assertNotIn(eligible, pending)
+            self.assertLessEqual(len(pending), 20)
             w.show_page(10)
             self.assertEqual(w.stack.currentIndex(),10)
             w.close()
