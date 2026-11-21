@@ -100,3 +100,5 @@ Depuis V2.5.2, Réglages → Mises à jour Windows → Télécharger et installe
 Le nouveau programme se trouve dans %LOCALAPPDATA%\Programs\ValheimStatsTracker\versions, les données dans %LOCALAPPDATA%\ValheimStatsTracker. L'ancienne version reste disponible. Le raccourci vers V2.5.2 ou une version suivante redirige automatiquement vers la nouvelle version validée.
 
 Une dernière installation manuelle est nécessaire depuis V2.5.1. Si Windows Security ne confirme pas un antivirus sain, le ZIP vérifié reste accessible via « Ouvrir le dossier du ZIP », mais l'application refuse de l'exécuter automatiquement. Aucun contournement de Defender n'est recommandé.
+
+**Retour manuel :** l'ancien EXE reste disponible. Pour démarrer une version V2.5.2 ou ultérieure sans redirection automatique vers la dernière version installée, ajoute l'argument de lancement `--no-update-handoff` au raccourci de secours. Ce mode ne désactive aucune protection antivirus et ne modifie pas les données.
