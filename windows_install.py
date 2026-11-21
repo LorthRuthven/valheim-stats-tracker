@@ -76,30 +76,30 @@ def _write_state(path: Path, state: dict):
         Path(name).unlink(missing_ok=True)
 
 
-def defender_scanner(archive: Path, folder: Path):
-    """Analyse explicite avec Defender ; un outil indisponible bloque l'auto-lancement."""
+def check_antivirus_protection(archive: Path, folder: Path):
+    """Refuse l'activation si Windows Security ne signale pas un antivirus sain.
+
+    L'API Windows Security Center est accessible sans élévation UAC. Ce contrôle
+    ne remplace pas un scan dédié : le filtre antivirus temps réel reste chargé
+    d'inspecter les fichiers écrits sur disque et les exécutables démarrés.
+    """
     if os.name != "nt":
         raise UpdateError("L'installation automatique est réservée à Windows.")
-    candidates = []
-    root = Path(os.environ.get("ProgramData", r"C:\ProgramData")) / "Microsoft" / "Windows Defender" / "Platform"
-    if root.is_dir():
-        candidates.extend(sorted(root.glob("*/MpCmdRun.exe"), reverse=True))
-    candidates.append(Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Windows Defender" / "MpCmdRun.exe")
-    scanner = next((file for file in candidates if file.is_file()), None)
-    if scanner is None:
-        raise UpdateError("Analyse Defender indisponible : installation automatique bloquée. Le ZIP vérifié reste accessible.")
-    for path in (archive, folder):
-        try:
-            result = subprocess.run(
-                [str(scanner), "-Scan", "-ScanType", "3", "-File", str(path)],
-                timeout=240, capture_output=True, text=True, check=False,
-            )
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            raise UpdateError("Analyse antivirus interrompue : installation annulée.") from exc
-        if result.returncode != 0:
-            raise UpdateError("Defender n'a pas validé le nouveau programme (code "
-                              + str(result.returncode) + "). Installation annulée.")
-
+    import ctypes
+    from ctypes import wintypes
+    health = ctypes.c_int(-1)
+    try:
+        library = ctypes.WinDLL("wscapi.dll")
+        query = library.WscGetSecurityProviderHealth
+        query.argtypes = (wintypes.DWORD, ctypes.POINTER(ctypes.c_int))
+        query.restype = ctypes.c_long
+        result = query(0x4, ctypes.byref(health))  # WSC_SECURITY_PROVIDER_ANTIVIRUS
+    except (OSError, AttributeError, ValueError) as exc:
+        raise UpdateError("Impossible de vérifier la protection antivirus Windows : installation annulée.") from exc
+    if result != 0 or health.value != 0:  # S_OK et WSC_SECURITY_PROVIDER_HEALTH_GOOD
+        raise UpdateError("Windows Security ne signale pas un antivirus en bon état. Installation annulée.")
+    if not archive.is_file() or not (folder / EXE).is_file():
+        raise UpdateError("Un fichier a été bloqué ou retiré pendant la préparation.")
 
 def probe_candidate(executable: Path, version: str):
     """Vérifie que la version extraite démarre sans ouvrir une deuxième fenêtre."""
@@ -171,9 +171,9 @@ def install_release(info, archive, *, program_root=None, marker=None,
                 header = program.read(2)
             if header != b"MZ":
                 raise UpdateError("Exécutable Windows extrait invalide.")
-            (scan or defender_scanner)(archive, stage)
+            (scan or check_antivirus_protection)(archive, stage)
             if not executable.is_file():
-                raise UpdateError("L'exécutable a été retiré pendant l'analyse antivirus.")
+                raise UpdateError("L'exécutable a été retiré par la protection Windows.")
             # Sauvegarder AVANT d'exécuter le binaire candidat.
             (backup or (lambda: backup_before_update(app_dir(), version)))()
             (probe or probe_candidate)(executable, version)
@@ -190,7 +190,7 @@ def install_release(info, archive, *, program_root=None, marker=None,
                 shutil.rmtree(stage, ignore_errors=True)
     else:
         # Une réactivation requiert la même vérification antivirus et de démarrage.
-        (scan or defender_scanner)(archive, destination)
+        (scan or check_antivirus_protection)(archive, destination)
         (backup or (lambda: backup_before_update(app_dir(), version)))()
         (probe or probe_candidate)(existing, version)
 
