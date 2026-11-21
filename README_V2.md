@@ -95,8 +95,8 @@ Pour le diagnostic du lecteur de fichiers `.fch`, les **205 compteurs bruts** et
 
 ### V2.5.2 — Mise à jour Windows directement dans l'application
 
-Depuis V2.5.2, Réglages → Mises à jour Windows → Télécharger et installer effectue le téléchargement SHA-256, l'extraction dans un répertoire versionné, l'analyse Defender et un contrôle de démarrage, puis propose de redémarrer. Aucun remplacement d'EXE en cours ni script PowerShell. Une installation dont l'analyse ou le contrôle de lancement échoue n'est pas activée.
+Depuis V2.5.2, Réglages → Mises à jour Windows → Télécharger et installer effectue le téléchargement SHA-256, l'extraction dans un répertoire versionné, la vérification via Windows Security Center qu'un antivirus est sain, puis un contrôle de démarrage, puis propose de redémarrer. Aucun remplacement d'EXE en cours ni script PowerShell. Une installation dont le contrôle de protection ou de démarrage échoue n'est pas activée.
 
 Le nouveau programme se trouve dans %LOCALAPPDATA%\Programs\ValheimStatsTracker\versions, les données dans %LOCALAPPDATA%\ValheimStatsTracker. L'ancienne version reste disponible. Le raccourci vers V2.5.2 ou une version suivante redirige automatiquement vers la nouvelle version validée.
 
-Une dernière installation manuelle est nécessaire depuis V2.5.1. Si Defender est indisponible, le ZIP vérifié reste accessible via « Ouvrir le dossier du ZIP », mais l'application refuse de l'exécuter automatiquement. Aucun contournement de Defender n'est recommandé.
+Une dernière installation manuelle est nécessaire depuis V2.5.1. Si Windows Security ne confirme pas un antivirus sain, le ZIP vérifié reste accessible via « Ouvrir le dossier du ZIP », mais l'application refuse de l'exécuter automatiquement. Aucun contournement de Defender n'est recommandé.
