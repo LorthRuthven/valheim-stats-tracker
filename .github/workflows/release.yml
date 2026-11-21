@@ -104,6 +104,8 @@ jobs:
           Write-Host 'Extraction : UnityPy + FMOD + archspec JSON lisibles depuis l executable compile'
       - name: Vérifier le démarrage d'une future mise à jour
         shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
         run: |
           $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
           $version = (Get-Content version.json | ConvertFrom-Json).version
