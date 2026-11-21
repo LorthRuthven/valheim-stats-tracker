@@ -1,3 +1,20 @@
+# Valheim Stats Tracker V2.5.2 — Retour des mises à jour intégrées
+
+## Mise à jour Windows : installation et redémarrage
+- Réglages → Mises à jour Windows → Télécharger et installer : contrôle GitHub Releases et SHA-256 conservé.
+- Après confirmation explicite, extraction dans un dossier versionné sous %LOCALAPPDATA%\Programs\ValheimStatsTracker\versions. L'EXE en cours n'est jamais remplacé.
+- ZIP et nouveau dossier analysés avec Microsoft Defender. Si Defender est indisponible ou signale un problème, activation refusée ; le ZIP reste accessible.
+- Vérification du démarrage du nouvel EXE et de son interface Qt avant activation.
+- Activation atomique, puis proposition de redémarrage. Les raccourcis V2.5.2 ou ultérieurs redirigent vers une version installée plus récente.
+- Anciennes installations conservées pour retour manuel en arrière. Aucun PowerShell, script masqué, tâche planifiée ni exception antivirus.
+- Fichiers .fch lus sans modification. Historique SQLite, succès, favoris, archives dans %LOCALAPPDATA%\ValheimStatsTracker, avec nouvelle copie transactionnelle avant activation.
+- Un échec de téléchargement, d'analyse, de démarrage ou de sauvegarde laisse la version courante active.
+
+**Transition V2.5.1 → V2.5.2 :** il faut installer V2.5.2 une dernière fois manuellement depuis la release officielle (ZIP Windows, antivirus puis extraction dans un nouveau dossier). Les prochaines versions peuvent être installées depuis les Réglages.
+
+**Sécurité :** le SHA-256 n'est pas une signature du code et ne garantit pas l'acceptation Defender/SmartScreen. La publication reste conditionnée à la revue explicite V2.5.2.
+
+---
 # Valheim Stats Tracker V2.5.1 — Encyclopédie enrichie, archives et galerie
 
 ## Sécurité de la mise à jour V2.5.1
