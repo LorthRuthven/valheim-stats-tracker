@@ -21,7 +21,7 @@ jobs:
       - name: Tester le moteur, l'historique et l'updater
         run: python3 -m unittest discover -s tests -v
       - name: Vérifier les fichiers Python
-        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_install.py windows_update_ui.py game_icon_extraction.py display_scaling.py collection_catalog.py collection_gallery.py collection_page.py wiki_images.py viking_stats.py viking_stats_page.py character_archive.py game_visuals.py tools/bundle_inventory_sprites.py tools/fetch_game_assets.py
+        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_install.py windows_update_ui.py game_icon_extraction.py display_scaling.py collection_catalog.py collection_gallery.py collection_page.py wiki_images.py viking_stats.py viking_stats_page.py character_archive.py game_visuals.py tools/bundle_inventory_sprites.py tools/bundle_piece_sprites.py tools/fetch_game_assets.py
 
   windows:
     runs-on: windows-latest
@@ -46,8 +46,10 @@ jobs:
         shell: pwsh
         run: |
           python -m tools.bundle_inventory_sprites
+          python -m tools.bundle_piece_sprites
           if ($LASTEXITCODE -ne 0) { throw 'Impossible de distribuer sans les sprites Valheim requis' }
           python -m unittest discover -s tests -p test_real_game_icons.py -v
+          python -m unittest discover -s tests -p test_piece_images.py -v
           if ($LASTEXITCODE -ne 0) { throw 'Couverture des icones Valheim incomplete' }
       - name: Vérifier la nouvelle interface Qt (hors écran)
         shell: pwsh
@@ -205,11 +207,11 @@ jobs:
           retention-days: 7
 
   release:
-    # Autorisation strictement bornee a la V2.7.0 :
+    # Autorisation strictement bornee a la V2.7.1 :
     # - variable GitHub sur cette version ; ou
     # - marqueur d'approbation explicite dans le commit de fusion de la PR,
     #   autorise par le proprietaire du projet. Aucun push ordinaire ne publie.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.VALHEIM_WINDOWS_APPROVED_VERSION == '2.7.0' || contains(github.event.head_commit.message, '[approve-v2.7.0-release]'))
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.VALHEIM_WINDOWS_APPROVED_VERSION == '2.7.1' || contains(github.event.head_commit.message, '[approve-v2.7.1-release]'))
     needs: [tests, windows]
     runs-on: ubuntu-latest
     steps:

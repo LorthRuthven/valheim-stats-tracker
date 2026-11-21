@@ -11,7 +11,7 @@ from real_assets import collection_icon, game_icon
 SIZES = {"compact": (156, 155, 66), "normal": (205, 192, 94),
          "large": (260, 247, 126)}
 SOURCE_LABELS = {"game": "SPRITE DU JEU", "wiki": "IMAGE DU WIKI",
-                 "trophy": "TROPHÉE ASSOCIÉ", "missing": "IMAGE MANQUANTE"}
+                 "trophy": "TROPHÉE ASSOCIÉ", "piece": "IMAGE DE CONSTRUCTION", "missing": "IMAGE MANQUANTE"}
 # Un vrai sprite de matériau peut illustrer une famille de constructions.
 # Cette association reste toujours indiquée comme thématique et n'est jamais
 # comptée comme une illustration exacte de la construction.

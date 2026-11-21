@@ -1,3 +1,21 @@
+# Valheim Stats Tracker V2.7.1 — Images de constructions authentiques
+
+## Couverture d'images
+- Ajout de **386 images de constructions Valheim** indexées par identifiant exact (`$piece_...`), issues de la [documentation Jötunn](https://valheim-modding.github.io/Jotunn/data/pieces/piece-list.html), commit `18a0b624ceaf757abcfeb5cb1386d111a6dec9b2`.
+- L'ancien pack de sprites d'inventaire ne couvrait pas correctement les murs, portes, planchers, toitures, postes de fabrication, etc. Ceux-ci utilisent désormais de véritables images de pièces plutôt qu'une icône de matériau de remplacement.
+- Chaque fichier PNG est vérifié lors du build par nom de prefab, empreinte Git blob du commit épinglé et validité de l'image.
+- Les correspondances manifestement incorrectes dans la source ont été rectifiées pour éviter de montrer un objet différent.
+- Affichage de provenance distinct : **Image de construction**, **Sprite d'inventaire**, **Image Wiki** ou **Trophée associé**. Aucun faux visuel généré.
+- La couverture de l'encyclopédie est recalculée : le nombre restant sans image dépend aussi des images Wiki du cache privé et des sprites présents sur chaque installation.
+- Droits des images du jeu : © Iron Gate AB / Coffee Stain Publishing ; documentaire Jötunn, usage non officiel.
+
+## Continuité
+- Aucune migration destructive. L'historique SQLite, les succès, personnages, favoris, les 12 pages et l'installation intégrée restent compatibles.
+- Nouvelle copie de sécurité au premier lancement V2.7.1 dans `%LOCALAPPDATA%\\ValheimStatsTracker\\backups\\avant_v2.7.1`.
+- Les sauvegardes Valheim `.fch` restent en lecture seule.
+
+---
+
 # Valheim Stats Tracker V2.7.0 — Encyclopédie fluide, vraie largeur d'écran
 
 ## Galerie entièrement repensée

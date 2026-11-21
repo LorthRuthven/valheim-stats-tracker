@@ -46,7 +46,7 @@ def _find_asset(kind,key):
     name=entries.get(_slug(key))
     if not isinstance(name,str) or '/' in name or '\\' in name or '..' in name:
         return QIcon()
-    return _qicon(bundled_assets()/('achievements' if kind=='achievements' else 'items')/name)
+    return _qicon(bundled_assets()/('achievements' if kind=='achievements' else 'pieces' if kind=='pieces' else 'items')/name)
 
 def achievement_icon(title):
     # La clé d'affichage française n'est jamais utilisée pour attribuer une mauvaise icône.
@@ -112,6 +112,16 @@ def game_icon(prefab):
             return icon
     return QIcon()
 
+def piece_icon(prefab):
+    """Image authentique d'une construction Valheim référencée par le prefab exact.
+
+    Provenance : documentation Jötunn. Ce n'est pas un sprite d'inventaire.
+    """
+    if not isinstance(prefab, str) or not prefab.lower().startswith("$piece_"):
+        return QIcon()
+    return _find_asset("pieces", prefab)
+
+
 def creature_trophy_icon(prefab):
     """Trophée exact du monstre (jamais présenté comme une photo de lui)."""
     if not isinstance(prefab, str):
@@ -128,6 +138,9 @@ def collection_icon(prefab):
     icon=game_icon(prefab)
     if not icon.isNull():
         return icon
+    image_piece=piece_icon(prefab)
+    if not image_piece.isNull():
+        return image_piece
     image=_wiki_cache().cached_image(prefab)
     if image is not None:
         image_icon = _qicon(image)
