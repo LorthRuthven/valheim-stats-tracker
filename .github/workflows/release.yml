@@ -132,7 +132,7 @@ jobs:
           if ($check.ExitCode -ne 0) { throw "Le vérificateur ZIP compilé a échoué : $($check.ExitCode)" }
           Write-Host 'Validation ZIP incluse dans le programme : OK'
 
-      - name: Vérifier l'updater sans PowerShell caché et le rollback
+      - name: Vérifier l'updater sans processus caché
         shell: pwsh
         run: |
           python -m unittest discover -s tests -p test_windows_update_safe.py -v
@@ -142,7 +142,7 @@ jobs:
           if ($source -match 'ExecutionPolicy|subprocess\\.Popen|INSTALL_PS1|install\\.ps1') {
             throw 'Un ancien mécanisme silencieux reste présent dans windows_update.py.'
           }
-          Write-Host 'Mise à jour vérifiée et installée manuellement : aucune exécution PowerShell.'
+          Write-Host 'ZIP vérifié et installation versionnée : aucune exécution PowerShell.'
 
       - name: Contrôler chaque sprite Valheim depuis le véritable EXE compilé
         shell: pwsh
