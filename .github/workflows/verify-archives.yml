@@ -56,8 +56,9 @@ jobs:
         shell: pwsh
         run: |
           python -m tools.bundle_inventory_sprites
+          if ($LASTEXITCODE -ne 0) { throw 'Sprites d’inventaire Valheim incomplets' }
           python -m tools.bundle_piece_sprites
-          if ($LASTEXITCODE -ne 0) { throw 'Sprites Valheim incomplets' }
+          if ($LASTEXITCODE -ne 0) { throw 'Images de constructions Valheim incomplètes' }
           python -m unittest discover -s tests -p test_real_game_icons.py -v
           python -m unittest discover -s tests -p test_piece_images.py -v
           if ($LASTEXITCODE -ne 0) { throw 'Une image Valheim manque au paquet' }
