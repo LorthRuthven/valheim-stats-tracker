@@ -69,3 +69,7 @@ L'application Windows autonome installe et relance les futures versions depuis R
 
 ## V2.7.0 — Encyclopédie sur grand écran
 La galerie n'a plus de pages : scroll vertical continu, cartes Compact/Normal/Grand, fiche latérale ouvrable au clic, recherche et liste technique conservées. L'application met en avant les images de jeu et Wiki vérifiées ; les éventuels visuels de matériaux sont explicitement indiqués comme thématiques. Mise à jour intégrée depuis V2.5.2.
+
+
+## V2.7.2 — Atlas Jötunn et audit de couverture
+1 530 illustrations authentiques de créatures, objets et éléments du monde complètent les 386 pièces. Les identifiants encore manquants peuvent être copiés depuis l'Encyclopédie, sans lire ni transmettre les sauvegardes des personnages.

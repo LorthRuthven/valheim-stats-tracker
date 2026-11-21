@@ -1,10 +1,10 @@
-# Valheim Stats Tracker V2.7.1
+# Valheim Stats Tracker V2.7.2
 
 **Windows 10/11 :** dans la V2.5.2 ou une version ultérieure, choisir **Réglages → Mises à jour Windows → Vérifier les mises à jour**. L'application vérifie l'archive officielle GitHub Releases et son SHA-256, installe la nouvelle version dans un dossier séparé après contrôle de la protection antivirus Windows, puis propose de redémarrer.
 
 **Encyclopédie V2.7.0 :** galerie virtuelle en défilement continu sans pages, plein écran par défaut, fiche repliable et tailles Compact/Normal/Grand. Le filtre par provenance, les Activités et les détails cumulés sont conservés.
 
-**Protection des données :** au premier lancement V2.7.1, une nouvelle sauvegarde transactionnelle de l'historique, des archives et des réglages/favoris est créée dans `%LOCALAPPDATA%\\ValheimStatsTracker\\backups\\avant_v2.7.1`. Les sauvegardes de personnages Valheim `.fch` restent en lecture seule. Les anciennes versions ne sont pas supprimées automatiquement.
+**Protection des données :** au premier lancement V2.7.2, une nouvelle sauvegarde transactionnelle de l'historique, des archives et des réglages/favoris est créée dans `%LOCALAPPDATA%\\ValheimStatsTracker\\backups\\avant_v2.7.2`. Les sauvegardes de personnages Valheim `.fch` restent en lecture seule. Les anciennes versions ne sont pas supprimées automatiquement.
 
 # Valheim Stats Tracker V2.1
 
@@ -118,3 +118,7 @@ La galerie utilise désormais une liste Qt virtualisée : toutes les entrées se
 ### V2.7.1 — Véritables images des constructions
 
 Cette version ajoute au ZIP Windows 386 images des pièces Valheim issues de la documentation Jötunn, indexées par identifiant exact. Elles complètent les images d'inventaire déjà présentes et sont distinguées comme « Image de construction ». Les fichiers téléchargés lors de la construction sont vérifiés contre les empreintes de Git du dépôt source épinglé. Les droits des images sont réservés à Iron Gate AB / Coffee Stain Publishing. Aucun téléchargement additionnel n'est nécessaire dans l'application.
+
+### V2.7.2 — Grand atlas documentaire Valheim
+
+L'exécutable inclut maintenant 1 530 illustrations authentiques d'objets, créatures et éléments du monde tirées d'une révision épinglée de Jötunn, en plus des 386 images de constructions de la V2.7.1 et des sprites historiques. Le filtre de provenance différencie créatures, monde, inventaire et constructions. **Options images → Copier les images manquantes** permet d'obtenir les identifiants encore non couverts sans partager les sauvegardes `.fch`. Toutes les données existantes sont conservées.

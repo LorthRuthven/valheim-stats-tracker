@@ -1,3 +1,8 @@
+## V2.7.2 — 1 530 visuels authentiques supplémentaires
+- Atlas documentaire Jötunn : objets, créatures et monde, empreintes Git et tests intégralement empaquetés.
+- Audit local copiable des derniers identifiants sans illustration, regroupés par catégorie.
+- Conservation complète de l'updater, des archives et des succès.
+
 ## V2.7.1 — 386 images authentiques de constructions
 - Capture de la documentation Jötunn associée par prefab exact, contrôlée par SHA Git et PNG ; provenance séparée des sprites d'inventaire.
 - Correction des correspondances trompeuses et réduction des entrées sans images.

@@ -1,3 +1,24 @@
+# Valheim Stats Tracker V2.7.2 — Catalogue Valheim illustré à grande échelle
+
+## Le vrai problème des images manquantes
+- Le pack V2.7.1 avait les images des 386 constructions de base, mais le reste du catalogue et les entrées supplémentaires des sauvegardes pouvaient encore manquer d'illustrations.
+- Nouveau **pack de 1 530 images supplémentaires authentiques** provenant de la documentation Jötunn : **1 231 objets**, **162 créatures**, **134 éléments du monde** et **3 équipements du monde**. Les images précédentes sont conservées.
+- Le code peut utiliser les nouveaux fichiers par identifiant/prefab exact, y compris les entrées ajoutées dynamiquement par les sauvegardes des joueurs.
+- Noms, tailles, empreintes Git et décodage de chaque PNG sont vérifiés au build contre un commit épinglé. Le programme Windows est contrôlé pour s'assurer que les 1 530 PNG ont vraiment été empaquetés.
+- Les images de créatures et d'éléments du monde ont leur propre provenance visible ; les images de matériaux associées ne sont jamais présentées comme la pièce exacte.
+
+## Audit des derniers manquants
+- Dans les options de l'Encyclopédie : **« Copier les images manquantes »** fournit l'intégralité des identifiants encore non illustrés, groupés par catégorie, sans fichier de sauvegarde ni information personnelle.
+- Les entrées spécifiques à une sauvegarde ne peuvent pas toutes être anticipées depuis le seul catalogue standard. Il faut leur identifiant exact pour vérifier qu'une image correspond au bon prefab.
+- Le compteur de couverture reste honnête et ne comptabilise ni dessins générés ni images de matériaux substituées.
+
+## Sécurité
+- Préservation des 12 pages, de la progression des succès et de l'historique SQLite, des favoris, des archives, de l'extraction locale et de l'updater V2.5.2+.
+- Nouvelle sauvegarde des données avant la première ouverture V2.7.2 dans `%LOCALAPPDATA%\\ValheimStatsTracker\\backups\\avant_v2.7.2`. Les `.fch` demeurent strictement en lecture seule.
+- Sources des images : © Iron Gate AB / Coffee Stain Publishing, via la documentation Jötunn (Valheim-Modding/Jotunn). Redistribution dans ce compagnon non officiel.
+
+---
+
 # Valheim Stats Tracker V2.7.1 — Images de constructions authentiques
 
 ## Couverture d'images

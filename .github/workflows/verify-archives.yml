@@ -18,7 +18,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y python3-tk
       - name: Vérifier les fichiers Python
-        run: python3 -m py_compile character_archive.py viking_stats_page.py nordic_ui.py valheim_reader.py v2_core.py windows_install.py windows_update_ui.py collection_gallery.py collection_page.py tools/bundle_piece_sprites.py
+        run: python3 -m py_compile character_archive.py viking_stats_page.py nordic_ui.py valheim_reader.py v2_core.py windows_install.py windows_update_ui.py collection_gallery.py collection_page.py tools/bundle_piece_sprites.py tools/bundle_catalogue_atlas.py
       - name: Tester le moteur et le cumul des personnages
         run: python3 -m unittest discover -s tests -v
 
@@ -58,9 +58,11 @@ jobs:
           python -m tools.bundle_inventory_sprites
           if ($LASTEXITCODE -ne 0) { throw 'Sprites inventaire Valheim incomplets' }
           python -m tools.bundle_piece_sprites
+          python -m tools.bundle_catalogue_atlas
           if ($LASTEXITCODE -ne 0) { throw 'Images constructions Valheim incompletes' }
           python -m unittest discover -s tests -p test_real_game_icons.py -v
           python -m unittest discover -s tests -p test_piece_images.py -v
+          python -m unittest discover -s tests -p test_catalogue_atlas.py -v
           if ($LASTEXITCODE -ne 0) { throw 'Une image Valheim manque au paquet' }
 
       - name: Diagnostiquer les images du Wiki (facultatif, sans donnees utilisateur)
@@ -122,10 +124,12 @@ jobs:
         run: |
           python -m tools.bundle_inventory_sprites
           python -m tools.bundle_piece_sprites
+          python -m tools.bundle_catalogue_atlas
       - name: Exiger la couverture des sprites de toutes les pages
         run: |
           python -m unittest discover -s tests -p test_real_game_icons.py -v
           python -m unittest discover -s tests -p test_piece_images.py -v
+          python -m unittest discover -s tests -p test_catalogue_atlas.py -v
       - name: Construire l'application Windows autonome
         shell: pwsh
         run: |
@@ -153,6 +157,14 @@ jobs:
           $pieceImages = @(Get-ChildItem -LiteralPath $pieceFolder -Filter '*.png' -File)
           if ($pieceImages.Count -lt 380) { throw "Constructions absentes du programme Windows : $($pieceImages.Count) images" }
           Write-Host "Pack constructions Valheim inclus dans le vrai EXE : $($pieceImages.Count) PNG"
+          $counts = @{ jotunn_items=1231; jotunn_characters=162; jotunn_prefabs=134; jotunn_world=3 }
+          foreach ($name in $counts.Keys) {
+            $folder = "dist/ValheimStatsTracker/_internal/assets/$name"
+            if (-not (Test-Path -LiteralPath $folder -PathType Container)) { throw "Atlas $name absent du vrai EXE" }
+            $found = @(Get-ChildItem -LiteralPath $folder -Filter '*.png' -File).Count
+            if ($found -ne $counts[$name]) { throw "Atlas $name incomplet : $found / $($counts[$name])" }
+            Write-Host "Atlas $name dans le ZIP Windows : $found PNG authentiques"
+          }
           $version = (Get-Content version.json | ConvertFrom-Json).version
           $archive = "dist/Valheim_Stats_Tracker_v${version}_Windows.zip"
           Compress-Archive -Path dist/ValheimStatsTracker -DestinationPath $archive -CompressionLevel Optimal
