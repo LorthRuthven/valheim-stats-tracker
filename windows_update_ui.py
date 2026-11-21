@@ -105,8 +105,8 @@ class UpdatePanel(QWidget):
         answer = QMessageBox.question(
             self, "Mettre à jour Valheim Stats Tracker",
             "Installer la version Windows " + self.info["version"] + " ?\n\n"
-            "Le ZIP GitHub officiel sera contrôlé par SHA-256, puis analysé "
-            "avec Windows Security (antivirus actif). L'application vérifiera le lancement "
+            "Le ZIP GitHub officiel sera contrôlé par SHA-256 et l’état de l’antivirus "
+            "sera vérifié par Windows Security. L’application vérifiera le lancement "
             "de la nouvelle version avant de l'activer.\n\n"
             "Une copie des données sera conservée et l'ancienne version "
             "restera installée. Aucun script PowerShell ni contournement "
