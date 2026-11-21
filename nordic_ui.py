@@ -939,6 +939,13 @@ if __name__=='__main__':
             _verify_update_ready(expected)
         except Exception:
             import traceback
+            details = traceback.format_exc()
+            if '--update-diagnostics' in sys.argv:
+                try:
+                    logpath = Path(sys.argv[sys.argv.index('--update-diagnostics') + 1])
+                    logpath.write_text(details, encoding='utf-8')
+                except (OSError, IndexError):
+                    pass
             traceback.print_exc()
             sys.exit(25)
         sys.exit(0)
