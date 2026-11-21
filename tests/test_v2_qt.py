@@ -138,6 +138,10 @@ class QtWindowTests(unittest.TestCase):
             gallery = book.gallery
             self.assertIs(book.list_stack.currentWidget(), gallery)
             self.assertTrue(book.gallery_button.isChecked())
+            self.assertEqual(book.coverage_bar.maximum(), 1000)
+            self.assertGreater(book.coverage_bar.value(), 0)
+            self.assertIsNotNone(book.game_import_button)
+            self.assertGreaterEqual(book.image_filter.count(), 6)
             self.assertGreater(len(gallery.entries), 350)
             self.assertEqual(len(gallery.cards), 18)
             self.assertEqual(book.table.rowCount(), 350)
