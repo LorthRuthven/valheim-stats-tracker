@@ -85,6 +85,26 @@ def screenshot_gallery(fch: Path, dest: Path):
             shots.append((window.NAV[index][0], output))
             print(f"CAPTURE {index + 1:02d}/12 {window.NAV[index][0]} : {output}", flush=True)
 
+        # Vérification visuelle de la couverture réelle de l'encyclopédie.
+        # Les données proviennent de la même sauvegarde de test publique.
+        window.show_page(10)
+        book = window.collection_page
+        for category, filename in (
+            ("Armes", "20_encyclopedie-armes-images-valheim.png"),
+            ("Trophées", "21_encyclopedie-trophees-images-valheim.png"),
+        ):
+            book.category.setCurrentText(category)
+            book.image_filter.setCurrentText("Avec illustration")
+            app.processEvents()
+            if not book.visible_entries:
+                raise RuntimeError("Aucun objet illustré dans la catégorie : " + category)
+            shot = dest / filename
+            if not window.grab().save(str(shot), "PNG"):
+                raise RuntimeError("Capture Encyclopédie impossible : " + category)
+            print("CAPTURE ENCYCLOPÉDIE :", category, shot, flush=True)
+        book.category.setCurrentIndex(0)
+        book.image_filter.setCurrentIndex(0)
+
         # Rendu supplémentaire dans la liste défilante des statistiques.
         window.show_page(11)
         app.processEvents()
