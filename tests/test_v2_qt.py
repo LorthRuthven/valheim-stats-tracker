@@ -184,7 +184,8 @@ class QtWindowTests(unittest.TestCase):
                 e["token"] == entry["token"] for e in book.visible_entries))
             book.gallery_button.click()
             self.assertIs(book.list_stack.currentWidget(), gallery)
-            self.assertEqual(gallery.model.rowCount(), 1)
+            self.assertEqual(gallery.model.rowCount(), len(book.filtered_entries))
+            self.assertGreater(gallery.model.rowCount(), 0)
             self.assertFalse(book.detail_toggle.isChecked())
             window.close()
             window.store.close()
@@ -464,12 +465,14 @@ class QtWindowTests(unittest.TestCase):
             self.assertLess(
                 visible_widgets.index(w.collection_page.detail_title),
                 visible_widgets.index(w.collection_page.preview))
-            self.assertGreaterEqual(
-                w.collection_page.detail_scroll.widget().minimumHeight(),645)
+            self.assertEqual(
+                w.collection_page.detail_scroll.widget().minimumHeight(), 0)
+            self.assertTrue(w.collection_page.detail_scroll.isHidden())
             settings=w.stack.widget(4)
             text=' '.join(x.text() for x in settings.findChildren(QLabel))
-            self.assertIn('installation manuelle sans PowerShell',text)
-            self.assertNotIn('sauvegarde et redémarrage',text)
+            self.assertIn('installation intégrée',text)
+            self.assertIn('redémarrage après confirmation',text)
+            self.assertNotIn('installation manuelle sans PowerShell',text)
             w.close()
             w.store.close()
 
