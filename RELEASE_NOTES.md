@@ -1,4 +1,13 @@
-# Valheim Stats Tracker V2.5.0 — Archives de personnages et statistiques cumulées
+# Valheim Stats Tracker V2.5.1 — Encyclopédie enrichie, archives et galerie
+
+## Sécurité de la mise à jour V2.5.1
+- Avant la première ouverture de la V2.5.1, le tracker réalise automatiquement une **copie transactionnelle de `historique.sqlite3`**, incluant les anciens relevés de succès et archives de personnages, et des fichiers JSON de favoris et de réglages. Copie locale : `%LOCALAPPDATA%\\ValheimStatsTracker\\backups\\avant_v2.5.1`.
+- L'original reste en place. Si la sauvegarde préalable échoue, la nouvelle version ne doit pas ouvrir ni modifier la base d'historique.
+- La nouvelle version est proposée par le panneau **Réglages → Mises à jour Windows**, uniquement après sa publication officielle sur GitHub Releases avec empreinte SHA-256 reconnue.
+- L'application télécharge un ZIP vérifié et l'ouvre dans l'Explorateur. **Aucune installation silencieuse ni exécution automatique** n'est autorisée ; l'utilisateur doit extraire le ZIP et lancer l'EXE manuellement après son analyse antivirus.
+- Les fichiers `.fch` originaux et les succès Steam restent intacts.
+
+
 
 ## Mes personnages dans « Statistiques du Viking »
 - Importer plusieurs anciens fichiers `.fch` simultanément, sans les modifier.
