@@ -165,7 +165,11 @@ def install_release(info, archive, *, program_root=None, marker=None,
                         with package.open(item, "r") as source, path.open("wb") as target:
                             shutil.copyfileobj(source, target)
             executable = stage / EXE
-            if not executable.is_file() or executable.open("rb").read(2) != b"MZ":
+            if not executable.is_file():
+                raise UpdateError("Exécutable Windows extrait invalide.")
+            with executable.open("rb") as program:
+                header = program.read(2)
+            if header != b"MZ":
                 raise UpdateError("Exécutable Windows extrait invalide.")
             (scan or defender_scanner)(archive, stage)
             if not executable.is_file():
