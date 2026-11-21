@@ -77,6 +77,21 @@ def matching_catalogue_items(sprite_names, catalogue_rows):
     return matched
 
 
+def matching_creature_trophies(sprite_names, catalogue_rows):
+    """Vrais trophées correspondant exactement à une créature."""
+    by_slug = {slug(name): name for name in sorted(sprite_names)}
+    matched = {}
+    for entry in catalogue_rows:
+        token = str(entry.get("token", "")).lstrip("$")
+        if not (token.startswith("enemy_") or token.startswith("animal_")):
+            continue
+        raw = token.split("_", 1)[-1]
+        trophy = by_slug.get(slug("Trophy" + raw))
+        if trophy:
+            matched[entry["token"]] = trophy
+    return matched
+
+
 def read_icon(item, sprite):
     address = SOURCE + "/sprites/" + urllib.parse.quote(sprite) + ".png"
     payload = fetch_bytes(address)
@@ -106,11 +121,14 @@ def build_inventory_icons():
     missing = sorted(must_have - set(entries))
     if missing:
         raise RuntimeError(f"Correspondances absentes de la source : {missing}")
-    matches = matching_catalogue_items(entries, catalogue())
-    names = set(must_have) | set(matches.values())
+    entries_list = catalogue()
+    matches = matching_catalogue_items(entries, entries_list)
+    trophies = matching_creature_trophies(entries, entries_list)
+    names = set(must_have) | set(matches.values()) | set(trophies.values())
     print(
-        f"CATALOGUE : {len(matches)} correspondance(s) exactes "
-        f"sur {len(catalogue())} entrées, {len(names)} objets à intégrer",
+        f"CATALOGUE : {len(matches)} sprites d'objets exacts, "
+        f"{len(trophies)} trophées liés aux créatures, "
+        f"{len(names)} images uniques à intégrer",
         flush=True,
     )
 
@@ -168,6 +186,9 @@ def build_inventory_icons():
         "catalogue_total": len(catalogue()),
         "catalogue_tokens_matched": sorted(
             token for token, item in matches.items() if slug(item) in result
+        ),
+        "creature_trophies": sorted(
+            token for token, item in trophies.items() if slug(item) in result
         ),
         "catalogue_optional_unavailable": failed_optional,
         "sha256": {name: hashlib.sha256((root / filename).read_bytes()).hexdigest()
