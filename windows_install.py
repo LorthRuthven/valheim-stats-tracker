@@ -174,14 +174,15 @@ def install_release(info, archive, *, program_root=None, marker=None,
             (scan or defender_scanner)(archive, stage)
             if not executable.is_file():
                 raise UpdateError("L'exécutable a été retiré pendant l'analyse antivirus.")
+            # Sauvegarder AVANT d'exécuter le binaire candidat.
+            (backup or (lambda: backup_before_update(app_dir(), version)))()
             (probe or probe_candidate)(executable, version)
             receipt = {"version": version, "sha256": digest,
                        "exe_sha256": sha256_file(executable)}
             (stage / "installation.json").write_text(
                 json.dumps(receipt, ensure_ascii=False, indent=2), encoding="utf-8"
             )
-            # On ne touche jamais aux données avant leur sauvegarde indépendante.
-            (backup or (lambda: backup_before_update(app_dir(), version)))()
+            # L'ancienne installation reste intacte.
             stage.rename(destination)  # Même disque : publication atomique.
             stage = None
         finally:
@@ -190,8 +191,8 @@ def install_release(info, archive, *, program_root=None, marker=None,
     else:
         # Une réactivation requiert la même vérification antivirus et de démarrage.
         (scan or defender_scanner)(archive, destination)
-        (probe or probe_candidate)(existing, version)
         (backup or (lambda: backup_before_update(app_dir(), version)))()
+        (probe or probe_candidate)(existing, version)
 
     executable = _valid_receipt(destination, version, digest)
     if executable is None:
