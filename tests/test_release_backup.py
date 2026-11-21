@@ -14,15 +14,29 @@ class ReleaseBackupTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         with sqlite3.connect(self.root / "historique.sqlite3") as db:
+            db.execute("""
+                CREATE TABLE snapshots (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    character TEXT NOT NULL, sha TEXT NOT NULL,
+                    observed_at REAL NOT NULL, filename TEXT NOT NULL,
+                    data BLOB NOT NULL, UNIQUE(character,sha)
+                )
+            """)
             db.execute(
-                "CREATE TABLE snapshots (id INTEGER PRIMARY KEY, character TEXT)"
+                "INSERT INTO snapshots(character,sha,observed_at,filename,data) "
+                "VALUES (?,?,?,?,?)",
+                ("Ruthvenson", "save-hash", 0, "Ruthvenson.fch", b"historique"),
             )
-            db.execute("INSERT INTO snapshots(character) VALUES (?)", ("Ruthvenson",))
+            db.execute("""
+                CREATE TABLE archived_characters (
+                    character_id TEXT PRIMARY KEY, name TEXT NOT NULL,
+                    sha TEXT NOT NULL, filename TEXT NOT NULL,
+                    observed_at REAL NOT NULL, data BLOB NOT NULL
+                )
+            """)
             db.execute(
-                "CREATE TABLE archived_characters (character_id TEXT PRIMARY KEY, name TEXT)"
-            )
-            db.execute(
-                "INSERT INTO archived_characters VALUES ('id:123','Kelsrun')"
+                "INSERT INTO archived_characters VALUES (?,?,?,?,?,?)",
+                ("id:123", "Kelsrun", "archive-hash", "Kelsrun.fch", 0, b"archive"),
             )
         (self.root / "favoris.json").write_text('{"characters":{"Ruthvenson":["forge"]}}', encoding="utf8")
         (self.root / "stats_favorites.json").write_text('{"run":true}', encoding="utf8")
