@@ -1,3 +1,11 @@
+# Valheim Stats Tracker V2.5.1
+
+**Mise à jour officielle Windows :** dans l'application, ouvrir Réglages → Mises à jour Windows → Vérifier les mises à jour. La V2.5.1 est proposée uniquement lorsqu'elle est publiée avec son ZIP et son empreinte SHA-256 sur GitHub Releases.
+
+Le téléchargement vérifie le ZIP mais ne le lance pas : analyse Defender, décompression dans un **nouveau dossier**, puis exécution manuelle de `ValheimStatsTracker.exe`. Ne pas remplacer ni supprimer l'ancienne installation avant de contrôler ses données.
+
+**Sauvegarde automatique de la progression au premier lancement V2.5.1 :** l'historique, les archives et les fichiers JSON de favoris/réglages sont conservés dans `%LOCALAPPDATA%\\ValheimStatsTracker\\backups\\avant_v2.5.1`. Il est également recommandé d'effectuer une copie personnelle du dossier de données. Les fichiers `.fch` du jeu ne sont jamais écrits par le tracker.
+
 # Valheim Stats Tracker V2.1
 
 ## Windows 10/11 — sans Python
