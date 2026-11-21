@@ -43,6 +43,35 @@ class RealGameIconsTests(unittest.TestCase):
         for name in SKILLS.values():
             self.assertIn(name, SKILL_ITEMS)
 
+    def test_strict_catalogue_item_matches_never_substitute_creatures(self):
+        from tools.bundle_inventory_sprites import matching_catalogue_items
+        entries = [
+            {"token": "$item_sword_iron"},
+            {"token": "$item_wood"},
+            {"token": "$enemy_boar"},
+            {"token": "$piece_wood"},
+            {"token": "$item_unavailable"},
+        ]
+        matched = matching_catalogue_items(
+            {"SwordIron": "swordiron", "Wood": "wood", "Boar": "boar"},
+            entries,
+        )
+        self.assertEqual(matched, {
+            "$item_sword_iron": "SwordIron", "$item_wood": "Wood"
+        })
+
+    def test_audit_reports_exact_catalogue_coverage(self):
+        if not (ROOT / "assets" / "GAME_ICONS_AUDIT.json").exists():
+            self.skipTest("Audit seulement lors du build Windows")
+        from collection_catalog import catalogue
+        audit = json.loads((ROOT / "assets" / "GAME_ICONS_AUDIT.json").read_text(encoding="utf-8"))
+        self.assertEqual(audit["catalogue_total"], len(catalogue()))
+        self.assertEqual(
+            audit["catalogue_exact_matches"],
+            len(audit["catalogue_tokens_matched"])
+        )
+        self.assertGreater(audit["catalogue_exact_matches"], 0)
+
     def test_inventory_pack_is_complete_and_the_images_are_real_png(self):
         if not self.catalog_path.exists():
             self.skipTest("Pack local absent ; sera vérifié lors du build Windows")
