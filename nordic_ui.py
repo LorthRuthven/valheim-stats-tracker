@@ -778,9 +778,11 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
 def main():
     import sys
     from windows_install import handoff_if_newer
-    if handoff_if_newer(VERSION):
+    bypass = '--no-update-handoff' in sys.argv
+    if not bypass and handoff_if_newer(VERSION):
         return 0
-    app=QApplication(sys.argv);app.setApplicationName('Valheim Stats Tracker');app.setStyle('Fusion')
+    qt_args = [arg for arg in sys.argv if arg != '--no-update-handoff']
+    app=QApplication(qt_args);app.setApplicationName('Valheim Stats Tracker');app.setStyle('Fusion')
     window=NordicWindow();window.show()
     return app.exec()
 
