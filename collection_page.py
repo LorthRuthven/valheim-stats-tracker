@@ -65,7 +65,7 @@ class CollectionPage(QWidget):
         self.coverage_bar.setValue(0)
         self.coverage_bar.setFixedWidth(190)
         self.coverage_bar.setMinimumHeight(20)
-        self.coverage_bar.setFormat("Images exactes : %p %")
+        self.coverage_bar.setFormat("Illustrations : %p %")
         headline.addWidget(self.coverage_bar)
         self.wiki_button = QPushButton("Compléter 20 images Wiki")
         self.wiki_button.setObjectName("wikiImportButton")

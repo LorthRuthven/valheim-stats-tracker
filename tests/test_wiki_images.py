@@ -67,6 +67,8 @@ class WikiImageTests(unittest.TestCase):
         self.assertEqual(wiki_title("$item_sword_iron"), "Iron sword")
         self.assertEqual(wiki_title("$enemy_abomination"), "Abomination")
         self.assertIsNone(wiki_title("$piece_woodwall"))
+        self.assertEqual(wiki_title("$piece_workbench"), "Workbench")
+        self.assertEqual(wiki_title("$piece_portal_stone"), "Stone portal")
         self.assertIsNone(wiki_title("Bourgeon naingris"))
         self.assertTrue(_same_title("Greyling", "Greyling"))
         self.assertFalse(_same_title("Greydwarf", "Greyling"))

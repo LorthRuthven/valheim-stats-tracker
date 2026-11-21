@@ -1,3 +1,9 @@
+## V2.7.0 — Encyclopédie fluide et plein écran
+- Suppression du page par page, grille virtualisée et scroll continu.
+- Fiche repliable, bandeau compact, trois tailles de cartes.
+- Sources Wiki exactes pour nouvelles constructions ; visuels de matériaux correctement étiquetés.
+- Sauvegardes et updater intégrés conservés.
+
 ## V2.6.0 — Galerie encyclopédie et activités plus lisibles
 - Encyclopédie : galerie paginée par images authentiques, provenance visible, sélection des fiches, bascule vers le tableau.
 - Activités : répartition graphique des familles selon les filtres, conservant cartes, détails et données brutes.

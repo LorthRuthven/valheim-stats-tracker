@@ -205,11 +205,11 @@ jobs:
           retention-days: 7
 
   release:
-    # Autorisation strictement bornee a la V2.6.0 :
+    # Autorisation strictement bornee a la V2.7.0 :
     # - variable GitHub sur cette version ; ou
     # - marqueur d'approbation explicite dans le commit de fusion de la PR,
     #   autorise par le proprietaire du projet. Aucun push ordinaire ne publie.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.VALHEIM_WINDOWS_APPROVED_VERSION == '2.6.0' || contains(github.event.head_commit.message, '[approve-v2.6.0-release]'))
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.VALHEIM_WINDOWS_APPROVED_VERSION == '2.7.0' || contains(github.event.head_commit.message, '[approve-v2.7.0-release]'))
     needs: [tests, windows]
     runs-on: ubuntu-latest
     steps:

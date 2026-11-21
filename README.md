@@ -65,3 +65,7 @@ La [dernière release](https://github.com/LorthRuthven/valheim-stats-tracker/rel
 ## Mise à jour intégrée de Windows (depuis V2.5.2)
 
 L'application Windows autonome installe et relance les futures versions depuis Réglages → Mises à jour Windows. Le ZIP est vérifié par SHA-256, extrait dans une installation versionnée, soumis à une vérification de l'état antivirus Windows Security et testé avant le redémarrage. L'EXE en cours n'est pas remplacé. Les archives et succès restent dans %LOCALAPPDATA%\ValheimStatsTracker. Les utilisateurs en V2.5.1 doivent installer V2.5.2 une dernière fois manuellement. Voir README_V2.md.
+
+
+## V2.7.0 — Encyclopédie sur grand écran
+La galerie n'a plus de pages : scroll vertical continu, cartes Compact/Normal/Grand, fiche latérale ouvrable au clic, recherche et liste technique conservées. L'application met en avant les images de jeu et Wiki vérifiées ; les éventuels visuels de matériaux sont explicitement indiqués comme thématiques. Mise à jour intégrée depuis V2.5.2.
