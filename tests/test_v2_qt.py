@@ -129,6 +129,44 @@ class QtWindowTests(unittest.TestCase):
             self.assertEqual(w.stack.currentIndex(),10)
             w.close()
 
+    def test_encyclopedia_image_gallery_pagination_source_and_list_compatibility(self):
+        """Le catalogue entier est consultable, pas seulement les 350 du tableau."""
+        app = QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as temp:
+            window = NordicWindow(TrackerStore(temp))
+            book = window.collection_page
+            gallery = book.gallery
+            self.assertIs(book.list_stack.currentWidget(), gallery)
+            self.assertTrue(book.gallery_button.isChecked())
+            self.assertGreater(len(gallery.entries), 350)
+            self.assertEqual(len(gallery.cards), 18)
+            self.assertEqual(book.table.rowCount(), 350)
+            self.assertEqual(gallery.cards[0].picture.objectName(), "collectionGalleryImage")
+            gallery.move_page(21)
+            self.assertEqual(gallery.page_number, 21)
+            entry = gallery.entries[21 * 18]
+            gallery.cards[0].inspect.click()
+            app.processEvents()
+            self.assertEqual(book._selected_token(), entry["token"])
+            self.assertIn(entry["token"], book.detail_category.text())
+            self.assertIn(gallery.cards[0].origin.text(), (
+                "SPRITE DU JEU", "IMAGE DU WIKI",
+                "TROPHÉE ASSOCIÉ", "SANS ILLUSTRATION"
+            ))
+            book.list_button.click()
+            self.assertIs(book.list_stack.currentWidget(), book.table)
+            self.assertTrue(book.list_button.isChecked())
+            book.search.setText(entry["token"])
+            app.processEvents()
+            self.assertEqual(book.table.rowCount(), 1)
+            book.gallery_button.click()
+            self.assertIs(book.list_stack.currentWidget(), gallery)
+            self.assertEqual(len(gallery.entries), 1)
+            self.assertEqual(gallery.cards[0].token, entry["token"])
+            self.assertFalse(gallery.next.isEnabled())
+            window.close()
+            window.store.close()
+
     def test_local_sprite_aliases_match_real_prefabs(self):
         app=QApplication.instance() or QApplication([])
         import json
