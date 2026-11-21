@@ -1,220 +1,237 @@
-"""Galerie paginée de l'Encyclopédie Valheim.
-
-N'affiche que des ressources vérifiées : sprites extraits du jeu, images Wiki
-mises en cache, véritables trophées associés. Aucune illustration synthétique.
-Les éléments sans portrait restent visibles.
-"""
+"""Encyclopédie : grille Valheim continue et virtualisée, sans pagination."""
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QSize, Signal
+from PySide6.QtCore import QAbstractListModel, QModelIndex, QRect, QSize, Qt, Signal
+from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import (
-    QFrame, QGridLayout, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QVBoxLayout, QWidget,
+    QAbstractItemView, QListView, QStyle, QStyledItemDelegate, QVBoxLayout, QWidget,
+)
+from real_assets import collection_icon, game_icon
+
+SIZES = {"compact": (156, 155, 66), "normal": (205, 192, 94),
+         "large": (260, 247, 126)}
+SOURCE_LABELS = {"game": "SPRITE DU JEU", "wiki": "IMAGE DU WIKI",
+                 "trophy": "TROPHÉE ASSOCIÉ", "missing": "IMAGE MANQUANTE"}
+# Un vrai sprite de matériau peut illustrer une famille de constructions.
+# Cette association reste toujours indiquée comme thématique et n'est jamais
+# comptée comme une illustration exacte de la construction.
+MATERIAL_HINTS = (
+    ("blackmarble", "BlackMarble"), ("ashwood", "Ashwood"),
+    ("grausten", "Grausten"), ("flametal", "Flametal"),
+    ("crystal", "Crystal"), ("stone", "Stone"),
+    ("wood", "Wood"), ("iron", "Iron"),
 )
 
-from real_assets import collection_icon
 
-PAGE_SIZE = 18
-SOURCE_LABELS = {
-    "game": "SPRITE DU JEU",
-    "wiki": "IMAGE DU WIKI",
-    "trophy": "TROPHÉE ASSOCIÉ",
-    "missing": "SANS ILLUSTRATION",
-}
+def thematic_material(token):
+    key = str(token).removeprefix("$").lower()
+    if not key.startswith("piece_"):
+        return None
+    for prefix, material in MATERIAL_HINTS:
+        if key[6:].startswith(prefix):
+            icon = game_icon(material)
+            if not icon.isNull():
+                return icon
+    return None
 
 
-class GalleryCard(QFrame):
-    """Carte d'objet : titre et image assez grands pour l'écran Full HD."""
-
-    selected = Signal(str)
-
+class EntryModel(QAbstractListModel):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.token = ""
-        self.setObjectName("collectionGalleryCard")
-        self.setMinimumSize(175, 198)
-        self.setMaximumHeight(220)
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(12, 11, 12, 11)
-        outer.setSpacing(6)
-        self.picture = QLabel()
-        self.picture.setObjectName("collectionGalleryImage")
-        self.picture.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.picture.setFixedHeight(91)
-        outer.addWidget(self.picture)
-        self.title = QLabel()
-        self.title.setObjectName("collectionGalleryTitle")
-        self.title.setWordWrap(True)
-        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title.setMinimumHeight(36)
-        self.title.setStyleSheet(
-            "color:#f5e9d4;font:600 10pt 'Segoe UI';background:transparent;"
-        )
-        outer.addWidget(self.title)
-        self.origin = QLabel()
-        self.origin.setObjectName("collectionGalleryOrigin")
-        self.origin.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.origin.setStyleSheet("color:#a9c0ba;font:8pt 'Segoe UI';background:transparent;")
-        outer.addWidget(self.origin)
-        self.inspect = QPushButton("Voir la fiche")
-        self.inspect.setObjectName("collectionGalleryOpen")
-        self.inspect.setFixedHeight(29)
-        self.inspect.clicked.connect(self._open)
-        outer.addWidget(self.inspect)
-        self._set_highlight(False)
+        self.entries = []
 
-    def _set_highlight(self, selected):
-        color = "#d5b078" if selected else "#425c62"
-        background = "#27413f" if selected else "#192e38"
-        self.setStyleSheet(
-            "QFrame#collectionGalleryCard {background:" + background +
-            ";border:1px solid " + color + ";border-radius:12px;}"
-            "QFrame#collectionGalleryCard:hover {border:1px solid #d5b078;}"
-        )
+    def rowCount(self, parent=QModelIndex()):
+        return 0 if parent.isValid() else len(self.entries)
 
-    def set_entry(self, entry, source, chosen=False):
-        self.token = str(entry["token"])
-        self.title.setText(str(entry["name"]))
-        self.origin.setText(SOURCE_LABELS.get(source, "SANS ILLUSTRATION"))
-        image = collection_icon(self.token)
-        self.picture.clear()
-        if image.isNull():
-            self.picture.setText("Illustration\nindisponible")
-            self.picture.setWordWrap(True)
-            self.picture.setStyleSheet(
-                "color:#afc0bc;font:9pt 'Segoe UI';background:transparent;"
-            )
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
+        if not index.isValid() or index.row() >= len(self.entries):
+            return None
+        entry = self.entries[index.row()]
+        if role == Qt.ItemDataRole.DisplayRole:
+            return entry["name"]
+        if role == Qt.ItemDataRole.UserRole:
+            return entry["token"]
+        if role == Qt.ItemDataRole.ToolTipRole:
+            return (f"{entry['name']}\n{entry['category']}\n"
+                    f"{entry['status']}\nIdentifiant : {entry['token']}")
+        return None
+
+    def set_entries(self, entries):
+        same = (len(self.entries) == len(entries) and
+                all(a["token"] == b["token"]
+                    for a, b in zip(self.entries, entries)))
+        if same:
+            self.entries = list(entries)
+            if self.entries:
+                self.dataChanged.emit(
+                    self.index(0, 0), self.index(len(self.entries)-1, 0))
         else:
-            self.picture.setPixmap(image.pixmap(QSize(88, 88)))
-        self.setToolTip(
-            f"{entry['name']}\n{entry['category']}\n"
-            f"{SOURCE_LABELS.get(source, source)}\n"
-            f"{entry['status']}\nIdentifiant : {entry['token']}"
-        )
-        self._set_highlight(chosen)
+            self.beginResetModel()
+            self.entries = list(entries)
+            self.endResetModel()
+        return same
 
-    def _open(self):
-        if self.token:
-            self.selected.emit(self.token)
+
+class CardDelegate(QStyledItemDelegate):
+    def __init__(self, lookup, parent=None):
+        super().__init__(parent)
+        self.lookup = lookup
+        self.mode = "normal"
+        self._cache = {}
+
+    def sizeHint(self, option, index):
+        width, height, _ = SIZES[self.mode]
+        return QSize(width, height)
+
+    def invalidate(self, token=None):
+        if token is None:
+            self._cache.clear()
+        else:
+            for key in tuple(self._cache):
+                if key[0] == token:
+                    del self._cache[key]
+
+    def _image(self, token, source, size):
+        key = (token, source, size)
+        if key not in self._cache:
+            image = collection_icon(token)
+            thematic = False
+            if image.isNull():
+                image = thematic_material(token)
+                thematic = image is not None
+            pix = None if image is None or image.isNull() else image.pixmap(QSize(size, size))
+            if len(self._cache) >= 160:
+                self._cache.clear()
+            self._cache[key] = pix, thematic
+        return self._cache[key]
+
+    def paint(self, painter, option, index):
+        if not index.isValid() or index.row() >= len(index.model().entries):
+            return
+        entry = index.model().entries[index.row()]
+        source = self.lookup(entry["token"])
+        _, _, image_size = SIZES[self.mode]
+        selected = bool(option.state & QStyle.StateFlag.State_Selected)
+        rect = option.rect.adjusted(3, 3, -3, -3)
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(QColor("#e6bd7e" if selected else "#45636b"), 1.2))
+        painter.setBrush(QColor("#29403d" if selected else "#1a303a"))
+        painter.drawRoundedRect(rect, 11, 11)
+        pix, thematic = self._image(entry["token"], source, image_size)
+        img_rect = QRect(rect.x()+8, rect.y()+8, rect.width()-16, image_size+5)
+        if pix is not None and not pix.isNull():
+            painter.drawPixmap(
+                img_rect.x()+(img_rect.width()-pix.width())//2,
+                img_rect.y()+(img_rect.height()-pix.height())//2, pix)
+        else:
+            painter.setFont(QFont("Segoe UI", 8))
+            painter.setPen(QColor("#8ba5a6"))
+            painter.drawText(img_rect, int(Qt.AlignmentFlag.AlignCenter),
+                             "IMAGE\nINDISPONIBLE")
+        font = QFont("Segoe UI", 10 if self.mode != "large" else 11)
+        font.setWeight(QFont.Weight.DemiBold)
+        painter.setFont(font)
+        painter.setPen(QColor("#f3e6d5"))
+        painter.drawText(
+            QRect(rect.x()+7, img_rect.bottom()+4, rect.width()-14,
+                  31 if self.mode == "compact" else 38),
+            int(Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap),
+            entry["name"])
+        painter.setFont(QFont("Segoe UI", 8))
+        painter.setPen(QColor("#b0c5c4"))
+        caption = "MATÉRIAU ASSOCIÉ" if thematic else SOURCE_LABELS[source]
+        painter.drawText(
+            QRect(rect.x()+5, rect.bottom()-24, rect.width()-10, 19),
+            int(Qt.AlignmentFlag.AlignCenter), caption)
+        if entry.get("observed"):
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor("#a5d5b5"))
+            painter.drawEllipse(rect.right()-15, rect.y()+10, 6, 6)
+        painter.restore()
 
 
 class CollectionGallery(QWidget):
-    """Affiche *toutes* les correspondances, sans troncature à 350 lignes."""
-
+    """La liste contient toutes les entrées mais Qt ne peint que les visibles."""
     selected = Signal(str)
 
     def __init__(self, state_lookup, parent=None):
         super().__init__(parent)
         self.lookup = state_lookup
         self.entries = []
-        self.page_number = 0
         self.selected_token = None
-        self.columns = 3
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(9)
-        navigation = QHBoxLayout()
-        self.page_status = QLabel("Aucune entrée")
-        self.page_status.setObjectName("collectionGalleryCount")
-        self.page_status.setWordWrap(True)
-        navigation.addWidget(self.page_status, 1)
-        self.previous = QPushButton("‹ Précédent")
-        self.previous.setObjectName("collectionGalleryPrevious")
-        self.next = QPushButton("Suivant ›")
-        self.next.setObjectName("collectionGalleryNext")
-        self.previous.clicked.connect(lambda: self.move_page(-1))
-        self.next.clicked.connect(lambda: self.move_page(1))
-        navigation.addWidget(self.previous)
-        navigation.addWidget(self.next)
-        outer.addLayout(navigation)
-        self.empty = QLabel("Aucune entrée pour ces filtres.")
-        self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        outer.addWidget(self.empty)
-        self.scroller = QScrollArea()
-        self.scroller.setWidgetResizable(True)
-        self.scroller.setFrameShape(QFrame.Shape.NoFrame)
-        self.scroller.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        canvas = QWidget()
-        self.grid = QGridLayout(canvas)
-        self.grid.setContentsMargins(2, 3, 5, 12)
-        self.grid.setHorizontalSpacing(12)
-        self.grid.setVerticalSpacing(12)
-        self.grid.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.scroller.setWidget(canvas)
-        outer.addWidget(self.scroller, 1)
+        self.size_mode = "normal"
+        self.model = EntryModel(self)
+        self.delegate = CardDelegate(state_lookup, self)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.list = QListView(self)
+        self.list.setObjectName("collectionContinuousList")
+        self.list.setModel(self.model)
+        self.list.setItemDelegate(self.delegate)
+        self.list.setViewMode(QListView.ViewMode.IconMode)
+        self.list.setFlow(QListView.Flow.LeftToRight)
+        self.list.setWrapping(True)
+        self.list.setResizeMode(QListView.ResizeMode.Adjust)
+        self.list.setMovement(QListView.Movement.Static)
+        self.list.setLayoutMode(QListView.LayoutMode.Batched)
+        self.list.setBatchSize(160)
+        self.list.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        self.list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.list.setSpacing(7)
+        self.list.setStyleSheet(
+            "QListView#collectionContinuousList{background:transparent;"
+            "border:none;outline:none;} QListView::item{border:none;}")
+        self.list.clicked.connect(self._clicked)
+        root.addWidget(self.list, 1)
+        self.set_card_size("normal")
 
-        self.cards = []
-        for _ in range(PAGE_SIZE):
-            card = GalleryCard(canvas)
-            card.selected.connect(self._select)
-            self.cards.append(card)
-            self.grid.addWidget(card, 0, 0)
-            card.hide()
-        self.render()
+    def _clicked(self, index):
+        if index.isValid() and index.row() < len(self.entries):
+            self.selected_token = self.entries[index.row()]["token"]
+            self.selected.emit(self.selected_token)
+
+    def set_card_size(self, mode):
+        if mode not in SIZES:
+            return
+        self.size_mode = mode
+        self.delegate.mode = mode
+        self.delegate.invalidate()
+        width, height, _ = SIZES[mode]
+        self.list.setGridSize(QSize(width+8, height+8))
+        self.list.doItemsLayout()
+        self.list.viewport().update()
 
     def set_entries(self, entries, selected=None):
         self.entries = list(entries)
-        tokens = {item["token"] for item in self.entries}
-        self.selected_token = selected if selected in tokens else (
-            self.entries[0]["token"] if self.entries else None
-        )
-        index = next(
-            (i for i, item in enumerate(self.entries)
-             if item["token"] == self.selected_token), 0
-        )
-        self.page_number = index // PAGE_SIZE
-        self.render()
+        unchanged = self.model.set_entries(self.entries)
+        names = {entry["token"] for entry in self.entries}
+        self.selected_token = (
+            selected if selected in names else
+            self.selected_token if self.selected_token in names else
+            self.entries[0]["token"] if self.entries else None)
+        if not unchanged:
+            self.list.scrollToTop()
+        self.list.viewport().update()
 
-    def _select(self, token):
+    def select_token(self, token, *, emit=False):
+        if not any(entry["token"] == token for entry in self.entries):
+            return False
         self.selected_token = token
-        self.render()
-        self.selected.emit(token)
-
-    def move_page(self, offset):
-        last = max(0, (len(self.entries) - 1) // PAGE_SIZE)
-        self.page_number = max(0, min(last, self.page_number + offset))
-        self.render()
-        self.scroller.verticalScrollBar().setValue(0)
-
-    def render(self):
-        last = max(0, (len(self.entries) - 1) // PAGE_SIZE)
-        self.page_number = max(0, min(last, self.page_number))
-        start = self.page_number * PAGE_SIZE
-        page = self.entries[start:start + PAGE_SIZE]
-        self.page_status.setText(
-            (f"{start + 1}–{start + len(page)} sur {len(self.entries)}"
-             f"  •  page {self.page_number + 1}/{last + 1}")
-            if page else "Aucune entrée dans cette sélection"
-        )
-        self.previous.setEnabled(self.page_number > 0)
-        self.next.setEnabled(self.page_number < last)
-        self.empty.setVisible(not page)
-        for index, card in enumerate(self.cards):
-            self.grid.removeWidget(card)
-            if index >= len(page):
-                card.hide()
-                continue
-            entry = page[index]
-            card.set_entry(
-                entry, self.lookup(entry["token"]),
-                entry["token"] == self.selected_token,
-            )
-            self.grid.addWidget(card, index // self.columns, index % self.columns)
-            card.show()
+        if emit:
+            self.selected.emit(token)
+        return True
 
     def update_token(self, token):
-        start = self.page_number * PAGE_SIZE
-        for index, entry in enumerate(self.entries[start:start + PAGE_SIZE]):
+        self.delegate.invalidate(token)
+        for i, entry in enumerate(self.entries):
             if entry["token"] == token:
-                self.cards[index].set_entry(
-                    entry, self.lookup(token), token == self.selected_token
-                )
-                return
+                index = self.model.index(i, 0)
+                self.model.dataChanged.emit(index, index)
+                break
+        self.list.viewport().update()
 
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        width = max(self.width(), 100)
-        new_columns = 4 if width >= 1040 else 3 if width >= 740 else 2 if width >= 485 else 1
-        if self.columns != new_columns:
-            self.columns = new_columns
-            self.render()
+    def invalidate_images(self):
+        self.delegate.invalidate()
+        self.list.viewport().update()
