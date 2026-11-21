@@ -64,11 +64,11 @@ class IntegratedUpdateTests(unittest.TestCase):
         self.assertEqual(state["sha256"], info["sha256"])
         self.assertTrue((executable.parent.parent / "installation.json").exists())
 
-    def test_antivirus_refuse_pas_d_activation_ni_ecrasement(self):
+    def test_windows_security_refuse_pas_d_activation_ni_ecrasement(self):
         archive, info = make_zip(self.base)
         def refuse(*_):
-            raise UpdateError("Defender a bloqué l'installation")
-        with self.assertRaisesRegex(UpdateError, "Defender"):
+            raise UpdateError("Protection Windows inactive")
+        with self.assertRaisesRegex(UpdateError, "Protection Windows"):
             self.install(info, archive, scan=refuse)
         self.assertFalse(self.state.exists())
         self.assertFalse(list((self.versions / "versions").glob("2.5.2-*")))
