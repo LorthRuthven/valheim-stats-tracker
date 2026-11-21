@@ -58,3 +58,8 @@ La nouvelle interface PySide6 et ses graphiques interactifs sont livrés dans l'
 La [dernière release](https://github.com/LorthRuthven/valheim-stats-tracker/releases/latest) contient une application Qt autonome pour Windows (archive avec suffixe \`_Windows.zip\`), sans installation de Python. La V2.1 ajoute un panorama de fjord et maison longue, un emblème runique, des pictogrammes de navigation, une jauge d'objectifs et des transitions animées désactivables. Les graphiques interactifs, succès et données de la V2 restent présents.
 
 **Note de compatibilité :** le ZIP sans suffixe \`_Windows\` est destiné à l'ancien updater Python et conserve l'interface historique. Il ne transforme pas l'ancien programme Tkinter en nouvelle application autonome. Les données locales sont partagées et préservées.
+
+
+## Mise à jour intégrée de Windows (depuis V2.5.2)
+
+L'application Windows autonome installe et relance les futures versions depuis Réglages → Mises à jour Windows. Le ZIP est vérifié par SHA-256, extrait dans une installation versionnée, analysé avec Defender puis testé avant le redémarrage. L'EXE en cours n'est pas remplacé. Les archives et succès restent dans %LOCALAPPDATA%\ValheimStatsTracker. Les utilisateurs en V2.5.1 doivent installer V2.5.2 une dernière fois manuellement. Voir README_V2.md.
