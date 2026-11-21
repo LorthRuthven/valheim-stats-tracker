@@ -136,7 +136,7 @@ class CardDelegate(QStyledItemDelegate):
         painter.drawText(
             QRect(rect.x()+7, img_rect.bottom()+4, rect.width()-14,
                   31 if self.mode == "compact" else 38),
-            int(Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap),
+            int(Qt.AlignmentFlag.AlignCenter) | int(Qt.TextFlag.TextWordWrap),
             entry["name"])
         painter.setFont(QFont("Segoe UI", 8))
         painter.setPen(QColor("#b0c5c4"))
