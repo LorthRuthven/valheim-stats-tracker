@@ -1,10 +1,10 @@
-# Valheim Stats Tracker V2.7.0
+# Valheim Stats Tracker V2.7.1
 
 **Windows 10/11 :** dans la V2.5.2 ou une version ultérieure, choisir **Réglages → Mises à jour Windows → Vérifier les mises à jour**. L'application vérifie l'archive officielle GitHub Releases et son SHA-256, installe la nouvelle version dans un dossier séparé après contrôle de la protection antivirus Windows, puis propose de redémarrer.
 
 **Encyclopédie V2.7.0 :** galerie virtuelle en défilement continu sans pages, plein écran par défaut, fiche repliable et tailles Compact/Normal/Grand. Le filtre par provenance, les Activités et les détails cumulés sont conservés.
 
-**Protection des données :** au premier lancement V2.7.0, une nouvelle sauvegarde transactionnelle de l'historique, des archives et des réglages/favoris est créée dans `%LOCALAPPDATA%\\ValheimStatsTracker\\backups\\avant_v2.7.0`. Les sauvegardes de personnages Valheim `.fch` restent en lecture seule. Les anciennes versions ne sont pas supprimées automatiquement.
+**Protection des données :** au premier lancement V2.7.1, une nouvelle sauvegarde transactionnelle de l'historique, des archives et des réglages/favoris est créée dans `%LOCALAPPDATA%\\ValheimStatsTracker\\backups\\avant_v2.7.1`. Les sauvegardes de personnages Valheim `.fch` restent en lecture seule. Les anciennes versions ne sont pas supprimées automatiquement.
 
 # Valheim Stats Tracker V2.1
 
@@ -114,3 +114,7 @@ Les données locales sont sauvegardées avant la première ouverture V2.6.0. Les
 ### V2.7.0 — Affichage optimisé pour les grands écrans
 
 La galerie utilise désormais une liste Qt virtualisée : toutes les entrées se parcourent avec la molette sans pagination, sans créer un widget pour chacune. La fiche de droite est fermée par défaut et s'ouvre en sélectionnant une carte. Choix Compact / Normal / Grand ; bandeau des statistiques condensé. Quelques constructions utilisent un vrai sprite de matériau explicitement présenté comme tel lorsqu'aucun sprite exact n'existe ; la jauge de couverture n'est pas gonflée par ces substituts. Recherche Wiki étendue à des stations identifiées, avec attribution et sans téléchargement implicite. Sauvegarde locale de sécurité V2.7.0 avant ouverture.
+
+### V2.7.1 — Véritables images des constructions
+
+Cette version ajoute au ZIP Windows 386 images des pièces Valheim issues de la documentation Jötunn, indexées par identifiant exact. Elles complètent les images d'inventaire déjà présentes et sont distinguées comme « Image de construction ». Les fichiers téléchargés lors de la construction sont vérifiés contre les empreintes de Git du dépôt source épinglé. Les droits des images sont réservés à Iron Gate AB / Coffee Stain Publishing. Aucun téléchargement additionnel n'est nécessaire dans l'application.

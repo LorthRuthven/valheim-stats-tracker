@@ -18,7 +18,7 @@ import time
 from collection_catalog import CATEGORIES, catalogue
 from collection_gallery import CollectionGallery, thematic_material
 from desktop_v2 import label, panel
-from real_assets import game_icon, collection_icon, creature_trophy_icon, reset_icon_cache
+from real_assets import game_icon, piece_icon, collection_icon, creature_trophy_icon, reset_icon_cache
 from wiki_images import WikiImageCache, wiki_title
 
 MAX_VISIBLE = 350
@@ -121,6 +121,7 @@ class CollectionPage(QWidget):
         self.image_filter.addItem("Avec illustration", "available")
         self.image_filter.addItem("Sans illustration", "missing")
         self.image_filter.addItem("Sprites exacts du jeu", "game")
+        self.image_filter.addItem("Images de constructions", "piece")
         self.image_filter.addItem("Images du Wiki", "wiki")
         self.image_filter.addItem("Trophées associés", "trophy")
         self.image_filter.currentIndexChanged.connect(self.render)
@@ -299,6 +300,8 @@ class CollectionPage(QWidget):
             return state
         if not game_icon(token).isNull():
             state = "game"
+        elif not piece_icon(token).isNull():
+            state = "piece"
         elif self.wiki_cache.cached_image(token) is not None:
             state = "wiki"
         elif not creature_trophy_icon(token).isNull():
@@ -356,7 +359,7 @@ class CollectionPage(QWidget):
                 picture_filter == "all"
                 or (picture_filter == "available" and self.image_state(e["token"]) != "missing")
                 or (picture_filter == "missing" and self.image_state(e["token"]) == "missing")
-                or (picture_filter in ("game", "wiki", "trophy")
+                or (picture_filter in ("game", "piece", "wiki", "trophy")
                     and self.image_state(e["token"]) == picture_filter)
             )
         ]
@@ -365,7 +368,7 @@ class CollectionPage(QWidget):
         self.visible_entries = shown
         self.gallery.set_entries(filtered, selected)
         observed = sum(1 for e in self.entries if e["observed"])
-        stats = {"game": 0, "wiki": 0, "trophy": 0, "missing": 0}
+        stats = {"game": 0, "piece": 0, "wiki": 0, "trophy": 0, "missing": 0}
         for entry in self.entries:
             stats[self.image_state(entry["token"])] += 1
         illustrated=len(self.entries)-stats["missing"]
@@ -378,7 +381,8 @@ class CollectionPage(QWidget):
         self.summary.setText(
             f"{len(self.entries)} entrées • {len(filtered)} résultats • "
             f"{observed} activités enregistrées • "
-            f"Illustrations : {stats['game']} sprites exacts • {stats['wiki']} images Wiki • "
+            f"Illustrations : {stats['game']} sprites d’inventaire • "
+            f"{stats['piece']} images de constructions • {stats['wiki']} images Wiki • "
             f"{stats['trophy']} trophées associés • {stats['missing']} sans image"
         )
         self.table.blockSignals(True)
@@ -448,7 +452,8 @@ class CollectionPage(QWidget):
         else:
             self.preview.setText("")
             self.preview.setPixmap(visual.pixmap(QSize(155, 155)))
-        if source and game_icon(entry["token"]).isNull():
+        if (source and game_icon(entry["token"]).isNull()
+                and piece_icon(entry["token"]).isNull()):
             self.image_source.setText(
                 "Image : Valheim Wiki (cache local)\n"
                 "Source : " + source.get("wiki_title","") +
@@ -456,7 +461,11 @@ class CollectionPage(QWidget):
             )
             self.image_link.setEnabled(True)
         else:
-            if thematic:
+            if self.image_state(entry["token"]) == "piece":
+                description = ("Image de cette construction Valheim, référencée par le "
+                               "prefab exact dans la documentation Jötunn. "
+                               "© Iron Gate AB / Coffee Stain Publishing.")
+            elif thematic:
                 description = (
                     "Vrai sprite du matériau Valheim associé à cette famille de constructions. "
                     "Ce n'est pas une image exacte de cette pièce."
@@ -473,6 +482,7 @@ class CollectionPage(QWidget):
             self.image_source.setText(description)
             self.image_link.setEnabled(False)
         can_wiki = (game_icon(entry["token"]).isNull()
+                    and piece_icon(entry["token"]).isNull()
                     and self.wiki_cache.cached_image(entry["token"]) is None
                     and wiki_title(entry["token"]) is not None)
         retry_available = (can_wiki and self.wiki_cache.can_attempt(entry["token"]))

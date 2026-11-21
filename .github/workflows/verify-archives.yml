@@ -18,7 +18,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y python3-tk
       - name: Vérifier les fichiers Python
-        run: python3 -m py_compile character_archive.py viking_stats_page.py nordic_ui.py valheim_reader.py v2_core.py windows_install.py windows_update_ui.py collection_gallery.py collection_page.py
+        run: python3 -m py_compile character_archive.py viking_stats_page.py nordic_ui.py valheim_reader.py v2_core.py windows_install.py windows_update_ui.py collection_gallery.py collection_page.py tools/bundle_piece_sprites.py
       - name: Tester le moteur et le cumul des personnages
         run: python3 -m unittest discover -s tests -v
 
@@ -56,8 +56,11 @@ jobs:
         shell: pwsh
         run: |
           python -m tools.bundle_inventory_sprites
-          if ($LASTEXITCODE -ne 0) { throw 'Sprites Valheim incomplets' }
+          if ($LASTEXITCODE -ne 0) { throw 'Sprites inventaire Valheim incomplets' }
+          python -m tools.bundle_piece_sprites
+          if ($LASTEXITCODE -ne 0) { throw 'Images constructions Valheim incompletes' }
           python -m unittest discover -s tests -p test_real_game_icons.py -v
+          python -m unittest discover -s tests -p test_piece_images.py -v
           if ($LASTEXITCODE -ne 0) { throw 'Une image Valheim manque au paquet' }
 
       - name: Diagnostiquer les images du Wiki (facultatif, sans donnees utilisateur)
@@ -116,9 +119,13 @@ jobs:
       - name: Préparer les images officielles pour le paquet
         run: python -m tools.fetch_game_assets
       - name: Ajouter les vrais objets Valheim au ZIP Windows
-        run: python -m tools.bundle_inventory_sprites
+        run: |
+          python -m tools.bundle_inventory_sprites
+          python -m tools.bundle_piece_sprites
       - name: Exiger la couverture des sprites de toutes les pages
-        run: python -m unittest discover -s tests -p test_real_game_icons.py -v
+        run: |
+          python -m unittest discover -s tests -p test_real_game_icons.py -v
+          python -m unittest discover -s tests -p test_piece_images.py -v
       - name: Construire l'application Windows autonome
         shell: pwsh
         run: |
@@ -141,6 +148,11 @@ jobs:
             throw "Base JSON archspec absente du programme construit : $bundledArchspec"
           }
           Write-Host "Archspec JSON present dans le bundle Windows : $bundledArchspec"
+          $pieceFolder = 'dist/ValheimStatsTracker/_internal/assets/pieces'
+          if (-not (Test-Path -LiteralPath $pieceFolder -PathType Container)) { throw 'Dossier images de constructions absent du vrai programme Windows' }
+          $pieceImages = @(Get-ChildItem -LiteralPath $pieceFolder -Filter '*.png' -File)
+          if ($pieceImages.Count -lt 380) { throw "Constructions absentes du programme Windows : $($pieceImages.Count) images" }
+          Write-Host "Pack constructions Valheim inclus dans le vrai EXE : $($pieceImages.Count) PNG"
           $version = (Get-Content version.json | ConvertFrom-Json).version
           $archive = "dist/Valheim_Stats_Tracker_v${version}_Windows.zip"
           Compress-Archive -Path dist/ValheimStatsTracker -DestinationPath $archive -CompressionLevel Optimal

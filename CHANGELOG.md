@@ -1,3 +1,8 @@
+## V2.7.1 — 386 images authentiques de constructions
+- Capture de la documentation Jötunn associée par prefab exact, contrôlée par SHA Git et PNG ; provenance séparée des sprites d'inventaire.
+- Correction des correspondances trompeuses et réduction des entrées sans images.
+- Données, succès, 12 écrans et updater préservés.
+
 ## V2.7.0 — Encyclopédie fluide et plein écran
 - Suppression du page par page, grille virtualisée et scroll continu.
 - Fiche repliable, bandeau compact, trois tailles de cartes.

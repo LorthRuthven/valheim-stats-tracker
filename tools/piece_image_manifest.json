@@ -1,0 +1,1939 @@
+{
+  "source_repo": "Valheim-Modding/Jotunn",
+  "source_commit": "18a0b624ceaf757abcfeb5cb1386d111a6dec9b2",
+  "source_catalog": "data/pieces/piece-list.html",
+  "pixel_copyright": "Valheim © Iron Gate AB / Coffee Stain Publishing",
+  "notes": "Images de pièces du jeu dans la documentation Jötunn, correspondance exacte par prefab.",
+  "pieces": {
+    "$piece_archerytarget": {
+      "file": "piece_ArcheryTarget.png",
+      "git_blob_sha": "7139bca97318734eb63370de35798584665d1c8e",
+      "bytes": 9972
+    },
+    "$piece_armorstand": {
+      "file": "ArmorStand.png",
+      "git_blob_sha": "3254130f9380d25eac97f88ae660d0cd3cdcc267",
+      "bytes": 3515
+    },
+    "$piece_artisan_ext1": {
+      "file": "artisan_ext1.png",
+      "git_blob_sha": "d5789af8a9cd3a0b604a4ddd6bb57b9ec28c7b4d",
+      "bytes": 10865
+    },
+    "$piece_artisanstation": {
+      "file": "piece_artisanstation.png",
+      "git_blob_sha": "af50e061ed4c10986acac55dd154558fc5fc76a8",
+      "bytes": 8586
+    },
+    "$piece_ashwood_archedwall": {
+      "file": "ashwood_wall_arch.png",
+      "git_blob_sha": "e3f57711cc76f2b7ccff674d796dc23b64d2a2dd",
+      "bytes": 6260
+    },
+    "$piece_ashwood_beam_1m": {
+      "file": "ashwood_beam_1m.png",
+      "git_blob_sha": "c36d06b9f298c699ad329ed45a17d3ba6dc373b7",
+      "bytes": 7892
+    },
+    "$piece_ashwood_beam_2m": {
+      "file": "ashwood_beam_2m.png",
+      "git_blob_sha": "78f1a1a674f98df414cb7e3688552fbac3ca5f55",
+      "bytes": 6455
+    },
+    "$piece_ashwood_bed": {
+      "file": "ashwood_bed.png",
+      "git_blob_sha": "9d5674698e9980d7bea45be5a7f7e828003c7cc8",
+      "bytes": 10594
+    },
+    "$piece_ashwood_decowall": {
+      "file": "ashwood_decowall_2x2.png",
+      "git_blob_sha": "d9df5d5acc9d98ca0941a4b78c18af545deba6c1",
+      "bytes": 10883
+    },
+    "$piece_ashwood_decowall_divider": {
+      "file": "ashwood_decowall_divider.png",
+      "git_blob_sha": "042e9c4049348c7e558f461beef7ba61ee094f32",
+      "bytes": 7798
+    },
+    "$piece_ashwood_decowall_tree": {
+      "file": "ashwood_decowall_tree.png",
+      "git_blob_sha": "ed456824d3c6f79833ad29f4cdab5c755446ab76",
+      "bytes": 13202
+    },
+    "$piece_ashwood_door": {
+      "file": "ashwood_door.png",
+      "git_blob_sha": "01145a8ace56ff942117da2ca1c1746f5d498673",
+      "bytes": 6779
+    },
+    "$piece_ashwood_floor_1x1": {
+      "file": "ashwood_floor_1x1.png",
+      "git_blob_sha": "c8df3f1dbee43ae55ab6696709497d9c0921ea04",
+      "bytes": 7791
+    },
+    "$piece_ashwood_floor_2x2": {
+      "file": "ashwood_floor_2x2.png",
+      "git_blob_sha": "a4cef243bd00ca5ccb472fc967b3e3f3f2167cb2",
+      "bytes": 8423
+    },
+    "$piece_ashwood_floor_deco": {
+      "file": "ashwood_deco_floor.png",
+      "git_blob_sha": "e83c2c9a27e10695982ca80c83467d0ed236e9d6",
+      "bytes": 8617
+    },
+    "$piece_ashwood_halfwall": {
+      "file": "ashwood_halfwall_1x2.png",
+      "git_blob_sha": "33ad344d63f5420cd9eb6e868aa7ae503058eb1f",
+      "bytes": 12356
+    },
+    "$piece_ashwood_pole_1m": {
+      "file": "ashwood_pole_1m.png",
+      "git_blob_sha": "8238c9eee3a249ab92ad4ab286cdc0064ab6e932",
+      "bytes": 4989
+    },
+    "$piece_ashwood_pole_2m": {
+      "file": "ashwood_pole_2m.png",
+      "git_blob_sha": "9ff295f8aac6319411122ba4b21336b04c574d3f",
+      "bytes": 3664
+    },
+    "$piece_ashwood_quarterwall": {
+      "file": "ashwood_quarterwall_1x1.png",
+      "git_blob_sha": "e93e6878ea25faecaab246cb565e2c249ea0c143",
+      "bytes": 10175
+    },
+    "$piece_ashwood_wall": {
+      "file": "ashwood_wall_2x2.png",
+      "git_blob_sha": "4f0955853d4c487de54ca2a483ae11b56b16fbc7",
+      "bytes": 11376
+    },
+    "$piece_ashwoodarch_big": {
+      "file": "ashwood_arch_big.png",
+      "git_blob_sha": "14bd04cf3f2adce90c3e19e5d82d56417cabf9ae",
+      "bytes": 7495
+    },
+    "$piece_ashwoodbeam26": {
+      "file": "ashwood_wall_beam_26.png",
+      "git_blob_sha": "1fc1857fee3a685df04df2d2125f9aa488576304",
+      "bytes": 6908
+    },
+    "$piece_ashwoodbeam45": {
+      "file": "ashwood_wall_beam_45.png",
+      "git_blob_sha": "350e53a083d713ba09ceba6be73ef5a40be829b6",
+      "bytes": 5211
+    },
+    "$piece_ashwoodbeam67": {
+      "file": "ashwood_wall_beam_67.png",
+      "git_blob_sha": "5d5d6074b86c82683510903f3f012f2d6befe2ca",
+      "bytes": 3943
+    },
+    "$piece_ashwoodcross26": {
+      "file": "ashwood_wall_cross_26.png",
+      "git_blob_sha": "b10950574120c53193383b5feb88acf28fbc76a5",
+      "bytes": 8023
+    },
+    "$piece_ashwoodcross45": {
+      "file": "ashwood_wall_cross_45.png",
+      "git_blob_sha": "abf3c4b62e45aaeb5e25e7f535b2b10c49445a5a",
+      "bytes": 6840
+    },
+    "$piece_ashwoodstair": {
+      "file": "ashwood_stair.png",
+      "git_blob_sha": "8d751379e58e1fb452d7c9acfbf7e4baece85646",
+      "bytes": 10991
+    },
+    "$piece_ashwoodwallroof_26": {
+      "file": "ashwood_wall_roof_26.png",
+      "git_blob_sha": "707e1e57eeb1b906c94c157cdcbd705b05641d0f",
+      "bytes": 6175
+    },
+    "$piece_ashwoodwallroof_26_upsidedown": {
+      "file": "ashwood_wall_roof_26_upsidedown.png",
+      "git_blob_sha": "99311b36ae0a4dc14ae65d1953fc41f9abc3e033",
+      "bytes": 4937
+    },
+    "$piece_ashwoodwallroof_45": {
+      "file": "ashwood_wall_roof_45.png",
+      "git_blob_sha": "78f26fb92340b4bd322fb34e463158aca55cc3af",
+      "bytes": 5962
+    },
+    "$piece_ashwoodwallroof_45_upsidedown": {
+      "file": "ashwood_wall_roof_45_upsidedown.png",
+      "git_blob_sha": "a26e3d5dad92ed2981873bc5938ab1e125349eb0",
+      "bytes": 5442
+    },
+    "$piece_ashwoodwallroof67": {
+      "file": "ashwood_wall_roof_67_a.png",
+      "git_blob_sha": "f506a903c7a98cd89a7bc4c2088f9dd297bbdd82",
+      "bytes": 4721
+    },
+    "$piece_ashwoodwallroof67upsidedown": {
+      "file": "ashwood_wall_roof_67_upsidedown.png",
+      "git_blob_sha": "ca94843715f1259bd43fcfd3fa00d3691c39c57b",
+      "bytes": 4514
+    },
+    "$piece_ashwoodwallrooftop67": {
+      "file": "ashwood_wall_cross_67.png",
+      "git_blob_sha": "0ee1c771f5a700eb818bdf0b859ecf4eac42761e",
+      "bytes": 5621
+    },
+    "$piece_asksvinskeleton": {
+      "file": "piece_asksvinskeleton.png",
+      "git_blob_sha": "1166e58cffcbf5f87c68a7d8294fa9acef4e7dd4",
+      "bytes": 8537
+    },
+    "$piece_banner01": {
+      "file": "piece_banner01.png",
+      "git_blob_sha": "f6081ba6d20e3b89d8b0a9cc7f779341157c2b27",
+      "bytes": 6650
+    },
+    "$piece_banner02": {
+      "file": "piece_banner02.png",
+      "git_blob_sha": "9b91601d58be2617616d4dde1bb949aa0475b999",
+      "bytes": 7600
+    },
+    "$piece_banner03": {
+      "file": "piece_banner03.png",
+      "git_blob_sha": "ce87f552950e5773fd577d55f84dd4ff09c7200c",
+      "bytes": 6300
+    },
+    "$piece_banner04": {
+      "file": "piece_banner04.png",
+      "git_blob_sha": "b3e2dbfbe15986df459abc7fde7035b5b5cae1ec",
+      "bytes": 7229
+    },
+    "$piece_banner05": {
+      "file": "piece_banner05.png",
+      "git_blob_sha": "4ee5617dc7cf0f5e8be86581a2188be56a4f123d",
+      "bytes": 6893
+    },
+    "$piece_banner06": {
+      "file": "piece_banner06.png",
+      "git_blob_sha": "90c7198b368c1c93b75232ed340d0ae3c9310d48",
+      "bytes": 6303
+    },
+    "$piece_banner07": {
+      "file": "piece_banner07.png",
+      "git_blob_sha": "908389fba4c597a1dd2d891669cac75a91b5d62e",
+      "bytes": 6750
+    },
+    "$piece_banner08": {
+      "file": "piece_banner08.png",
+      "git_blob_sha": "7fa17707885579b563d91e561278085d63cd8706",
+      "bytes": 6063
+    },
+    "$piece_banner09": {
+      "file": "piece_banner09.png",
+      "git_blob_sha": "c9582387c27e3428d9798523e61a645251bdbbfa",
+      "bytes": 6946
+    },
+    "$piece_banner10": {
+      "file": "piece_banner10.png",
+      "git_blob_sha": "a71af9176fddfae15822520d093bee9328dc1269",
+      "bytes": 6793
+    },
+    "$piece_banner11": {
+      "file": "piece_banner11.png",
+      "git_blob_sha": "2b36d084e165e67ac5da1ffadcfac66ccae4076e",
+      "bytes": 6752
+    },
+    "$piece_barber": {
+      "file": "piece_barber.png",
+      "git_blob_sha": "425916c1180484d95db4e88fac4020b8a3d659e1",
+      "bytes": 13035
+    },
+    "$piece_bathtub": {
+      "file": "Raft.png",
+      "git_blob_sha": "e9b2568718807b2168362e4e3ab7c1c899a7e510",
+      "bytes": 16987
+    },
+    "$piece_bed": {
+      "file": "bed.png",
+      "git_blob_sha": "525cc5d97d60cc8ab8ca3079f353d4acdd28cdbc",
+      "bytes": 10182
+    },
+    "$piece_bed02": {
+      "file": "piece_bed02.png",
+      "git_blob_sha": "03c1ef275f25284267286dc0ebc1261919f62872",
+      "bytes": 14157
+    },
+    "$piece_beehive": {
+      "file": "piece_beehive.png",
+      "git_blob_sha": "0ca5d4a20899b4de12def52c4a1395997911acb9",
+      "bytes": 9430
+    },
+    "$piece_bench_runed": {
+      "file": "piece_bench_runed.png",
+      "git_blob_sha": "4255b9782c385702d606faefcd6be0724229558f",
+      "bytes": 11882
+    },
+    "$piece_bench01": {
+      "file": "piece_bench01.png",
+      "git_blob_sha": "20483027aaaaeb662a052c4d98531ef8e1b93ac8",
+      "bytes": 8904
+    },
+    "$piece_benchlog": {
+      "file": "piece_logbench01.png",
+      "git_blob_sha": "6b6c8dda3f99e5beb46a0739d3d92afb5919f478",
+      "bytes": 10259
+    },
+    "$piece_birdnest": {
+      "file": "piece_birdnest.png",
+      "git_blob_sha": "954508fb0068125e84bb7f7036c503f4dfc4077c",
+      "bytes": 10081
+    },
+    "$piece_blackforge": {
+      "file": "blackforge.png",
+      "git_blob_sha": "4e63582b811eced9a132fd720d906bf224fef86a",
+      "bytes": 16805
+    },
+    "$piece_blackforge_ext1": {
+      "file": "blackforge_ext1.png",
+      "git_blob_sha": "c38e540bf9be837349fdb42fc6f0a6af2c7d4fe6",
+      "bytes": 10103
+    },
+    "$piece_blackforge_ext2": {
+      "file": "blackforge_ext2_vise.png",
+      "git_blob_sha": "cd7810ff64b492783d22744b6feecc210ed5322d",
+      "bytes": 6258
+    },
+    "$piece_blackforge_ext3": {
+      "file": "blackforge_ext3_metalcutter.png",
+      "git_blob_sha": "d971f51f23c6d6f69c385e7d88f0480440e1500f",
+      "bytes": 7990
+    },
+    "$piece_blackforge_ext4": {
+      "file": "blackforge_ext4_gemcutter.png",
+      "git_blob_sha": "196bcbd85d3bbd9fdb168a42d2fd6c63b7763b16",
+      "bytes": 8426
+    },
+    "$piece_blackforge_ext5": {
+      "file": "blackforge_ext5_apron.png",
+      "git_blob_sha": "5907bda61a8a075fff8c1953fa1a6565c21f0c90",
+      "bytes": 7456
+    },
+    "$piece_blackmarble_arch": {
+      "file": "blackmarble_arch.png",
+      "git_blob_sha": "6719732352cb7f5d14b0f106c2bf10ffd81a9bc6",
+      "bytes": 16002
+    },
+    "$piece_blackmarble_base1": {
+      "file": "blackmarble_base_1.png",
+      "git_blob_sha": "334c600218f1735d2a6d2bbc80fa2e5da41a3519",
+      "bytes": 14228
+    },
+    "$piece_blackmarble_basecorner": {
+      "file": "blackmarble_basecorner.png",
+      "git_blob_sha": "7373e37bd3511b99a5dfd605714b6a14371ffd9e",
+      "bytes": 15124
+    },
+    "$piece_blackmarble_bench": {
+      "file": "piece_blackmarble_bench.png",
+      "git_blob_sha": "b87920e8894ce4b19837ed362f9979698e55ccd9",
+      "bytes": 11696
+    },
+    "$piece_blackmarble_column_1": {
+      "file": "blackmarble_column_1.png",
+      "git_blob_sha": "3e946c955dfe7ee0cd0f79313b53b1376b0dee5e",
+      "bytes": 11294
+    },
+    "$piece_blackmarble_column_2": {
+      "file": "blackmarble_column_2.png",
+      "git_blob_sha": "a3c520daaf6e9145db6a536b64044524fdbe3c00",
+      "bytes": 13075
+    },
+    "$piece_blackmarble_floor": {
+      "file": "blackmarble_floor.png",
+      "git_blob_sha": "9175a9fc2fe404ca59504fd152931862a9177d00",
+      "bytes": 18016
+    },
+    "$piece_blackmarble_floor_triangle": {
+      "file": "blackmarble_floor_triangle.png",
+      "git_blob_sha": "dc2a0261c6651c175ea961e3fa430d9af0f3fbeb",
+      "bytes": 10229
+    },
+    "$piece_blackmarble_out1": {
+      "file": "blackmarble_out_1.png",
+      "git_blob_sha": "a632ece4a8baf831fae7ac8426e3185344b17b6f",
+      "bytes": 16735
+    },
+    "$piece_blackmarble_outcorner": {
+      "file": "blackmarble_outcorner.png",
+      "git_blob_sha": "fb84cb34726faf49c3f1a7490795424218debeb4",
+      "bytes": 15150
+    },
+    "$piece_blackmarble_stair": {
+      "file": "blackmarble_stair.png",
+      "git_blob_sha": "1f455d0cc5d64af809e6cf39beb9d3b767a5b60e",
+      "bytes": 15979
+    },
+    "$piece_blackmarble_table": {
+      "file": "piece_blackmarble_table.png",
+      "git_blob_sha": "10e110c6eae9a881c4fe5f597080a5b165f340fc",
+      "bytes": 9883
+    },
+    "$piece_blackmarble_throne": {
+      "file": "piece_blackmarble_throne.png",
+      "git_blob_sha": "72f06c2998654ca5f448b2a5404260991e773d44",
+      "bytes": 10358
+    },
+    "$piece_blackmarble_tip": {
+      "file": "blackmarble_tip.png",
+      "git_blob_sha": "c2a660714bca237abd66b6a2646ebf3107f73b7f",
+      "bytes": 6667
+    },
+    "$piece_blackmarble1x1": {
+      "file": "blackmarble_1x1.png",
+      "git_blob_sha": "e7ff0d14bff2fb75a0089a57cc6141bc0017a5f5",
+      "bytes": 16788
+    },
+    "$piece_blackmarble2x1x1": {
+      "file": "blackmarble_2x1x1.png",
+      "git_blob_sha": "cdb610c53441a8926281f68a42c487754a8c93be",
+      "bytes": 18300
+    },
+    "$piece_blackmarble2x2x2": {
+      "file": "blackmarble_2x2x2.png",
+      "git_blob_sha": "24101e59a723480690791429aef869076c9c4e0e",
+      "bytes": 20774
+    },
+    "$piece_blackmetalbarstack": {
+      "file": "bar_blackmetal_stack.png",
+      "git_blob_sha": "1f564be74be7978bb06f260d68398fcd5d3f3500",
+      "bytes": 14696
+    },
+    "$piece_blackwoodbench01": {
+      "file": "piece_blackwood_bench01.png",
+      "git_blob_sha": "fb262bdfee114f7463b058f0d3a0c0f50f9205f3",
+      "bytes": 5842
+    },
+    "$piece_blackwoodstack": {
+      "file": "blackwood_stack.png",
+      "git_blob_sha": "a0282206bb8cbfcf3c20d1b30298c62df5510416",
+      "bytes": 9923
+    },
+    "$piece_BlackwoodStakewall": {
+      "file": "piece_stakewall_blackwood.png",
+      "git_blob_sha": "631bf8b7e70a91579c3ebe47531a5df40555050d",
+      "bytes": 10031
+    },
+    "$piece_blastfurnace": {
+      "file": "blastfurnace.png",
+      "git_blob_sha": "0c55a09c3ee83346feb69cbde501b11b78a6f81f",
+      "bytes": 11236
+    },
+    "$piece_bloodgoldbarstack": {
+      "file": "bar_gold_stack.png",
+      "git_blob_sha": "82993bb989f0f422a340a89f415733c07074cb40",
+      "bytes": 15433
+    },
+    "$piece_bone_throne": {
+      "file": "piece_bone_throne.png",
+      "git_blob_sha": "df88d6503941d9205ebe8fe94063d8ee5d7923db",
+      "bytes": 9189
+    },
+    "$piece_bonestack": {
+      "file": "bone_stack.png",
+      "git_blob_sha": "68eb0ec38e834ee5c5624d7caaf5f6edd5a07716",
+      "bytes": 15448
+    },
+    "$piece_bonfire": {
+      "file": "bonfire.png",
+      "git_blob_sha": "f8aaa88590c8da8380d4e43cb72a06d3f08f707c",
+      "bytes": 7522
+    },
+    "$piece_brazierceiling01": {
+      "file": "piece_brazierceiling01.png",
+      "git_blob_sha": "6d1bedc4423e7010b9303ea5e9fbba2c2709491d",
+      "bytes": 5083
+    },
+    "$piece_brazierfloor01": {
+      "file": "piece_brazierfloor01.png",
+      "git_blob_sha": "9f6bc2578e05d30845920237ae0913cf6549b522",
+      "bytes": 9298
+    },
+    "$piece_brazierfloor02": {
+      "file": "piece_brazierfloor02.png",
+      "git_blob_sha": "9f6bc2578e05d30845920237ae0913cf6549b522",
+      "bytes": 9298
+    },
+    "$piece_bronzebarstack": {
+      "file": "bar_bronze_stack.png",
+      "git_blob_sha": "c98d1969b02b383b25e69903ac123b079bbfbeaf",
+      "bytes": 10127
+    },
+    "$piece_candle": {
+      "file": "Candle_resin.png",
+      "git_blob_sha": "0b9bc413d2cd3e487aa671f99c6fd0cec050f542",
+      "bytes": 8386
+    },
+    "$piece_cartographytable": {
+      "file": "piece_cartographytable.png",
+      "git_blob_sha": "340b8e708ada3d0e6f247f7255003c55e5479110",
+      "bytes": 10176
+    },
+    "$piece_cauldron": {
+      "file": "piece_cauldron.png",
+      "git_blob_sha": "59262a757c109dfa484922b84038b3108f36b8e7",
+      "bytes": 4403
+    },
+    "$piece_cauldron_ext1_spice": {
+      "file": "cauldron_ext1_spice.png",
+      "git_blob_sha": "83a471b0f8ed61e2b828837cfbf44cf5dfca66ef",
+      "bytes": 7905
+    },
+    "$piece_cauldron_ext3_butchertable": {
+      "file": "cauldron_ext3_butchertable.png",
+      "git_blob_sha": "b75572590d5036c3e6c3fa6109aff93ca7e8c88f",
+      "bytes": 13155
+    },
+    "$piece_cauldron_ext4_pans": {
+      "file": "cauldron_ext4_pots.png",
+      "git_blob_sha": "89714c723f08f448dda6809692de99cc31c889ae",
+      "bytes": 12418
+    },
+    "$piece_cauldron_ext5_mortarandpestle": {
+      "file": "cauldron_ext5_mortarandpestle.png",
+      "git_blob_sha": "c1a0de5df2abb3231716492397f16f73d567fd5c",
+      "bytes": 11474
+    },
+    "$piece_cauldron_ext6_rollingpins": {
+      "file": "cauldron_ext6_rollingpins.png",
+      "git_blob_sha": "b142ac4aa2887b7f898d65522818f5a607aa6347",
+      "bytes": 9906
+    },
+    "$piece_cauldron_ext7_smoker": {
+      "file": "cauldron_ext7_smoker.png",
+      "git_blob_sha": "f8262bcb60530d8e091cbbb24f7419e2ceb7f542",
+      "bytes": 13495
+    },
+    "$piece_celebrationgarland": {
+      "file": "piece_CelebrationGarland.png",
+      "git_blob_sha": "33217032ef4a3aebf6d69b20718a2f13ca80f962",
+      "bytes": 4379
+    },
+    "$piece_chair": {
+      "file": "piece_chair02.png",
+      "git_blob_sha": "67c87f3fcf41e0aeefcce46af85df8ff38806540",
+      "bytes": 7787
+    },
+    "$piece_chair_runed": {
+      "file": "piece_chair_runed.png",
+      "git_blob_sha": "ae677a7c2bef63f14212142efd8635df670048a6",
+      "bytes": 6862
+    },
+    "$piece_charcoalkiln": {
+      "file": "charcoal_kiln.png",
+      "git_blob_sha": "8550e0c24632c1e9b6a0f620a1bf7c10946d8898",
+      "bytes": 13705
+    },
+    "$piece_chest": {
+      "file": "piece_chest.png",
+      "git_blob_sha": "07db6c53c51ad3078c613c894098a941a7650fb6",
+      "bytes": 17541
+    },
+    "$piece_chestbarrel": {
+      "file": "piece_chest_barrel.png",
+      "git_blob_sha": "b6ddd89fcc77e3fed879af738bffe51264347aeb",
+      "bytes": 8891
+    },
+    "$piece_chestblackmetal": {
+      "file": "piece_chest_blackmetal.png",
+      "git_blob_sha": "31203057d62849ccbbc433cad1ece62465bb2c13",
+      "bytes": 15544
+    },
+    "$piece_chestgrausten": {
+      "file": "piece_chest_grausten.png",
+      "git_blob_sha": "ccb82537c8aac88205f1f0861cd8f43a142580d8",
+      "bytes": 17531
+    },
+    "$piece_chestprivate": {
+      "file": "piece_chest_private.png",
+      "git_blob_sha": "1ce175431f2a35c27cfb994e409c317987432edc",
+      "bytes": 17293
+    },
+    "$piece_chesttreasure": {
+      "file": "piece_chest_treasure.png",
+      "git_blob_sha": "69030f372c3998137d6379090db4513c2042796d",
+      "bytes": 15710
+    },
+    "$piece_chestwarderobe": {
+      "file": "piece_chest_warderobe.png",
+      "git_blob_sha": "c987ddc8b0e5dfdaac86acfbfaf27dc80b9a0841",
+      "bytes": 10669
+    },
+    "$piece_chestwood": {
+      "file": "piece_chest_wood.png",
+      "git_blob_sha": "0f430e74a24cbb25b9a60ca50f2266b9713f57c2",
+      "bytes": 16498
+    },
+    "$piece_clothdoor": {
+      "file": "piece_cloth_hanging_door.png",
+      "git_blob_sha": "18d55cd7288d88ca63bf4c48b6ae5199da98dd62",
+      "bytes": 6832
+    },
+    "$piece_coalpile": {
+      "file": "coal_pile.png",
+      "git_blob_sha": "e94643de017b73cf7d223703e7f9e48c636a9205",
+      "bytes": 6272
+    },
+    "$piece_cookingstation": {
+      "file": "piece_cookingstation.png",
+      "git_blob_sha": "8b42906c919d4e1dcd873e843d1ce1cb1478822b",
+      "bytes": 6609
+    },
+    "$piece_cookingstation_iron": {
+      "file": "piece_cookingstation_iron.png",
+      "git_blob_sha": "428789fe4685f03eb3bd43707b0f88d2b464c04f",
+      "bytes": 5476
+    },
+    "$piece_copperbarstack": {
+      "file": "bar_copper_stack.png",
+      "git_blob_sha": "4f48235ebf0c39f3f9948d0414e55841aca47f91",
+      "bytes": 10220
+    },
+    "$piece_crystalwall1x1": {
+      "file": "crystal_wall_1x1.png",
+      "git_blob_sha": "bfc5f4b91e4fb30d4e29cff417b99c8a0b710829",
+      "bytes": 4030
+    },
+    "$piece_darkwoodarch": {
+      "file": "darkwood_arch.png",
+      "git_blob_sha": "7c4f8e3248d31a314f4165e0153fed6a823b5b82",
+      "bytes": 10008
+    },
+    "$piece_darkwoodbeam": {
+      "file": "darkwood_beam.png",
+      "git_blob_sha": "7d04518aa1901beaa21014c88d47112e716a2849",
+      "bytes": 9823
+    },
+    "$piece_darkwoodbeam_26": {
+      "file": "darkwood_beam_26.png",
+      "git_blob_sha": "1484c145fcf2a82c672481dbb5f126fa3272640d",
+      "bytes": 10956
+    },
+    "$piece_darkwoodbeam_45": {
+      "file": "darkwood_beam_45.png",
+      "git_blob_sha": "9c63bf4ec150795776eda1506818c9915105884a",
+      "bytes": 8603
+    },
+    "$piece_darkwoodbeam4": {
+      "file": "darkwood_beam4x4.png",
+      "git_blob_sha": "b386b25807b33d74525fdbad47a6af278d68997a",
+      "bytes": 7342
+    },
+    "$piece_darkwoodbeam67": {
+      "file": "darkwood_beam_67.png",
+      "git_blob_sha": "eea41a742b1f951d0039a350b6a6bdfbc959e6bd",
+      "bytes": 4134
+    },
+    "$piece_darkwoodchair": {
+      "file": "piece_chair03.png",
+      "git_blob_sha": "382997551bce16908a45883421819963587c8f5f",
+      "bytes": 7583
+    },
+    "$piece_darkwooddecowall": {
+      "file": "darkwood_decowall.png",
+      "git_blob_sha": "7e541abd53967229da2109276c3c5d90a16d0dff",
+      "bytes": 9249
+    },
+    "$piece_darkwoodgate": {
+      "file": "darkwood_gate.png",
+      "git_blob_sha": "40cd8907af312e24ecffb71463c1a5eeca229e79",
+      "bytes": 9778
+    },
+    "$piece_darkwoodpole": {
+      "file": "darkwood_pole.png",
+      "git_blob_sha": "e3ca316ff89a4808ae03d66123a331032d3d7290",
+      "bytes": 7024
+    },
+    "$piece_darkwoodpole4": {
+      "file": "darkwood_pole4.png",
+      "git_blob_sha": "dcda8732645dbcf30fd554139eb917d002e98a46",
+      "bytes": 5153
+    },
+    "$piece_darkwoodraven": {
+      "file": "darkwood_raven.png",
+      "git_blob_sha": "99b8304db418143a34892505ea84ff49b7f962ed",
+      "bytes": 8330
+    },
+    "$piece_darkwoodroof26": {
+      "file": "darkwood_roof.png",
+      "git_blob_sha": "870d4125ceb3013451a0843544d6118ceb20a12f",
+      "bytes": 11564
+    },
+    "$piece_darkwoodroof45": {
+      "file": "darkwood_roof_45.png",
+      "git_blob_sha": "fec2378b37875580f8706cea701ffa9a05aaa645",
+      "bytes": 12608
+    },
+    "$piece_darkwoodroof67": {
+      "file": "darkwood_roof_67.png",
+      "git_blob_sha": "54011ab9d87b90324eb58d05e74b4093b69963a3",
+      "bytes": 9663
+    },
+    "$piece_darkwoodrooficorner": {
+      "file": "darkwood_roof_icorner.png",
+      "git_blob_sha": "e4704956bc35b98e25b8cbce18bfbd26b7372038",
+      "bytes": 8394
+    },
+    "$piece_darkwoodrooficorner45": {
+      "file": "darkwood_roof_icorner_45.png",
+      "git_blob_sha": "73167e3fe1621d4e19069f11e76456d76ee639ae",
+      "bytes": 7747
+    },
+    "$piece_darkwoodrooficorner67": {
+      "file": "darkwood_roof_icorner_67.png",
+      "git_blob_sha": "33e096c11125028442db5e50477292106227e1fa",
+      "bytes": 5719
+    },
+    "$piece_darkwoodroofocorner": {
+      "file": "darkwood_roof_ocorner.png",
+      "git_blob_sha": "bd9a37bf2af9da01215c4ef703c81f4a4605bb02",
+      "bytes": 8340
+    },
+    "$piece_darkwoodroofocorner45": {
+      "file": "darkwood_roof_ocorner_45.png",
+      "git_blob_sha": "d62c1d450107c6726f5544f55feb4d97e84b860e",
+      "bytes": 9675
+    },
+    "$piece_darkwoodroofocorner67": {
+      "file": "darkwood_roof_ocorner_67.png",
+      "git_blob_sha": "dfb694abb6bd6ee037f15bb6d19717d3addddfc8",
+      "bytes": 6972
+    },
+    "$piece_darkwoodrooftop": {
+      "file": "darkwood_roof_top.png",
+      "git_blob_sha": "9019bb1e9a782efb98b9ef634d5a7314795c9dcf",
+      "bytes": 8060
+    },
+    "$piece_darkwoodrooftop45": {
+      "file": "darkwood_roof_top_45.png",
+      "git_blob_sha": "870be28868131c14f7a322944475c33f7abc11d4",
+      "bytes": 10195
+    },
+    "$piece_darkwoodrooftop67": {
+      "file": "darkwood_roof_top_67.png",
+      "git_blob_sha": "2865265e22aa7cb8040009fab5a013431982723a",
+      "bytes": 10019
+    },
+    "$piece_darkwoodwolf": {
+      "file": "darkwood_wolf.png",
+      "git_blob_sha": "c795b7d985d5ef9f92f70e27ca965f81be6182f7",
+      "bytes": 9441
+    },
+    "$piece_deco_stave_wall": {
+      "file": "stave_deco_wall_2x2.png",
+      "git_blob_sha": "385d5e036fc22d6c5b1e92a42d794f859e1f77a0",
+      "bytes": 10633
+    },
+    "$piece_drawbridge_dn": {
+      "file": "piece_drawbridge.png",
+      "git_blob_sha": "9138010916b37fc4fa07328a08d9e9a294b70094",
+      "bytes": 7468
+    },
+    "$piece_drawbridge_log": {
+      "file": "piece_drawbridge_log.png",
+      "git_blob_sha": "38cc3350a905c62793285b908ca9ea28feeee852",
+      "bytes": 10075
+    },
+    "$piece_dvergr_lantern": {
+      "file": "piece_dvergr_lantern.png",
+      "git_blob_sha": "bdd9fd9015c4cc9b323f932116b9b629199938db",
+      "bytes": 9819
+    },
+    "$piece_dvergr_lantern_pole": {
+      "file": "piece_dvergr_lantern_pole.png",
+      "git_blob_sha": "e5f4c461dfbe3707952bdbec0db3f44efd45dbe3",
+      "bytes": 7317
+    },
+    "$piece_dvergr_metal_wall": {
+      "file": "piece_dvergr_metal_wall_2x2.png",
+      "git_blob_sha": "6249085379fb41bc81c89d3850c881d4cacf5a1c",
+      "bytes": 8074
+    },
+    "$piece_dvergr_sharpstakes": {
+      "file": "piece_dvergr_sharpstakes.png",
+      "git_blob_sha": "821a67cb37c31cc8b4bf9cbeda1afb1bc0f373d5",
+      "bytes": 11841
+    },
+    "$piece_dvergr_spiralstair": {
+      "file": "piece_dvergr_spiralstair.png",
+      "git_blob_sha": "73685060a2a9398c5e4f4426c37e33df1c8f46b5",
+      "bytes": 10878
+    },
+    "$piece_dvergr_spiralstair_right": {
+      "file": "piece_dvergr_spiralstair_right.png",
+      "git_blob_sha": "d7926bba367bd66c2ead67898f576cd264f734f0",
+      "bytes": 14586
+    },
+    "$piece_dvergr_stake_wall": {
+      "file": "piece_dvergr_stake_wall.png",
+      "git_blob_sha": "87b52499340831d5995e94cb9664aa7b46fea676",
+      "bytes": 8969
+    },
+    "$piece_eitrrefinery": {
+      "file": "eitrrefinery.png",
+      "git_blob_sha": "96e4fa3e83f9497b4e1e9c2ce48487563c93e6b8",
+      "bytes": 14509
+    },
+    "$piece_faderember": {
+      "file": "piece_EternalPyre.png",
+      "git_blob_sha": "7553691ddef3bff35995a8a5a8b09480bd90d8d3",
+      "bytes": 9836
+    },
+    "$piece_fairylightgarland": {
+      "file": "piece_FairylightGarland.png",
+      "git_blob_sha": "0fe8178b542a2f1f94e16f6faf3247ee682d6b9e",
+      "bytes": 3510
+    },
+    "$piece_fermenter": {
+      "file": "fermenter.png",
+      "git_blob_sha": "79e2467ec29a7d8fa082b6c42cd3835dfb2118ac",
+      "bytes": 23882
+    },
+    "$piece_firepit": {
+      "file": "fire_pit.png",
+      "git_blob_sha": "2c69730b9ff0dfd3af1b25b181280fbd0689b313",
+      "bytes": 10061
+    },
+    "$piece_firepit_iron": {
+      "file": "fire_pit_iron.png",
+      "git_blob_sha": "daf925a4bb6a9b924ec9781eb50d4e95e724258b",
+      "bytes": 9553
+    },
+    "$piece_flametal_beam": {
+      "file": "Piece_flametal_beam.png",
+      "git_blob_sha": "562e11c1a7bb200b8e519ceea4d716849d610da1",
+      "bytes": 10286
+    },
+    "$piece_flametal_pillar": {
+      "file": "Piece_flametal_pillar.png",
+      "git_blob_sha": "f161bebfc5c6128f5db8d47d3d2e89ccf0256a17",
+      "bytes": 5344
+    },
+    "$piece_flametalbarstack": {
+      "file": "bar_flametal_stack.png",
+      "git_blob_sha": "53fd576a7f0f13f2487488a64f72b530ed827630",
+      "bytes": 15991
+    },
+    "$piece_flametalgate": {
+      "file": "flametal_gate.png",
+      "git_blob_sha": "448b04a04fcc45667d71c25cee5c4b3386ad05ca",
+      "bytes": 5537
+    },
+    "$piece_flintpile": {
+      "file": "flint_pile.png",
+      "git_blob_sha": "747f9f41d51d7077e2be939865d2f53176f39c07",
+      "bytes": 8422
+    },
+    "$piece_forge": {
+      "file": "forge.png",
+      "git_blob_sha": "2d402dc9670bf8f37941285792ccf00c5446aa69",
+      "bytes": 12889
+    },
+    "$piece_forge_ext1": {
+      "file": "forge_ext1.png",
+      "git_blob_sha": "7c87114b3e1ec56ea872fd0ff9191678467d071e",
+      "bytes": 7857
+    },
+    "$piece_forge_ext2": {
+      "file": "forge_ext2.png",
+      "git_blob_sha": "e5f324011b9bdcec0aca73c376cb80930ff91b88",
+      "bytes": 9159
+    },
+    "$piece_forge_ext3": {
+      "file": "forge_ext3.png",
+      "git_blob_sha": "113517e68a7992e8fafde923b1669192dd2ef86c",
+      "bytes": 9965
+    },
+    "$piece_forge_ext4": {
+      "file": "forge_ext4.png",
+      "git_blob_sha": "d5887b9a985d20f570ab9ee5d752f8ece2501db5",
+      "bytes": 11062
+    },
+    "$piece_forge_ext5": {
+      "file": "forge_ext5.png",
+      "git_blob_sha": "bca57000593b864808208d069b4209890e0eff3e",
+      "bytes": 11245
+    },
+    "$piece_forge_ext6": {
+      "file": "forge_ext6.png",
+      "git_blob_sha": "2fcd236c8fcb5b891d42a24ac95eed324e22bd3d",
+      "bytes": 10581
+    },
+    "$piece_frostfoundry": {
+      "file": "piece_FrostFoundry.png",
+      "git_blob_sha": "aa132cfc87ff130676b4fd14c7cf5c2b504cfa02",
+      "bytes": 16639
+    },
+    "$piece_frostkiln": {
+      "file": "piece_FrostKiln.png",
+      "git_blob_sha": "7d134072a6b421bd131beb1a56fb8b4a484910a0",
+      "bytes": 11275
+    },
+    "$piece_grausten_archmedium": {
+      "file": "Piece_grausten_pillar_arch.png",
+      "git_blob_sha": "0359ae2a89fc232341eeebb0225c2de5f09ef281",
+      "bytes": 6487
+    },
+    "$piece_grausten_archsmall": {
+      "file": "Piece_grausten_pillar_arch_small.png",
+      "git_blob_sha": "9a3d037ea2a4e7f4490eece4bec828d49f3c7002",
+      "bytes": 6098
+    },
+    "$piece_grausten_beammedium": {
+      "file": "Piece_grausten_pillarbeam_medium.png",
+      "git_blob_sha": "925b93d9341fc5ea2be4e25cef9f618a154bde94",
+      "bytes": 11228
+    },
+    "$piece_grausten_beamsmall": {
+      "file": "Piece_grausten_pillarbeam_small.png",
+      "git_blob_sha": "3a18c3310057cff52e81f1074323acf13711d371",
+      "bytes": 9598
+    },
+    "$piece_grausten_floor1x1": {
+      "file": "Piece_grausten_floor_1x1.png",
+      "git_blob_sha": "a64495629a2f70d3fd59836233d3e9f357cfa0ac",
+      "bytes": 11025
+    },
+    "$piece_grausten_floor2x2": {
+      "file": "Piece_grausten_floor_2x2.png",
+      "git_blob_sha": "aafa188a0eafab1a267aa4f653ac113625fe7290",
+      "bytes": 10378
+    },
+    "$piece_grausten_floor4x4": {
+      "file": "Piece_grausten_floor_4x4.png",
+      "git_blob_sha": "c077fd58531ed0bd967e1a214c077cd0160a5b1c",
+      "bytes": 9584
+    },
+    "$piece_grausten_pillarmedium": {
+      "file": "Piece_grausten_pillarbase_medium.png",
+      "git_blob_sha": "70890a9e24e1877d5c88d26b67556c13bfab48b9",
+      "bytes": 8035
+    },
+    "$piece_grausten_pillarsmall": {
+      "file": "Piece_grausten_pillarbase_small.png",
+      "git_blob_sha": "10fce15a693795410c054530f1193b7219181499",
+      "bytes": 5945
+    },
+    "$piece_grausten_pillartapered": {
+      "file": "Piece_grausten_pillarbase_tapered.png",
+      "git_blob_sha": "0bc8a1f1053af71c8a9890ec865344081afdfdce",
+      "bytes": 5829
+    },
+    "$piece_grausten_pillartaperedinverted": {
+      "file": "Piece_grausten_pillarbase_tapered_inverted.png",
+      "git_blob_sha": "3bc2d61e4bbe0debaf26545f137081b19691bfba",
+      "bytes": 6657
+    },
+    "$piece_grausten_roof45": {
+      "file": "piece_grausten_roof_45.png",
+      "git_blob_sha": "050e35ca9f24eaa7676b140f9366d8db14d10b52",
+      "bytes": 12473
+    },
+    "$piece_grausten_roof45_arch": {
+      "file": "piece_grausten_roof_45_arch.png",
+      "git_blob_sha": "b232da6067c997d686fe5db187e7474c7e2cfb65",
+      "bytes": 14739
+    },
+    "$piece_grausten_roof45_archcorner": {
+      "file": "piece_grausten_roof_45_arch_corner.png",
+      "git_blob_sha": "4b91a3a513554cde56d16fdc937ccdc23d2b9dae",
+      "bytes": 10680
+    },
+    "$piece_grausten_roof45_archcorner2": {
+      "file": "piece_grausten_roof_45_arch_corner2.png",
+      "git_blob_sha": "165c36cd2e0f392016e64e31ece18ae05e9ab70d",
+      "bytes": 11442
+    },
+    "$piece_grausten_roof45_corner": {
+      "file": "piece_grausten_roof_45_corner.png",
+      "git_blob_sha": "5d8cf3b6bb73e3862b12241f224adefc10ee0a42",
+      "bytes": 8627
+    },
+    "$piece_grausten_roof45_corner2": {
+      "file": "piece_grausten_roof_45_corner2.png",
+      "git_blob_sha": "903cf39b4f32934e49c221013ed2f872a9c84d31",
+      "bytes": 9026
+    },
+    "$piece_grausten_stair": {
+      "file": "piece_grausten_stonestair.png",
+      "git_blob_sha": "94fb2f042541bca93980048fc7aec0c4752ef7bb",
+      "bytes": 14720
+    },
+    "$piece_grausten_stoneladder": {
+      "file": "Piece_grausten_stone_ladder.png",
+      "git_blob_sha": "c59f607b1d34eb7e1c72a27ae382341d52d74223",
+      "bytes": 10889
+    },
+    "$piece_grausten_wall1x2": {
+      "file": "Piece_grausten_wall_1x2.png",
+      "git_blob_sha": "ae57745454ccc50d3eb7836abcbc84a362aa8d56",
+      "bytes": 7125
+    },
+    "$piece_grausten_wall2x2": {
+      "file": "Piece_grausten_wall_2x2.png",
+      "git_blob_sha": "d4545e05930e66583bcb24bfbdac78ac81bcea94",
+      "bytes": 8815
+    },
+    "$piece_grausten_wall4x2": {
+      "file": "Piece_grausten_wall_4x2.png",
+      "git_blob_sha": "9fa438a01c0b82c6ec974427001995392ec9819c",
+      "bytes": 10296
+    },
+    "$piece_grausten_wallarch": {
+      "file": "Piece_grausten_wall_arch.png",
+      "git_blob_sha": "fa537d7a645084133b07bc9c2cc257d8030a593a",
+      "bytes": 6876
+    },
+    "$piece_grausten_wallarchinv": {
+      "file": "Piece_grausten_wall_arch_inverted.png",
+      "git_blob_sha": "ef6b15cc8349f146de21b59c2200904a88a50d40",
+      "bytes": 5411
+    },
+    "$piece_grausten_window2x2": {
+      "file": "Piece_grausten_window_2x2.png",
+      "git_blob_sha": "4618c729aabef39bd0ca167957945830d2737d1a",
+      "bytes": 11110
+    },
+    "$piece_grausten_window4x2": {
+      "file": "Piece_grausten_window_4x2.png",
+      "git_blob_sha": "8de8c13e28b81e1acf3a2cd6f16eed57e4e21de8",
+      "bytes": 12276
+    },
+    "$piece_graustenpile": {
+      "file": "grausten_pile.png",
+      "git_blob_sha": "155e02568b65f8ce9a996e4030a899a73aa73fed",
+      "bytes": 9497
+    },
+    "$piece_groundtorch": {
+      "file": "piece_groundtorch.png",
+      "git_blob_sha": "0a1c0d65347919c11031e71c651527f868662a38",
+      "bytes": 5644
+    },
+    "$piece_groundtorchblue": {
+      "file": "piece_groundtorch_blue.png",
+      "git_blob_sha": "2d3329c50f4e8069a38f336200cea76e14892ab5",
+      "bytes": 5676
+    },
+    "$piece_groundtorchdemister": {
+      "file": "piece_groundtorch_mist.png",
+      "git_blob_sha": "62c544c1c4f67b3511c1c4bb3428820f01c6c79c",
+      "bytes": 16268
+    },
+    "$piece_groundtorchgreen": {
+      "file": "piece_groundtorch_green.png",
+      "git_blob_sha": "d2dc1c2baa3245229e0c31340254635ebe8f6b7d",
+      "bytes": 2044
+    },
+    "$piece_groundtorchwood": {
+      "file": "piece_groundtorch_wood.png",
+      "git_blob_sha": "25374a6108d7c5cc4fa0bf9169d5c48c8c3b9035",
+      "bytes": 1884
+    },
+    "$piece_guardstone": {
+      "file": "guard_stone.png",
+      "git_blob_sha": "5014926ae9e33d2e67197d1a898b6cf0e9df6977",
+      "bytes": 21237
+    },
+    "$piece_hanging_cloth_blue1": {
+      "file": "piece_cloth_hanging_door_blue.png",
+      "git_blob_sha": "8752ec0a6ee4e6c25b0500f3650b1f9b9d01c589",
+      "bytes": 7203
+    },
+    "$piece_hanging_cloth_blue2": {
+      "file": "piece_cloth_hanging_door_blue2.png",
+      "git_blob_sha": "28fe955e93c724326d0b79c170a7ce4d9207d746",
+      "bytes": 8824
+    },
+    "$piece_hearth": {
+      "file": "hearth.png",
+      "git_blob_sha": "c372469d5695327d6241d70e2e1b204d881f967d",
+      "bytes": 13890
+    },
+    "$piece_hexagonalgate": {
+      "file": "piece_hexagonal_door.png",
+      "git_blob_sha": "3bd03ecba8a57981d7b547ba7366a3f5caadf0ce",
+      "bytes": 12666
+    },
+    "$piece_hoodedlantern": {
+      "file": "piece_hoodedlantern.png",
+      "git_blob_sha": "26e68c7550ed6af5213690743e292fc87a689d4b",
+      "bytes": 9102
+    },
+    "$piece_icecube": {
+      "file": "piece_icecube.png",
+      "git_blob_sha": "26a1f7e22b6bebc6c0e550b232a68fcd523ea5a7",
+      "bytes": 8759
+    },
+    "$piece_incinerator": {
+      "file": "incinerator.png",
+      "git_blob_sha": "49168dd091dfef34fb6d178735f04e9067ae2350",
+      "bytes": 2521
+    },
+    "$piece_ironbarstack": {
+      "file": "bar_iron_stack.png",
+      "git_blob_sha": "be807db736d0738cf66ec99f8e06f34949a3773e",
+      "bytes": 12150
+    },
+    "$piece_ironfloor": {
+      "file": "iron_floor_2x2.png",
+      "git_blob_sha": "95888e3aa2a8dd1121f2af8710d4736b7a0547b9",
+      "bytes": 7948
+    },
+    "$piece_ironfloorSmall": {
+      "file": "iron_floor_1x1_v2.png",
+      "git_blob_sha": "d94cb68709737c7de1c3e44089dace36203562fa",
+      "bytes": 6814
+    },
+    "$piece_irongate": {
+      "file": "iron_grate.png",
+      "git_blob_sha": "d6dc7338e048160651bf7e442c75999f57ee7ead",
+      "bytes": 8986
+    },
+    "$piece_ironwall": {
+      "file": "iron_wall_2x2.png",
+      "git_blob_sha": "9fed29ef5cff4be1aee3e0d7f97182d3e558af0e",
+      "bytes": 9089
+    },
+    "$piece_ironwallSmall": {
+      "file": "iron_wall_1x1.png",
+      "git_blob_sha": "4f17e4ed9a6ef0e4ffa23982140014b3312f8283",
+      "bytes": 7529
+    },
+    "$piece_ironwoodbeam67": {
+      "file": "woodiron_beam_67.png",
+      "git_blob_sha": "0430121bdf73e64e67d0adec7c13e9c5874f1bb1",
+      "bytes": 4671
+    },
+    "$piece_itemstand": {
+      "file": "itemstand.png",
+      "git_blob_sha": "761de6bb55bc4905eb0f1a97255c4d04145dd461",
+      "bytes": 9706
+    },
+    "$piece_jackoturnip": {
+      "file": "piece_jackoturnip.png",
+      "git_blob_sha": "3cbb211980e5640405f5585cd55f15b3bf27c3c7",
+      "bytes": 7403
+    },
+    "$piece_jute_carpet": {
+      "file": "jute_carpet.png",
+      "git_blob_sha": "9bfaf95d8c34b9287b7852d38a46e8cc32bbaa01",
+      "bytes": 10561
+    },
+    "$piece_juteblue_carpet": {
+      "file": "jute_carpet_blue.png",
+      "git_blob_sha": "6834cfdab7298f4be0d8cbbe3d1f3aa9c9814a31",
+      "bytes": 7962
+    },
+    "$piece_lavalantern": {
+      "file": "piece_Lavalantern.png",
+      "git_blob_sha": "0333bce54bf4895c9ebfefe39fc9d76d130a4108",
+      "bytes": 10009
+    },
+    "$piece_logbeam2": {
+      "file": "wood_wall_log.png",
+      "git_blob_sha": "3d30491f7568e2677098ad466db85a5bb1c3866e",
+      "bytes": 8740
+    },
+    "$piece_logbeam4": {
+      "file": "wood_wall_log_4x0.5.png",
+      "git_blob_sha": "8c37383dc6079d9d7b6863f8d291ca226749219c",
+      "bytes": 6294
+    },
+    "$piece_logpole2": {
+      "file": "wood_pole_log.png",
+      "git_blob_sha": "156e38233997dd910088a06b218b221f91035c34",
+      "bytes": 5771
+    },
+    "$piece_logpole4": {
+      "file": "wood_pole_log_4.png",
+      "git_blob_sha": "19409163776b5a01c8e4a976ba41d57d1ad0ee3d",
+      "bytes": 3626
+    },
+    "$piece_magetable": {
+      "file": "piece_magetable.png",
+      "git_blob_sha": "bba5159cda179c423c756344a7aa0b78ba2f6d24",
+      "bytes": 10391
+    },
+    "$piece_magetable_ext": {
+      "file": "piece_magetable_ext.png",
+      "git_blob_sha": "6ea8196d6efce9b5780c153961e0a761446952fb",
+      "bytes": 14159
+    },
+    "$piece_magetable_ext2": {
+      "file": "piece_magetable_ext2.png",
+      "git_blob_sha": "776dc7f37757b3c3202b24ccd892e810b468fb7c",
+      "bytes": 13853
+    },
+    "$piece_magetable_ext3": {
+      "file": "piece_magetable_ext3.png",
+      "git_blob_sha": "be926f157ce5fcee26adae245ef10b2f3b7c6e66",
+      "bytes": 8229
+    },
+    "$piece_magetable_ext4": {
+      "file": "piece_magetable_ext4.png",
+      "git_blob_sha": "a496c8f81033a5b3a647e9fde97cdf188872ab5f",
+      "bytes": 9078
+    },
+    "$piece_marblepile": {
+      "file": "blackmarble_pile.png",
+      "git_blob_sha": "040eba0c6f87f792745b1eb5ede9bea55c19b0a4",
+      "bytes": 9778
+    },
+    "$piece_maypole": {
+      "file": "piece_maypole.png",
+      "git_blob_sha": "e12d9c8b8ab0d910ce9b2a77e59339c152da38c9",
+      "bytes": 7076
+    },
+    "$piece_meadcauldron": {
+      "file": "piece_MeadCauldron.png",
+      "git_blob_sha": "127e9d7af0e90cab0f0671cbd73cd2b5ff901448",
+      "bytes": 11626
+    },
+    "$piece_mistletoe": {
+      "file": "piece_mistletoe.png",
+      "git_blob_sha": "fd6a520f52087af46d8f5d0080c7683b60956e45",
+      "bytes": 2383
+    },
+    "$piece_moose_throne": {
+      "file": "piece_moose_throne.png",
+      "git_blob_sha": "4e07e9d56081e59f6d4a0cb5ffa3ebc84a037893",
+      "bytes": 10320
+    },
+    "$piece_oven": {
+      "file": "piece_oven.png",
+      "git_blob_sha": "4a2d75de58d33e53b7a03cc1228ec8bf9bd962d5",
+      "bytes": 19839
+    },
+    "$piece_portal": {
+      "file": "portal_wood.png",
+      "git_blob_sha": "da47aad1e3c91084023170a5a6e1b18078d0f65a",
+      "bytes": 20061
+    },
+    "$piece_portal_stone": {
+      "file": "portal_stone.png",
+      "git_blob_sha": "b380c64dd5761835bfbe5c8c4c3c4f733f7bf277",
+      "bytes": 12431
+    },
+    "$piece_pot_large_green": {
+      "file": "piece_pot2.png",
+      "git_blob_sha": "6867261a81328e6c22c113f79dd50902b36e079b",
+      "bytes": 6850
+    },
+    "$piece_pot_medium_green": {
+      "file": "piece_pot1.png",
+      "git_blob_sha": "21705ca868775eda96cbcf431c0074972b73c845",
+      "bytes": 9126
+    },
+    "$piece_pot_small_green": {
+      "file": "piece_pot3.png",
+      "git_blob_sha": "6e2ded23df372f05b82c3291f8816167fdc1a106",
+      "bytes": 8726
+    },
+    "$piece_preptable": {
+      "file": "piece_preptable.png",
+      "git_blob_sha": "4b2fd0bfe0830c35f05c02dda798dd8aa5a25e5c",
+      "bytes": 15674
+    },
+    "$piece_rug_asksvin": {
+      "file": "rug_asksvin.png",
+      "git_blob_sha": "8a329709f0873c41fc8f8c81539470721e7899b4",
+      "bytes": 5715
+    },
+    "$piece_rug_bjorn": {
+      "file": "rug_Bjorn.png",
+      "git_blob_sha": "19c8640384573d71fc10a3fb37bc0d910f10be14",
+      "bytes": 5672
+    },
+    "$piece_rug_deer": {
+      "file": "rug_deer.png",
+      "git_blob_sha": "83bd9a05506cf81e2806d9b6fc830ddc897f8d59",
+      "bytes": 4225
+    },
+    "$piece_rug_hare": {
+      "file": "rug_hare.png",
+      "git_blob_sha": "acf655439dee371007d2cb0817fc3e894b2c8f09",
+      "bytes": 6515
+    },
+    "$piece_rug_lox": {
+      "file": "rug_fur.png",
+      "git_blob_sha": "8b3f8992dadcd1b20087dcf62760f48c16e39149",
+      "bytes": 8296
+    },
+    "$piece_rug_moose": {
+      "file": "rug_moose.png",
+      "git_blob_sha": "4ae2907f12ec61d701a40e17ec29bfa67a4a23d1",
+      "bytes": 7599
+    },
+    "$piece_rug_seal": {
+      "file": "rug_seal.png",
+      "git_blob_sha": "6b676e6bdfca25f26ade5d2d0ff2798211208bbc",
+      "bytes": 6891
+    },
+    "$piece_rug_straw": {
+      "file": "rug_straw.png",
+      "git_blob_sha": "252d1936207d1de3c935d57db05883e3b561e3cb",
+      "bytes": 6294
+    },
+    "$piece_rug_wolf": {
+      "file": "rug_wolf.png",
+      "git_blob_sha": "d4f1cb4122b692ba359baa2f7b41f438e2f68eb3",
+      "bytes": 6952
+    },
+    "$piece_sapcollector": {
+      "file": "piece_sapcollector.png",
+      "git_blob_sha": "8314b1f71802802f6fa96ae7586a229d697771bc",
+      "bytes": 6529
+    },
+    "$piece_scale_26": {
+      "file": "scale_wall_roof_26.png",
+      "git_blob_sha": "805fad7a81039eff752888a17e9d9c59280520b5",
+      "bytes": 7698
+    },
+    "$piece_scale_26_flipped": {
+      "file": "scale_wall_roof_26_flipped.png",
+      "git_blob_sha": "7eb57b9ff910e142710cad45a202a31a1764f036",
+      "bytes": 5878
+    },
+    "$piece_scale_26_upsidedown": {
+      "file": "scale_wall_roof_26_upsidedown.png",
+      "git_blob_sha": "69572421d8d0f6d6041d5f745223bf3915323744",
+      "bytes": 6342
+    },
+    "$piece_scale_26_upsidedown_flipped": {
+      "file": "scale_wall_roof_26_upsidedown_flipped.png",
+      "git_blob_sha": "720624cbe225c7a6f38e88832882a4329f511963",
+      "bytes": 8889
+    },
+    "$piece_scale_45": {
+      "file": "scale_wall_roof_45.png",
+      "git_blob_sha": "5eeb7cbe3aec35532f2f0f174d9e21835725ec27",
+      "bytes": 6433
+    },
+    "$piece_scale_45_flipped": {
+      "file": "scale_wall_roof_45_flipped.png",
+      "git_blob_sha": "3223fc0bd72a1165f952b33212c7d17578c2dd4a",
+      "bytes": 5087
+    },
+    "$piece_scale_45_upsidedown": {
+      "file": "scale_wall_roof_45_upsidedown.png",
+      "git_blob_sha": "c63e31bfad62722269b7b227faea5754b6ea81d4",
+      "bytes": 8274
+    },
+    "$piece_scale_45_upsidedown_flipped": {
+      "file": "scale_wall_roof_45_upsidedown_flipped.png",
+      "git_blob_sha": "8c656d9649be0ec025fc7de53a3ff42ecffc2485",
+      "bytes": 6322
+    },
+    "$piece_scale_67": {
+      "file": "scale_wall_roof_67.png",
+      "git_blob_sha": "40a358454a5f241fbde76d5e8c913376b6b6d746",
+      "bytes": 5254
+    },
+    "$piece_scale_67_flipped": {
+      "file": "scale_wall_roof_67_flipped.png",
+      "git_blob_sha": "1454ffa410d85113141fef1976fa94ed18440539",
+      "bytes": 5401
+    },
+    "$piece_scale_67_upsidedown": {
+      "file": "scale_wall_roof_67_upsidedown.png",
+      "git_blob_sha": "6cb2510398dff0646200924c1fbffe0fbec01713",
+      "bytes": 6339
+    },
+    "$piece_scale_67_upsidedown_flipped": {
+      "file": "scale_wall_roof_67_upsidedown_flipped.png",
+      "git_blob_sha": "e9c199084b0d035913dfd4bf89b48ba454623490",
+      "bytes": 5529
+    },
+    "$piece_scale_halfwall": {
+      "file": "scale_halfwall_1x2.png",
+      "git_blob_sha": "a2706da29e624af65080e1ca2bf7136d8845ea3e",
+      "bytes": 11557
+    },
+    "$piece_scale_quarterwall": {
+      "file": "scale_quarterwall_1x1.png",
+      "git_blob_sha": "3f88eb3a6564a5716a1216fc3313e0c85b50b7d6",
+      "bytes": 9848
+    },
+    "$piece_scale_wall": {
+      "file": "scale_wall_2x2.png",
+      "git_blob_sha": "c28c40d76b454a5d05c68a459f5a14287b245488",
+      "bytes": 10677
+    },
+    "$piece_sconce": {
+      "file": "piece_walltorch.png",
+      "git_blob_sha": "725812b5edb04bfaa9e6d93cb851ae903c48b84d",
+      "bytes": 5806
+    },
+    "$piece_sharpstakes": {
+      "file": "piece_sharpstakes.png",
+      "git_blob_sha": "02086eed4d9f1d68565ec2ddffc318e44b4eab22",
+      "bytes": 11883
+    },
+    "$piece_shieldgenerator": {
+      "file": "piece_shieldgenerator.png",
+      "git_blob_sha": "00ed9307747ff833d2dbf6b8917823b237b08d7f",
+      "bytes": 12360
+    },
+    "$piece_sign": {
+      "file": "sign.png",
+      "git_blob_sha": "9fed1b836ea3b3195e24344d3b973cabb1c3acf7",
+      "bytes": 10319
+    },
+    "$piece_silverbarstack": {
+      "file": "bar_silver_stack.png",
+      "git_blob_sha": "00429fd3d80d06c7ea98adc9d99ba4d133c9bf5d",
+      "bytes": 5640
+    },
+    "$piece_skullpile": {
+      "file": "skull_pile.png",
+      "git_blob_sha": "161bd6c88ab938451aac66156aeea9de401a3633",
+      "bytes": 10046
+    },
+    "$piece_smelter": {
+      "file": "smelter.png",
+      "git_blob_sha": "3eab7e790c8e335bb96df0061fa21eef7548538e",
+      "bytes": 12917
+    },
+    "$piece_snowlantern": {
+      "file": "piece_snowlantern.png",
+      "git_blob_sha": "dc4ad353d9874e6f90733f72a9932463e258a5b2",
+      "bytes": 9059
+    },
+    "$piece_spinningwheel": {
+      "file": "piece_spinningwheel.png",
+      "git_blob_sha": "7c90b276c66b4d2765aa2649262154185d3967cd",
+      "bytes": 7331
+    },
+    "$piece_stakewall": {
+      "file": "stake_wall.png",
+      "git_blob_sha": "ea5ebcd46d4f49c01aa2356f8f18fb9877ee11ff",
+      "bytes": 10043
+    },
+    "$piece_stave_deco_beam_2m": {
+      "file": "stave_deco_beam_2m.png",
+      "git_blob_sha": "26581a2d1057b15da6a59be55949c3dfcf69e159",
+      "bytes": 12555
+    },
+    "$piece_stave_deco_pole_2m": {
+      "file": "stave_deco_pole_2m.png",
+      "git_blob_sha": "52008f06383b951d7d756d0589ffb9f927f189d2",
+      "bytes": 8002
+    },
+    "$piece_stave_pole_2m": {
+      "file": "stave_pole_2m.png",
+      "git_blob_sha": "aab39bc7813094ad6aaf7ea0cb5db44e44f55010",
+      "bytes": 8557
+    },
+    "$piece_stave_pole_4m": {
+      "file": "stave_pole_4m.png",
+      "git_blob_sha": "68100e2ff4990e38274b6c459ddb5aac902604e5",
+      "bytes": 5883
+    },
+    "$piece_stave_wall": {
+      "file": "stave_wall_2x2.png",
+      "git_blob_sha": "4f1eeec888fde8cfe6247bdd15c729339c2da3a2",
+      "bytes": 10711
+    },
+    "$piece_stavebeam2": {
+      "file": "stave_beam_2m.png",
+      "git_blob_sha": "b376aee18dd88ca1a22391427477eadbfa45bec5",
+      "bytes": 13628
+    },
+    "$piece_stavebeam26": {
+      "file": "stave_beam_26.png",
+      "git_blob_sha": "3269d9995311cc3e0add9f835a67130191589642",
+      "bytes": 12619
+    },
+    "$piece_stavebeam4": {
+      "file": "stave_beam_4m.png",
+      "git_blob_sha": "5a1645275cdf820a6aca7abdad4c9a015acfcf5d",
+      "bytes": 8744
+    },
+    "$piece_stavebeam45": {
+      "file": "stave_beam_45.png",
+      "git_blob_sha": "01cf0d5bbdae4858af3fa742f5437569d6d7ba84",
+      "bytes": 10439
+    },
+    "$piece_stavebeam67": {
+      "file": "stave_beam_67.png",
+      "git_blob_sha": "4166ecc48394a12f0b319cd1fe057807f29ba597",
+      "bytes": 6028
+    },
+    "$piece_stavecross26": {
+      "file": "stave_wall_cross_26.png",
+      "git_blob_sha": "65283182f3572f0f94580744325f204f4c965586",
+      "bytes": 13027
+    },
+    "$piece_stavecross45": {
+      "file": "stave_wall_cross_45.png",
+      "git_blob_sha": "2a036deb162bfcec17cf449a5c8c12cc29dfc818",
+      "bytes": 10716
+    },
+    "$piece_stavedecobeam26": {
+      "file": "stave_deco_beam_26.png",
+      "git_blob_sha": "35c91a7d155053dbb03da190b92cfb31f563752b",
+      "bytes": 8511
+    },
+    "$piece_stavedecobeam45": {
+      "file": "stave_deco_beam_45.png",
+      "git_blob_sha": "25c06390dae24eaa4e6c6d7f3e367c2b1da5a4f4",
+      "bytes": 6319
+    },
+    "$piece_stavedecobeam67": {
+      "file": "stave_deco_beam_67.png",
+      "git_blob_sha": "a674b7712ae9d3797e7713742c17ac072016f53c",
+      "bytes": 4950
+    },
+    "$piece_stavegate": {
+      "file": "stave_gate.png",
+      "git_blob_sha": "9590a401e9e78ee2b67a3f7922c836495139a0f8",
+      "bytes": 8442
+    },
+    "$piece_stavewallrooftop67": {
+      "file": "stave_wall_cross_67.png",
+      "git_blob_sha": "4d126ba8f6a083170c67b9954ecb3b74149ba386",
+      "bytes": 8219
+    },
+    "$piece_stonearch": {
+      "file": "stone_arch.png",
+      "git_blob_sha": "891b1a337025fa02fa04f06c936a002cf976e324",
+      "bytes": 10025
+    },
+    "$piece_stonecutter": {
+      "file": "piece_stonecutter.png",
+      "git_blob_sha": "a51f78876e4e9feff450a3a009fe19dc46a8d273",
+      "bytes": 13452
+    },
+    "$piece_stonefence": {
+      "file": "stone_fence.png",
+      "git_blob_sha": "118f92b70a80241a265005cc1a9052f5c2bc5d7d",
+      "bytes": 13245
+    },
+    "$piece_stonefloor2x2": {
+      "file": "stone_floor_2x2.png",
+      "git_blob_sha": "bb7b2457a91ce0537eaf28a5edf9299782b7776a",
+      "bytes": 14950
+    },
+    "$piece_stonepile": {
+      "file": "stone_pile.png",
+      "git_blob_sha": "1d7649072b0472e5d7ad61cee0d343bee4c81e82",
+      "bytes": 9991
+    },
+    "$piece_stonepillar": {
+      "file": "stone_pillar.png",
+      "git_blob_sha": "9db9dcb56b9ee22c693cd2bf37d4a9d39d580d70",
+      "bytes": 11776
+    },
+    "$piece_stonestair": {
+      "file": "stone_stair.png",
+      "git_blob_sha": "dbb4ec03938ea4c3092d8fc4cebb22e622e2dd0f",
+      "bytes": 17548
+    },
+    "$piece_stonethrone": {
+      "file": "piece_throne02.png",
+      "git_blob_sha": "83181d4f1f4873c60f1e5d858623b468f1ae1b17",
+      "bytes": 9594
+    },
+    "$piece_stonewall1x1": {
+      "file": "stone_wall_1x1.png",
+      "git_blob_sha": "3de07cf7e51fa648b9e41907028d1e1592c9f17a",
+      "bytes": 12703
+    },
+    "$piece_stonewall2x1": {
+      "file": "stone_wall_2x1.png",
+      "git_blob_sha": "08400931352ae36a09cb96c3d1a9f3c43aa21876",
+      "bytes": 14817
+    },
+    "$piece_stonewall4x2": {
+      "file": "stone_wall_4x2.png",
+      "git_blob_sha": "6b48ac55c674abbfc5a265bcf6841310467eaee8",
+      "bytes": 16485
+    },
+    "$piece_stool": {
+      "file": "piece_chair.png",
+      "git_blob_sha": "a0ab62cb2af5834784c48e9839fcfbd47d96c9d5",
+      "bytes": 10542
+    },
+    "$piece_table": {
+      "file": "piece_table.png",
+      "git_blob_sha": "3bf44f73cf27a9aa26d9a05e808318b590f7ae94",
+      "bytes": 10221
+    },
+    "$piece_table_oak": {
+      "file": "piece_table_oak.png",
+      "git_blob_sha": "85518eb206059fa424dc35e9b09ab26cee9355b9",
+      "bytes": 8377
+    },
+    "$piece_table_round": {
+      "file": "piece_table_round.png",
+      "git_blob_sha": "26b27c06c7762abe29b11bc75e90388c994ffb4d",
+      "bytes": 7736
+    },
+    "$piece_table_runed": {
+      "file": "piece_table_runed.png",
+      "git_blob_sha": "76c91909d19a19ddf5df3c2a2937f4edd2f0b601",
+      "bytes": 8056
+    },
+    "$piece_table_runed_small": {
+      "file": "piece_table_runed_small.png",
+      "git_blob_sha": "ba16bb9ee7e91f5354d55b4b707dd62a3eb261e8",
+      "bytes": 13365
+    },
+    "$piece_throne01": {
+      "file": "piece_throne01.png",
+      "git_blob_sha": "f3b504f2ef9b5acc3bffcddd855d0195a03ec23c",
+      "bytes": 10129
+    },
+    "$piece_tinbarstack": {
+      "file": "bar_tin_stack.png",
+      "git_blob_sha": "2d9f6cc3c6e611a0852c629a6364d71f1eff4efe",
+      "bytes": 8970
+    },
+    "$piece_trainingdummy": {
+      "file": "piece_TrainingDummy.png",
+      "git_blob_sha": "e0a163cc21bce4f93db8a61647b2a7dcc0b8a858",
+      "bytes": 7573
+    },
+    "$piece_trap": {
+      "file": "piece_trap_troll.png",
+      "git_blob_sha": "37ee6445e252064cbb346f04c8ba20ee7c4e0df3",
+      "bytes": 7954
+    },
+    "$piece_treasure_pile": {
+      "file": "treasure_pile.png",
+      "git_blob_sha": "7b975b8ee5000c2cf3a3f169f65c52f3ba8d5781",
+      "bytes": 9771
+    },
+    "$piece_treasure_stack": {
+      "file": "treasure_stack.png",
+      "git_blob_sha": "3182115c8098de55ed7ae708664490d4fe4b1131",
+      "bytes": 6061
+    },
+    "$piece_turret": {
+      "file": "piece_turret.png",
+      "git_blob_sha": "2d5ec29b201c1168b1359e879e3661af74847e7d",
+      "bytes": 8092
+    },
+    "$piece_windmill": {
+      "file": "windmill.png",
+      "git_blob_sha": "51ed7397fa0068eb48a9b1d5c39b31925aabd8f1",
+      "bytes": 13984
+    },
+    "$piece_wisplure": {
+      "file": "piece_wisplure.png",
+      "git_blob_sha": "ec1ae5beb9bd900af480ed2e1b2e157f72a2f308",
+      "bytes": 8876
+    },
+    "$piece_woodbeam1": {
+      "file": "wood_beam_1.png",
+      "git_blob_sha": "f0878c54f7e679004d53f3848a62af13f1dc8208",
+      "bytes": 11710
+    },
+    "$piece_woodbeam2": {
+      "file": "wood_beam.png",
+      "git_blob_sha": "a03e855cb12e219127f35217ed131da7a4457e8f",
+      "bytes": 10302
+    },
+    "$piece_woodbeam26": {
+      "file": "wood_beam_26.png",
+      "git_blob_sha": "c91355e506bc9d180be37cf962e096c2a60f708e",
+      "bytes": 9959
+    },
+    "$piece_woodbeam45": {
+      "file": "wood_beam_45.png",
+      "git_blob_sha": "093eb41b9f0b1a0638d663db41dc1e082d1ef6f9",
+      "bytes": 7818
+    },
+    "$piece_woodbeam67": {
+      "file": "wood_beam_67.png",
+      "git_blob_sha": "152976ac970ce396f9ce596e5e7dcdcbd77261c1",
+      "bytes": 5612
+    },
+    "$piece_woodcorestack": {
+      "file": "wood_core_stack.png",
+      "git_blob_sha": "f21cd219a21a911f54c56b1f057b374bcc0ede18",
+      "bytes": 14571
+    },
+    "$piece_wooddoor": {
+      "file": "wood_door.png",
+      "git_blob_sha": "b9357b35faa5b610257d0822c1933fce3d38ba97",
+      "bytes": 11570
+    },
+    "$piece_wooddragon": {
+      "file": "wood_dragon1.png",
+      "git_blob_sha": "698c620ce60e2c942bc5b7ad989edfde63ab3fcd",
+      "bytes": 6765
+    },
+    "$piece_woodfence": {
+      "file": "wood_fence.png",
+      "git_blob_sha": "df59c87a791fc46ff898fd3771e225535bdf18d0",
+      "bytes": 8347
+    },
+    "$piece_woodfencegate": {
+      "file": "wood_fence_gate.png",
+      "git_blob_sha": "9d48634a084afaadfa3d2676e6e254a1aa5525cd",
+      "bytes": 6681
+    },
+    "$piece_woodfinestack": {
+      "file": "wood_fine_stack.png",
+      "git_blob_sha": "45407d2b0e29b641850e6e6d9e6acf75a8d17b7b",
+      "bytes": 16480
+    },
+    "$piece_woodfloor1x1": {
+      "file": "wood_floor_1x1.png",
+      "git_blob_sha": "ba29dec54c0d87d0723af9b89a5c0d181acfd67d",
+      "bytes": 8341
+    },
+    "$piece_woodfloor2x2": {
+      "file": "wood_floor.png",
+      "git_blob_sha": "a9cb434eaa39c110a59fcb14fdd551efa13ee29a",
+      "bytes": 9784
+    },
+    "$piece_woodfroststack": {
+      "file": "wood_frost_stack.png",
+      "git_blob_sha": "f75b9d91317a75c33f2cd9620b50a4793654e019",
+      "bytes": 14709
+    },
+    "$piece_woodgate": {
+      "file": "wood_gate.png",
+      "git_blob_sha": "2b1a24588efbdc1fe23792acb167b2f5f8f4c29d",
+      "bytes": 8945
+    },
+    "$piece_woodironbeam": {
+      "file": "woodiron_beam.png",
+      "git_blob_sha": "e128f0630b6e10f99f5ceeb427fd0499fe83b032",
+      "bytes": 9289
+    },
+    "$piece_woodironbeam_26": {
+      "file": "woodiron_beam_26.png",
+      "git_blob_sha": "0c3a123059fe0f1101d2bd753db6a2b30b210c85",
+      "bytes": 9855
+    },
+    "$piece_woodironbeam_45": {
+      "file": "woodiron_beam_45.png",
+      "git_blob_sha": "48cbb8db8d067aa7492888fcc56d3c86ceb5a0a0",
+      "bytes": 7483
+    },
+    "$piece_woodironpole": {
+      "file": "woodiron_pole.png",
+      "git_blob_sha": "59e9b54d390ab1251847934d45619178fd75976c",
+      "bytes": 7028
+    },
+    "$piece_woodlog26": {
+      "file": "wood_log_26.png",
+      "git_blob_sha": "a98003df1f25bf35cd60398ea178098ef03cf2db",
+      "bytes": 8882
+    },
+    "$piece_woodlog45": {
+      "file": "wood_log_45.png",
+      "git_blob_sha": "b6cf22b51e790822ffb09c01373283cce4561686",
+      "bytes": 7319
+    },
+    "$piece_woodlog67": {
+      "file": "wood_log_67.png",
+      "git_blob_sha": "f87be912db399a183384093a7cb5167f7aca9327",
+      "bytes": 4663
+    },
+    "$piece_woodpole": {
+      "file": "wood_pole.png",
+      "git_blob_sha": "786bb59fa831ee941785828a5d721407fed9405d",
+      "bytes": 7791
+    },
+    "$piece_woodpole2": {
+      "file": "wood_pole2.png",
+      "git_blob_sha": "8304387ec61036d8e4b62b1cbcecb533f5625c6d",
+      "bytes": 6124
+    },
+    "$piece_woodroof26": {
+      "file": "wood_roof.png",
+      "git_blob_sha": "9d8f7bbfa1376ae50ad5fbfb1fb5f5c0c8588480",
+      "bytes": 15809
+    },
+    "$piece_woodroof45": {
+      "file": "wood_roof_45.png",
+      "git_blob_sha": "7f1685338f2f7d52498b3c71a34c10f571d0c38c",
+      "bytes": 14459
+    },
+    "$piece_woodroof67": {
+      "file": "wood_roof_67.png",
+      "git_blob_sha": "da8b9aa616e7aa9d4b6d065b36fc62d3f97df470",
+      "bytes": 10378
+    },
+    "$piece_woodrooficorner": {
+      "file": "wood_roof_icorner.png",
+      "git_blob_sha": "142a03fa9d7865860532f6c9e6f476cdc4ab4fff",
+      "bytes": 8564
+    },
+    "$piece_woodrooficorner45": {
+      "file": "wood_roof_icorner_45.png",
+      "git_blob_sha": "1b1a201c46ad13a410f87381ec75992464506e55",
+      "bytes": 8962
+    },
+    "$piece_woodrooficorner67": {
+      "file": "wood_roof_icorner_67.png",
+      "git_blob_sha": "9ff664ef7189bd950c580549133caf8d602f26e7",
+      "bytes": 6935
+    },
+    "$piece_woodroofocorner": {
+      "file": "wood_roof_ocorner.png",
+      "git_blob_sha": "696da1103a1863a78dd3f7746485b09a5a9b9da9",
+      "bytes": 9070
+    },
+    "$piece_woodroofocorner45": {
+      "file": "wood_roof_ocorner_45.png",
+      "git_blob_sha": "552c3673bd068d24b3171b4aaeffe124ec79e21e",
+      "bytes": 8967
+    },
+    "$piece_woodroofocorner67": {
+      "file": "wood_roof_ocorner_67.png",
+      "git_blob_sha": "943dc3ff51ac22efd7494d218d93bcb30e08aeab",
+      "bytes": 6981
+    },
+    "$piece_woodrooftop": {
+      "file": "wood_roof_top.png",
+      "git_blob_sha": "e64cfd3ad913c532fc5c4646d0381e5a1c877002",
+      "bytes": 10881
+    },
+    "$piece_woodrooftop45": {
+      "file": "wood_roof_top_45.png",
+      "git_blob_sha": "5757c6bd0415e4ee8eee3f875297deac640f5706",
+      "bytes": 12503
+    },
+    "$piece_woodrooftop67": {
+      "file": "wood_roof_top_67.png",
+      "git_blob_sha": "ad2a7154df841368e5e838209b09c52846e9be9a",
+      "bytes": 13163
+    },
+    "$piece_woodstack": {
+      "file": "Placeable_HardRock.png",
+      "git_blob_sha": "81a51fdd12ad2509fbc55fd5fc5f7c384c65f881",
+      "bytes": 7850
+    },
+    "$piece_woodstair": {
+      "file": "wood_stair.png",
+      "git_blob_sha": "a6d3ac50205aeea8d5af87ed0008ad24f5a9827e",
+      "bytes": 14168
+    },
+    "$piece_woodstepladder": {
+      "file": "wood_stepladder.png",
+      "git_blob_sha": "57aa32275dff04059db4def3bbadc18a0bf0b53d",
+      "bytes": 9245
+    },
+    "$piece_woodwall": {
+      "file": "woodwall.png",
+      "git_blob_sha": "57488ec5ba28954a958e93c86ece606d05250946",
+      "bytes": 11818
+    },
+    "$piece_woodwallhalf": {
+      "file": "wood_wall_half.png",
+      "git_blob_sha": "116e7b30045535f7d3f604682d3f140130e14f6f",
+      "bytes": 13670
+    },
+    "$piece_woodwallquarter": {
+      "file": "wood_wall_quarter.png",
+      "git_blob_sha": "1e2b3d8dd91bf0f4191552c6702c27d31aacef80",
+      "bytes": 10480
+    },
+    "$piece_woodwallroof": {
+      "file": "wood_wall_roof_a.png",
+      "git_blob_sha": "d8b82b1b6964f4ffab50ae0353a890306064add2",
+      "bytes": 9683
+    },
+    "$piece_woodwallroof_upsidedown": {
+      "file": "wood_wall_roof_upsidedown.png",
+      "git_blob_sha": "90994a6d50a79d12470dab90df1372010e80388f",
+      "bytes": 8065
+    },
+    "$piece_woodwallroof45": {
+      "file": "wood_wall_roof_45.png",
+      "git_blob_sha": "9a318be96cddbfb774c6eaabfbc20b9296e34df2",
+      "bytes": 7990
+    },
+    "$piece_woodwallroof45_upsidedown": {
+      "file": "wood_wall_roof_45_upsidedown.png",
+      "git_blob_sha": "43d50a47ead164e8c300d60a4a3095e48248c1a8",
+      "bytes": 7208
+    },
+    "$piece_woodwallroof67": {
+      "file": "wood_wall_roof_67_a.png",
+      "git_blob_sha": "6fc1f067a71501a5d692d55faeafa88d15ae7a7a",
+      "bytes": 6932
+    },
+    "$piece_woodwallroof67upsidedown": {
+      "file": "wood_wall_roof_67_upsidedown.png",
+      "git_blob_sha": "db7cd53073495b146eebedd080331fb7302ed3fc",
+      "bytes": 6537
+    },
+    "$piece_woodwallrooftop": {
+      "file": "wood_wall_roof_top.png",
+      "git_blob_sha": "5d63175156961aeab3ac91e4968abed05c4d148c",
+      "bytes": 11000
+    },
+    "$piece_woodwallrooftop45": {
+      "file": "wood_wall_roof_top_45.png",
+      "git_blob_sha": "a44ead5be1ca02ea235fe307a4a88d91abd95a6c",
+      "bytes": 9274
+    },
+    "$piece_woodwallrooftop67": {
+      "file": "wood_wall_roof_top_67.png",
+      "git_blob_sha": "852f7bbca3c75609907d9d172cf8eba8b5cc7b5b",
+      "bytes": 8007
+    },
+    "$piece_woodwindowshutter": {
+      "file": "wood_window.png",
+      "git_blob_sha": "5001e2ca91588852937894e771ae9a332fe9fbcf",
+      "bytes": 10799
+    },
+    "$piece_workbench": {
+      "file": "piece_workbench.png",
+      "git_blob_sha": "73e8f477413373deb0fecd6fd72b1be3f9140c13",
+      "bytes": 12705
+    },
+    "$piece_workbench_ext1": {
+      "file": "piece_workbench_ext1.png",
+      "git_blob_sha": "21c44a7f9c7c88385bf90e1dbeff28551b81992a",
+      "bytes": 12248
+    },
+    "$piece_workbench_ext2": {
+      "file": "piece_workbench_ext2.png",
+      "git_blob_sha": "91dc9890dec7a8eba9f65edb5a21cf6ce83068ca",
+      "bytes": 8598
+    },
+    "$piece_workbench_ext3": {
+      "file": "piece_workbench_ext3.png",
+      "git_blob_sha": "4feecdcd9676e366688ff65860a8f06aaa3e67aa",
+      "bytes": 10960
+    },
+    "$piece_workbench_ext4": {
+      "file": "piece_workbench_ext4.png",
+      "git_blob_sha": "49570c7c42693cfd32de560df23b4da13672eabb",
+      "bytes": 12157
+    },
+    "$piece_yggdrasilstack": {
+      "file": "wood_yggdrasil_stack.png",
+      "git_blob_sha": "d11317a73bce937f74dbac4cf439a91e82f10f8e",
+      "bytes": 10629
+    },
+    "$piece_yulecrown": {
+      "file": "piece_xmascrown.png",
+      "git_blob_sha": "08b9f183b1e0fa1990d5b3ee54933c1112789aa8",
+      "bytes": 9346
+    },
+    "$piece_yulegarland": {
+      "file": "piece_xmasgarland.png",
+      "git_blob_sha": "c9e7f1ad45f043f22a621e2f1aa2a147fa470790",
+      "bytes": 8451
+    },
+    "$piece_yuleklapp": {
+      "file": "piece_gift1.png",
+      "git_blob_sha": "d00fd7ee41ef06172ce742bfe0354f6bcd53c1b3",
+      "bytes": 10899
+    },
+    "$piece_yuletree": {
+      "file": "piece_xmastree.png",
+      "git_blob_sha": "f94136d5664b02a0dcc3b231f0626737aa914acd",
+      "bytes": 7542
+    }
+  }
+}
