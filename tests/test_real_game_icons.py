@@ -60,6 +60,21 @@ class RealGameIconsTests(unittest.TestCase):
             "$item_sword_iron": "SwordIron", "$item_wood": "Wood"
         })
 
+    def test_only_matching_creature_trophies_are_used(self):
+        from tools.bundle_inventory_sprites import matching_creature_trophies
+        matched = matching_creature_trophies(
+            {"TrophyAbomination": "TrophyAbomination",
+             "TrophyDraugr": "TrophyDraugr"},
+            [{"token": "$enemy_abomination"},
+             {"token": "$enemy_draugr"},
+             {"token": "$enemy_greyling"},
+             {"token": "$item_abomination"}],
+        )
+        self.assertEqual(matched, {
+            "$enemy_abomination": "TrophyAbomination",
+            "$enemy_draugr": "TrophyDraugr",
+        })
+
     def test_audit_reports_exact_catalogue_coverage(self):
         if not (ROOT / "assets" / "GAME_ICONS_AUDIT.json").exists():
             self.skipTest("Audit seulement lors du build Windows")
@@ -71,6 +86,11 @@ class RealGameIconsTests(unittest.TestCase):
             len(audit["catalogue_tokens_matched"])
         )
         self.assertGreater(audit["catalogue_exact_matches"], 0)
+        self.assertGreater(len(audit["creature_trophies"]), 0)
+        from real_assets import creature_trophy_icon
+        for token in audit["creature_trophies"]:
+            with self.subTest(creature=token):
+                self.assertFalse(creature_trophy_icon(token).isNull())
 
     def test_inventory_pack_is_complete_and_the_images_are_real_png(self):
         if not self.catalog_path.exists():
