@@ -20,6 +20,7 @@ from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
 from game_visuals import required_inventory_items
+from collection_catalog import catalogue
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "assets"
@@ -55,6 +56,27 @@ def sprite_index(csv_content):
     return index
 
 
+def matching_catalogue_items(sprite_names, catalogue_rows):
+    """Correspondances STRICTES entre prefabs Valheim et objets du CSV.
+
+    Aucun rapprochement flou : un nom de créature ou de pièce construit
+    ne devient jamais, par accident, le sprite d'une arme.
+    """
+    by_slug = {}
+    for name in sorted(sprite_names):
+        by_slug.setdefault(slug(name), name)
+    matched = {}
+    for entry in catalogue_rows:
+        token = str(entry.get("token", "")).lstrip("$")
+        if not (token.startswith("item_") or token.startswith("pickable_")):
+            continue
+        prefix, raw = token.split("_", 1)
+        exact = by_slug.get(slug(raw))
+        if exact:
+            matched[token] = exact
+    return matched
+
+
 def read_icon(item, sprite):
     address = SOURCE + "/sprites/" + urllib.parse.quote(sprite) + ".png"
     payload = fetch_bytes(address)
@@ -78,12 +100,19 @@ def build_inventory_icons():
     if not catalog_file.is_file():
         raise RuntimeError("L'index Steam doit être généré avant les objets Valheim")
     catalog = json.loads(catalog_file.read_text(encoding="utf-8"))
-    names = required_inventory_items()
+    must_have = required_inventory_items()
     csv_bytes = fetch_bytes(SOURCE + "/items2sprites.csv", 300_000)
     entries = sprite_index(csv_bytes)
-    missing = sorted(names - set(entries))
+    missing = sorted(must_have - set(entries))
     if missing:
         raise RuntimeError(f"Correspondances absentes de la source : {missing}")
+    matches = matching_catalogue_items(entries, catalogue())
+    names = set(must_have) | set(matches.values())
+    print(
+        f"CATALOGUE : {len(matches)} correspondance(s) exactes "
+        f"sur {len(catalogue())} entrées, {len(names)} objets à intégrer",
+        flush=True,
+    )
 
     root = BASE / "items"
     root.mkdir(parents=True, exist_ok=True)
@@ -126,6 +155,9 @@ def build_inventory_icons():
         "source_repo": "djcdevelopment/chest-seer",
         "source_revision": REVISION,
         "selected_icons": len(result),
+        "catalogue_exact_matches": len(matches),
+        "catalogue_total": len(catalogue()),
+        "catalogue_tokens_matched": sorted(matches),
         "sha256": {name: hashlib.sha256((root / filename).read_bytes()).hexdigest()
                    for name, filename in sorted(result.items())},
     }
