@@ -27,6 +27,7 @@ MAX_VISIBLE = 350
 class CollectionPage(QWidget):
     wiki_item_done = Signal(str)
     wiki_batch_done = Signal(int, int)
+    game_import_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -61,6 +62,11 @@ class CollectionPage(QWidget):
         self.wiki_button.setToolTip("Télécharge uniquement les images manquantes des éléments affichés, au maximum 20 par action.")
         self.wiki_button.clicked.connect(self._fetch_missing)
         wiki_controls.addWidget(self.wiki_button)
+        self.game_import_button = QPushButton("Importer les images depuis Valheim installé")
+        self.game_import_button.setObjectName("collectionImportRealImages")
+        self.game_import_button.setToolTip("Ouvre l'extracteur existant : uniquement des sprites de ton jeu, aucun mod.")
+        self.game_import_button.clicked.connect(self.game_import_requested.emit)
+        wiki_controls.addWidget(self.game_import_button)
         self.wiki_clear=QPushButton("Vider les images wiki")
         self.wiki_clear.clicked.connect(self._clear_wiki_cache)
         wiki_controls.addWidget(self.wiki_clear)
@@ -90,6 +96,9 @@ class CollectionPage(QWidget):
         self.image_filter.addItem("Toutes les images", "all")
         self.image_filter.addItem("Avec illustration", "available")
         self.image_filter.addItem("Sans illustration", "missing")
+        self.image_filter.addItem("Sprites exacts du jeu", "game")
+        self.image_filter.addItem("Images du Wiki", "wiki")
+        self.image_filter.addItem("Trophées associés", "trophy")
         self.image_filter.currentIndexChanged.connect(self.render)
         filters.addWidget(self.image_filter, 2)
         outer.addLayout(filters)
@@ -278,6 +287,8 @@ class CollectionPage(QWidget):
                 picture_filter == "all"
                 or (picture_filter == "available" and self.image_state(e["token"]) != "missing")
                 or (picture_filter == "missing" and self.image_state(e["token"]) == "missing")
+                or (picture_filter in ("game", "wiki", "trophy")
+                    and self.image_state(e["token"]) == picture_filter)
             )
         ]
         self.filtered_entries = filtered
