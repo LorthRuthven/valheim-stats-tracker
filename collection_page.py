@@ -152,6 +152,13 @@ class CollectionPage(QWidget):
         self.image_link.setEnabled(False)
         self.image_link.clicked.connect(self._open_image_source)
         detail_layout.addWidget(self.image_link)
+        self.wiki_selected_button=QPushButton("Chercher le portrait / l'image sur le Wiki")
+        self.wiki_selected_button.setObjectName("collectionFetchSelectedWiki")
+        self.wiki_selected_button.setToolTip(
+            "Recherche l'image de cette entrée seulement, sans modifier les données du jeu."
+        )
+        self.wiki_selected_button.clicked.connect(self._fetch_selected)
+        detail_layout.addWidget(self.wiki_selected_button)
         detail_layout.addStretch(1)
         # Un panneau scrollable évite que Qt compresse ses QLabel au point
         # de superposer le nom de l'objet et l'illustration sur un écran Full HD.
@@ -279,6 +286,7 @@ class CollectionPage(QWidget):
             self.detail_evidence.clear()
             self.preview.clear()
             self.preview.setText("Aucune icône à afficher")
+            self.wiki_selected_button.hide()
             return
         entry = self.visible_entries[index]
         self.detail_title.setText(entry["name"])
@@ -316,6 +324,18 @@ class CollectionPage(QWidget):
                 description = "Aucune illustration exacte ou liée à cette entrée n'est disponible."
             self.image_source.setText(description)
             self.image_link.setEnabled(False)
+        can_wiki = (game_icon(entry["token"]).isNull()
+                    and self.wiki_cache.cached_image(entry["token"]) is None
+                    and wiki_title(entry["token"]) is not None)
+        retry_available = (can_wiki and self.wiki_cache.can_attempt(entry["token"]))
+        self.wiki_selected_button.setVisible(can_wiki)
+        self.wiki_selected_button.setEnabled(retry_available and not self._wiki_busy)
+        if can_wiki and not retry_available:
+            reason = self.wiki_cache.last_error(entry["token"])
+            self.wiki_selected_button.setToolTip(
+                "Recherche déjà effectuée récemment : " +
+                (reason or "nouvel essai possible après six heures.")
+            )
         if (self._wiki_active and visual.isNull() and not self._wiki_busy
                 and self.wiki_cache.can_attempt(entry["token"])):
             self.wiki_timer.start(380)
