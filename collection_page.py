@@ -48,7 +48,7 @@ class CollectionPage(QWidget):
 
         overview, summary_layout = panel(
             "ENCYCLOPÉDIE DU DIXIÈME MONDE",
-            "Véritables icônes de ton installation Valheim. Les compteurs de sauvegarde "
+            "Véritables sprites du jeu (pack inclus ou extraction locale), et illustrations du Wiki. Les compteurs "
             "indiquent une activité, jamais un statut de découverte garanti."
         )
         self.summary = label("Chargement du catalogue…", muted=True, wrap=True)
@@ -96,7 +96,7 @@ class CollectionPage(QWidget):
         split = QSplitter(Qt.Orientation.Horizontal)
         list_frame, list_layout = panel(
             "CATALOGUE ILLUSTRÉ",
-            "Les illustrations proviennent de tes fichiers de jeu, pas de dessins génériques."
+            "Icônes authentiques du jeu et images Wiki attribuées, sans illustrations inventées."
         )
         self.table = QTableWidget(0, 3)
         self.table.setObjectName("collectionTable")
@@ -237,7 +237,7 @@ class CollectionPage(QWidget):
             f"  •  {len(filtered)} correspondent aux filtres"
             + (f"  •  {MAX_VISIBLE} premières affichées (affine ta recherche)"
                if len(filtered) > MAX_VISIBLE else "")
-            + f"\\nIllustrations : {stats['game']} sprites du jeu  •  "
+            + f"\nIllustrations : {stats['game']} sprites du jeu  •  "
               f"{stats['wiki']} images Wiki  •  {stats['missing']} sans image"
         )
         self.table.blockSignals(True)
@@ -411,7 +411,7 @@ class CollectionPage(QWidget):
             for token in self._wiki_targets
             if self.wiki_cache.last_error(token)
         ]
-        example = ("\\nExemple d'échec : " + problems[0]
+        example = ("\nExemple d'échec : " + problems[0]
                    if problems and found < total else "")
         self.wiki_status.setText(
             f"Valheim Wiki : {found} nouvelle(s) image(s) sur {total} tentative(s). "
