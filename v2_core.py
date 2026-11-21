@@ -23,7 +23,7 @@ from valheim_reader import (
     metrics, prefab_label,
 )
 
-VERSION = "2.5.1"
+VERSION = "2.5.2"
 DATA_FOLDER = "ValheimStatsTracker"
 GAP_SECONDS = 90 * 60
 
@@ -35,7 +35,7 @@ def app_dir() -> Path:
 
 
 def backup_before_update(directory: Path, version: str = VERSION) -> Path | None:
-    """Sauvegarde les données de progression avant la première ouverture 2.5.1.
+    """Sauvegarde les données de progression avant la première ouverture 2.5.2.
 
     La copie SQLite est cohérente, même si le journal WAL existe ; elle inclut
     les snapshots et archives de personnages. On conserve en plus les réglages
