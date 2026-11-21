@@ -777,9 +777,29 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
 
 def main():
     import sys
+    from windows_install import handoff_if_newer
+    if handoff_if_newer(VERSION):
+        return 0
     app=QApplication(sys.argv);app.setApplicationName('Valheim Stats Tracker');app.setStyle('Fusion')
     window=NordicWindow();window.show()
     return app.exec()
+
+def _verify_update_ready(expected_version):
+    """Controle reel du nouveau programme avant son activation automatique."""
+    if VERSION != expected_version:
+        raise RuntimeError("La version du programme ne correspond pas au ZIP.")
+    from tempfile import TemporaryDirectory
+    app = QApplication.instance() or QApplication([])
+    with TemporaryDirectory() as folder:
+        store = TrackerStore(folder)
+        try:
+            window = NordicWindow(store)
+            if window.stack.count() != 12 or window.update_controller is None:
+                raise RuntimeError("Interface incomplete dans l'EXE candidat.")
+            window.close()
+        finally:
+            store.close()
+
 
 def _verify_unitypy_bundle():
     """Teste l'exécutable réellement compilé : régression UnityPy.resources."""
@@ -913,6 +933,15 @@ def _verify_game_sprites_bundle():
 
 if __name__=='__main__':
     import sys
+    if '--verify-update-ready' in sys.argv:
+        try:
+            expected = sys.argv[sys.argv.index('--verify-update-ready') + 1]
+            _verify_update_ready(expected)
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            sys.exit(25)
+        sys.exit(0)
     if '--verify-real-icons' in sys.argv:
         try:
             _verify_game_sprites_bundle()
