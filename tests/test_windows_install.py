@@ -56,7 +56,7 @@ class IntegratedUpdateTests(unittest.TestCase):
         self.assertEqual(executable.read_bytes(), b"MZ-Windows-fake")
         self.assertEqual(self.original.read_bytes(), b"ANCIEN EXE")
         self.assertEqual(self.historical.read_bytes(), b"INTOUCHABLE - succes et archives utilisateur")
-        self.assertEqual([c[0] for c in controls], ["scan", "probe", "backup"])
+        self.assertEqual([c[0] for c in controls], ["scan", "backup", "probe"])
         self.assertEqual(active_executable("2.5.1", program_root=self.versions, marker=self.state), executable)
         self.assertIsNone(active_executable("2.5.2", program_root=self.versions, marker=self.state))
         state = json.loads(self.state.read_text(encoding="utf-8"))
