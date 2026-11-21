@@ -61,6 +61,30 @@ class SafeWindowsUpdateTests(unittest.TestCase):
             self.assertEqual(len(list((root / "updates").rglob("*.ps1"))), 0)
             validate_archive(archive)
 
+    def test_official_251_is_detected_as_new_version_with_digest(self):
+        import json
+        version = "2.5.1"
+        name = "Valheim_Stats_Tracker_v2.5.1_Windows.zip"
+        url = f"https://github.com/{windows_update.REPO}/releases/download/v{version}/{name}"
+        payload = json.dumps({
+            "tag_name": "v2.5.1",
+            "assets": [{"name": name, "browser_download_url": url,
+                        "digest": "sha256:" + "a" * 64}],
+        }).encode("utf8")
+        result = windows_update.check_release(
+            "2.5.0",
+            opener=lambda *_, **__: FakeResponse(payload, windows_update.API),
+        )
+        self.assertTrue(result["available"])
+        self.assertEqual(result["version"], "2.5.1")
+        self.assertEqual(result["url"], url)
+        self.assertEqual(result["sha256"], "a" * 64)
+        result_same = windows_update.check_release(
+            "2.5.1",
+            opener=lambda *_, **__: FakeResponse(payload, windows_update.API),
+        )
+        self.assertFalse(result_same["available"])
+
     def test_sha256_mismatch_refuses_download(self):
         data = package_bytes()
         with tempfile.TemporaryDirectory() as folder:
