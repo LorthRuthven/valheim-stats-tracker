@@ -185,8 +185,11 @@ jobs:
           retention-days: 7
 
   release:
-    # Aucune publication automatique tant que la version n'a pas été approuvée.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.VALHEIM_WINDOWS_APPROVED_VERSION == '2.5.0'
+    # Autorisation strictement bornee a la V2.5.1 :
+    # - variable GitHub sur cette version ; ou
+    # - marqueur d'approbation explicite dans le commit de fusion de la PR,
+    #   autorise par le proprietaire du projet. Aucun push ordinaire ne publie.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.VALHEIM_WINDOWS_APPROVED_VERSION == '2.5.1' || contains(github.event.head_commit.message, '[approve-v2.5.1-release]'))
     needs: [tests, windows]
     runs-on: ubuntu-latest
     steps:
