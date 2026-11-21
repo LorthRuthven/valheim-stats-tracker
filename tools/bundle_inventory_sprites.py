@@ -67,13 +67,14 @@ def matching_catalogue_items(sprite_names, catalogue_rows):
         by_slug.setdefault(slug(name), name)
     matched = {}
     for entry in catalogue_rows:
-        token = str(entry.get("token", "")).lstrip("$")
+        original = str(entry.get("token", ""))
+        token = original.lstrip("$")
         if not (token.startswith("item_") or token.startswith("pickable_")):
             continue
-        prefix, raw = token.split("_", 1)
+        _prefix, raw = token.split("_", 1)
         exact = by_slug.get(slug(raw))
         if exact:
-            matched[token] = exact
+            matched[original] = exact
     return matched
 
 
