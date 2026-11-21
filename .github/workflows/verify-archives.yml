@@ -18,7 +18,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y python3-tk
       - name: Vérifier les fichiers Python
-        run: python3 -m py_compile character_archive.py viking_stats_page.py nordic_ui.py valheim_reader.py v2_core.py windows_install.py windows_update_ui.py
+        run: python3 -m py_compile character_archive.py viking_stats_page.py nordic_ui.py valheim_reader.py v2_core.py windows_install.py windows_update_ui.py collection_gallery.py collection_page.py
       - name: Tester le moteur et le cumul des personnages
         run: python3 -m unittest discover -s tests -v
 
