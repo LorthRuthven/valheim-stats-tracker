@@ -46,7 +46,13 @@ def _find_asset(kind,key):
     name=entries.get(_slug(key))
     if not isinstance(name,str) or '/' in name or '\\' in name or '..' in name:
         return QIcon()
-    return _qicon(bundled_assets()/('achievements' if kind=='achievements' else 'pieces' if kind=='pieces' else 'items')/name)
+    folders = {
+        'achievements': 'achievements', 'pieces': 'pieces', 'items': 'items',
+        'jotunn_items': 'jotunn_items', 'jotunn_characters': 'jotunn_characters',
+        'jotunn_prefabs': 'jotunn_prefabs', 'jotunn_world': 'jotunn_world',
+    }
+    folder = folders.get(kind)
+    return _qicon(bundled_assets()/folder/name) if folder else QIcon()
 
 def achievement_icon(title):
     # La clé d'affichage française n'est jamais utilisée pour attribuer une mauvaise icône.
@@ -110,6 +116,108 @@ def game_icon(prefab):
         icon=_find_asset('items',variant)
         if not icon.isNull():
             return icon
+    # L'atlas Jötunn fournit un secours AUTHENTIQUE pour les entrées d'objets
+    # que l'ancien pack d'inventaire ne couvrait pas. Aucun match approximatif.
+    is_item = (not prefab.startswith('
+
+def piece_icon(prefab):
+    """Image authentique d'une construction Valheim référencée par le prefab exact.
+
+    Provenance : documentation Jötunn. Ce n'est pas un sprite d'inventaire.
+    """
+    if not isinstance(prefab, str) or not prefab.lower().startswith("$piece_"):
+        return QIcon()
+    return _find_asset("pieces", prefab)
+
+
+def character_icon(prefab):
+    """Portrait de créature tiré des captures Valheim documentées par Jötunn."""
+    if not isinstance(prefab,str) or not prefab.casefold().startswith(
+            ('$enemy_', '$animal_', '$spiritcaller_')):
+        return QIcon()
+    for key in _icon_candidates(prefab):
+        icon = _find_asset('jotunn_characters', key)
+        if not icon.isNull():
+            return icon
+    return QIcon()
+
+
+def world_icon(prefab):
+    """Capture de prefab ou d'outil du monde, avec correspondance exacte."""
+    if not isinstance(prefab,str) or not prefab.casefold().startswith(
+            ('$ship_', '$tool_', '$pickable_', '$piece_')):
+        return QIcon()
+    for key in _icon_candidates(prefab):
+        icon = _find_asset('jotunn_world', key)
+        if not icon.isNull():
+            return icon
+        icon = _find_asset('jotunn_prefabs', key)
+        if not icon.isNull():
+            return icon
+    return QIcon()
+
+
+def creature_trophy_icon(prefab):
+    """Trophée exact du monstre (jamais présenté comme une photo de lui)."""
+    if not isinstance(prefab, str):
+        return QIcon()
+    raw = prefab.strip().lstrip("$")
+    if not raw.startswith(("enemy_", "animal_")):
+        return QIcon()
+    creature = raw.split("_", 1)[-1]
+    return game_icon("Trophy" + creature)
+
+
+def collection_icon(prefab):
+    """Sprite exact > Wiki attribué > véritable trophée du même monstre."""
+    icon=game_icon(prefab)
+    if not icon.isNull():
+        return icon
+    image_piece=piece_icon(prefab)
+    if not image_piece.isNull():
+        return image_piece
+    character = character_icon(prefab)
+    if not character.isNull():
+        return character
+    world = world_icon(prefab)
+    if not world.isNull():
+        return world
+    image=_wiki_cache().cached_image(prefab)
+    if image is not None:
+        image_icon = _qicon(image)
+        if not image_icon.isNull():
+            return image_icon
+    return creature_trophy_icon(prefab)
+
+
+@lru_cache(maxsize=1)
+def _wiki_cache():
+    from wiki_images import WikiImageCache
+    return WikiImageCache()
+
+
+def reset_icon_cache():
+    """Appelé après une nouvelle extraction pour actualiser immédiatement toutes les pages."""
+    _local_aliases.cache_clear()
+    _qicon.cache_clear()
+
+
+def hero_photo():
+    path=bundled_assets()/'hero.jpg'
+    if not path.is_file():
+        return QPixmap()
+    return QPixmap(str(path))
+
+def asset_coverage():
+    index=manifest()
+    return len(index.get('achievements',{})),len(index.get('items',{}))
+) or
+               prefab.casefold().startswith(('$item_', '$pickable_')))
+    if is_item:
+        for variant in variants:
+            icon = _find_asset('jotunn_items', variant)
+            if not icon.isNull():
+                return icon
     return QIcon()
 
 def piece_icon(prefab):
