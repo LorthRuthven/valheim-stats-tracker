@@ -62,4 +62,4 @@ La [dernière release](https://github.com/LorthRuthven/valheim-stats-tracker/rel
 
 ## Mise à jour intégrée de Windows (depuis V2.5.2)
 
-L'application Windows autonome installe et relance les futures versions depuis Réglages → Mises à jour Windows. Le ZIP est vérifié par SHA-256, extrait dans une installation versionnée, analysé avec Defender puis testé avant le redémarrage. L'EXE en cours n'est pas remplacé. Les archives et succès restent dans %LOCALAPPDATA%\ValheimStatsTracker. Les utilisateurs en V2.5.1 doivent installer V2.5.2 une dernière fois manuellement. Voir README_V2.md.
+L'application Windows autonome installe et relance les futures versions depuis Réglages → Mises à jour Windows. Le ZIP est vérifié par SHA-256, extrait dans une installation versionnée, soumis à une vérification de l'état antivirus Windows Security et testé avant le redémarrage. L'EXE en cours n'est pas remplacé. Les archives et succès restent dans %LOCALAPPDATA%\ValheimStatsTracker. Les utilisateurs en V2.5.1 doivent installer V2.5.2 une dernière fois manuellement. Voir README_V2.md.
