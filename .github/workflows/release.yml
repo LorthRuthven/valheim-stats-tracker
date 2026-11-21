@@ -21,7 +21,7 @@ jobs:
       - name: Tester le moteur, l'historique et l'updater
         run: python3 -m unittest discover -s tests -v
       - name: Vérifier les fichiers Python
-        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_update_ui.py game_icon_extraction.py display_scaling.py collection_catalog.py collection_page.py wiki_images.py viking_stats.py viking_stats_page.py stat_pictograms.py tools/fetch_game_assets.py
+        run: python3 -m py_compile app.py valheim_reader.py v2_core.py desktop_v2.py nordic_ui.py restored_pages.py real_assets.py windows_update.py windows_update_ui.py game_icon_extraction.py display_scaling.py collection_catalog.py collection_page.py wiki_images.py viking_stats.py viking_stats_page.py character_archive.py game_visuals.py tools/bundle_inventory_sprites.py tools/fetch_game_assets.py
 
   windows:
     runs-on: windows-latest
@@ -42,6 +42,13 @@ jobs:
         shell: pwsh
         run: |
           python -m tools.fetch_game_assets
+      - name: Ajouter les sprites authentiques aux assets Windows
+        shell: pwsh
+        run: |
+          python -m tools.bundle_inventory_sprites
+          if ($LASTEXITCODE -ne 0) { throw 'Impossible de distribuer sans les sprites Valheim requis' }
+          python -m unittest discover -s tests -p test_real_game_icons.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Couverture des icones Valheim incomplete' }
       - name: Vérifier la nouvelle interface Qt (hors écran)
         shell: pwsh
         run: |
@@ -109,62 +116,66 @@ jobs:
           $test = Start-Process -FilePath $exe -ArgumentList '--verify-wiki-cache' -Wait -PassThru
           if ($test.ExitCode -ne 0) { throw "Cache Wiki ou Pillow indisponible depuis l'EXE : $($test.ExitCode)" }
           Write-Host 'Import Wiki et Pillow depuis EXE : OK'
-      - name: Tester le lancement de PowerShell depuis le programme Windows compilé
+      - name: Tester le contrôle du ZIP depuis le véritable EXE compilé
         shell: pwsh
         run: |
           $exe = Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe'
-          $process = Start-Process -FilePath $exe -ArgumentList '--verify-updater-bootstrap' -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw "L'EXE n'a pas pu lancer PowerShell automatiquement (code $($process.ExitCode))" }
-          Write-Host 'Lancement enfant depuis EXE PyInstaller : OK'
-      - name: Tester remplacement et redémarrage Windows (installation réelle)
+          $check = Start-Process -FilePath $exe -ArgumentList '--verify-safe-updater' -Wait -PassThru
+          if ($check.ExitCode -ne 0) { throw "Le vérificateur ZIP compilé a échoué : $($check.ExitCode)" }
+          Write-Host 'Validation ZIP incluse dans le programme : OK'
+
+      - name: Vérifier l'updater sans processus caché
         shell: pwsh
         run: |
-          python -c 'from windows_update import INSTALL_PS1; from pathlib import Path; Path("dist/install_smoke.ps1").write_text(INSTALL_PS1, encoding="utf-8-sig")'
-          $root = Join-Path $env:RUNNER_TEMP 'valheim-update-smoke'
-          $old = Join-Path $root 'old'
-          $new = Join-Path $root 'new'
-          $backup = Join-Path $root 'backup'
-          $log = Join-Path $root 'install.log'
-          New-Item -ItemType Directory -Force -Path $old, $new | Out-Null
-          Set-Content -LiteralPath (Join-Path $old 'ValheimStatsTracker.exe') -Value 'old executable marker'
-          Set-Content -LiteralPath (Join-Path $old 'version-marker.txt') -Value 'old'
-          Copy-Item -Path 'dist/ValheimStatsTracker/*' -Destination $new -Recurse -Force
-          Set-Content -LiteralPath (Join-Path $new 'version-marker.txt') -Value 'new'
-          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'dist/install_smoke.ps1' -ParentPid 999999 -Source $new -Target $old -Backup $backup -Log $log -SmokeTest
-          $exitCode = $LASTEXITCODE
-          if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log }
-          if ($exitCode -ne 0) { throw "Test réel du script de mise à jour échoué : $exitCode" }
-          if ((Get-Content -LiteralPath (Join-Path $old 'version-marker.txt')) -ne 'new') { throw 'Les nouveaux fichiers ne sont pas installés' }
-          if ((Get-Content -LiteralPath (Join-Path $backup 'version-marker.txt')) -ne 'old') { throw 'Sauvegarde de la version précédente manquante' }
-          if (-not (Select-String -LiteralPath $log -Pattern 'RELAUNCH_TEST_OK' -Quiet)) { throw 'Redémarrage effectif non validé' }
-          Write-Host 'INSTALLATION + REDÉMARRAGE + SAUVEGARDE : OK'
-      - name: Tester un redémarrage bloqué sans annuler une mise à jour réussie
+          python -m unittest discover -s tests -p test_windows_update_safe.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Le téléchargement SHA-256 et la préparation manuelle ont échoué.' }
+          $source = Get-Content -Raw windows_update.py
+          if ($source -match 'ExecutionPolicy|subprocess\\.Popen|INSTALL_PS1|install\\.ps1') {
+            throw 'Un ancien mécanisme silencieux reste présent dans windows_update.py.'
+          }
+          Write-Host 'Mise à jour vérifiée et installée manuellement : aucune exécution PowerShell.'
+
+      - name: Contrôler chaque sprite Valheim depuis le véritable EXE compilé
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
+          $check = Start-Process -FilePath $exe -ArgumentList '--verify-real-icons' -Wait -PassThru
+          if ($check.ExitCode -ne 0) {
+            throw "Sprites du jeu absents du programme compilé (sortie : $($check.ExitCode))."
+          }
+          Write-Host 'Vraies icônes Valheim dans le programme compilé : OK'
+
+      - name: Vérifier Defender sur l'exécutable si le service est actif
         shell: pwsh
         run: |
-          python -c 'from windows_update import INSTALL_PS1; from pathlib import Path; Path("dist/install_blocked.ps1").write_text(INSTALL_PS1, encoding="utf-8-sig")'
-          $root = Join-Path $env:RUNNER_TEMP 'valheim-update-relaunch-failed'
-          $old = Join-Path $root 'old'
-          $new = Join-Path $root 'new'
-          $backup = Join-Path $root 'backup'
-          $log = Join-Path $root 'install.log'
-          New-Item -ItemType Directory -Force -Path $old, $new | Out-Null
-          Set-Content -LiteralPath (Join-Path $old 'ValheimStatsTracker.exe') -Value 'ancien programme'
-          Set-Content -LiteralPath (Join-Path $new 'ValheimStatsTracker.exe') -Value 'nouveau programme'
-          Set-Content -LiteralPath (Join-Path $old 'version-marker.txt') -Value 'old'
-          Set-Content -LiteralPath (Join-Path $new 'version-marker.txt') -Value 'new'
-          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'dist/install_blocked.ps1' -ParentPid 999999 -Source $new -Target $old -Backup $backup -Log $log -SimulateRelaunchFailure -SilentRelaunchFailure
-          $exitCode = $LASTEXITCODE
-          Get-Content -LiteralPath $log
-          if ($exitCode -ne 2) { throw "Redémarrage bloqué non distingué de l'installation : $exitCode" }
-          if ((Get-Content -LiteralPath (Join-Path $old 'version-marker.txt')) -ne 'new') { throw 'Mise à jour annulée malgré une copie réussie' }
-          if ((Get-Content -LiteralPath (Join-Path $backup 'version-marker.txt')) -ne 'old') { throw 'Sauvegarde de secours absente' }
-          if (-not (Select-String -LiteralPath $log -Pattern 'INSTALL_OK' -Quiet)) { throw 'Installation non journalisée' }
-          if (-not (Select-String -LiteralPath $log -Pattern 'RELAUNCH_ERROR' -Quiet)) { throw 'Blocage de redémarrage non journalisé' }
-          if (Select-String -LiteralPath $log -Pattern 'ROLLBACK_START' -Quiet) { throw 'Rollback incorrect en cas de blocage de lancement' }
-          Write-Host 'COPIE PRESERVEE + DIAGNOSTIC DU REDEMARRAGE : OK'
-          # GitHub Actions termine la commande PowerShell avec LASTEXITCODE.
-          # Ici le code 2 est attendu et explicitement valide par les assertions.
-          $global:LASTEXITCODE = 0
+          $defender = Get-MpComputerStatus -ErrorAction SilentlyContinue
+          if ($defender -and $defender.AntivirusEnabled -and $defender.AMServiceEnabled) {
+            $exe = (Resolve-Path 'dist/ValheimStatsTracker/ValheimStatsTracker.exe').Path
+            $scanStart = Get-Date
+            Start-MpScan -ScanType CustomScan -ScanPath $exe -ErrorAction Stop
+            $zip = (Get-ChildItem -Path dist -Filter '*_Windows.zip' | Select-Object -First 1).FullName
+            if (-not $zip) { throw 'Archive Windows ZIP absente.' }
+            Start-MpScan -ScanType CustomScan -ScanPath $zip -ErrorAction Stop
+            if (-not (Test-Path -LiteralPath $zip -PathType Leaf)) {
+              throw 'Defender a retire le ZIP du dossier.'
+            }
+            $recent = @(Get-MpThreatDetection -ErrorAction SilentlyContinue | Where-Object {
+              $_.InitialDetectionTime -ge $scanStart.AddMinutes(-1)
+            })
+            if ($recent.Count -gt 0) {
+              $ids = ($recent | ForEach-Object { $_.ThreatID }) -join ','
+              throw ("Defender signale une detection recente lors du controle: " + $ids)
+            }
+            if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+              throw 'Windows Defender a supprimé ou placé en quarantaine le programme.'
+            }
+            Write-Host 'Analyse Defender exécutée sur le programme Windows compilé.'
+          } else {
+            Write-Warning 'Defender indisponible sur ce runner : validation antivirus non garantie.'
+          }
+
       - name: Transmettre l'archive Windows à la publication
         uses: actions/upload-artifact@v4
         with:
@@ -174,6 +185,11 @@ jobs:
           retention-days: 7
 
   release:
+    # Autorisation strictement bornee a la V2.5.1 :
+    # - variable GitHub sur cette version ; ou
+    # - marqueur d'approbation explicite dans le commit de fusion de la PR,
+    #   autorise par le proprietaire du projet. Aucun push ordinaire ne publie.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.VALHEIM_WINDOWS_APPROVED_VERSION == '2.5.1' || contains(github.event.head_commit.message, '[approve-v2.5.1-release]'))
     needs: [tests, windows]
     runs-on: ubuntu-latest
     steps:

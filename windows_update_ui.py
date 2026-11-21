@@ -6,7 +6,7 @@ from PySide6.QtCore import QObject, Signal, Qt, QTimer
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QMessageBox, QProgressBar, QPushButton, QVBoxLayout, QWidget
 
 from v2_core import VERSION, app_dir
-from windows_update import check_release, stage_release, install_and_restart
+from windows_update import check_release, stage_release, open_download_folder
 
 class Events(QObject):
     checked=Signal(object)
@@ -26,13 +26,13 @@ class UpdatePanel(QWidget):
         self.events.failure.connect(self._failed)
         layout=QVBoxLayout(self)
         layout.setContentsMargins(8,8,8,8)
-        self.status=QLabel("Version Windows "+VERSION+" • Vérification automatique disponible")
+        self.status=QLabel("Version Windows "+VERSION+" • Mise à jour manuelle sécurisée")
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
         row=QHBoxLayout()
         self.check_button=QPushButton("Vérifier les mises à jour")
         self.check_button.clicked.connect(self.check)
-        self.install_button=QPushButton("Télécharger et installer")
+        self.install_button=QPushButton("Télécharger le ZIP vérifié")
         self.install_button.setEnabled(False)
         self.install_button.clicked.connect(self.install)
         row.addWidget(self.check_button);row.addWidget(self.install_button)
@@ -71,9 +71,10 @@ class UpdatePanel(QWidget):
     def install(self):
         if not self.info or not self.info['available']:return
         answer=QMessageBox.question(self,"Mettre à jour Valheim Stats Tracker",
-            "Installer la version Windows "+self.info['version']+" ?\n"
-            "L'application se fermera puis redémarrera. "
-            "Une copie des anciens fichiers sera conservée.")
+            "Télécharger la version Windows "+self.info['version']+" ?\n\n"
+            "L'archive sera vérifiée par SHA-256, sans installer ni lancer de programme.\n"
+            "Il faudra analyser le ZIP, l'extraire dans un nouveau dossier, "
+            "puis analyser l'EXE avant de l'exécuter.")
         if answer!=QMessageBox.StandardButton.Yes:return
         self.status.setText("Téléchargement et contrôle SHA-256…")
         self.bar.setRange(0,100);self.bar.setValue(0)
@@ -90,13 +91,27 @@ class UpdatePanel(QWidget):
     def _downloaded(self,directory):
         self.busy=False
         self.bar.setValue(100)
-        self.status.setText("Fichiers contrôlés. Installation après fermeture…")
+        self.check_button.setEnabled(True)
+        self.status.setText(
+            "ZIP vérifié, non exécuté. Installation manuelle : analyse Defender obligatoire "
+            "avant le lancement du nouvel exécutable."
+        )
         try:
-            install_and_restart(directory,app_dir())
+            open_download_folder(directory)
         except Exception as exc:
-            self._failed(str(exc))
+            self.status.setText("ZIP contrôlé : "+str(directory)+" • "+str(exc))
             return
-        QApplication.quit()
+        QMessageBox.information(
+            self, "Archive Windows vérifiée",
+            "Le ZIP téléchargé se trouve dans ce dossier :\n"
+            +str(directory)+"\n\n"
+            "Par sécurité, l'application n'exécute plus de mise à jour silencieuse.\n"
+            "Fais analyser le ZIP avec Defender, puis extrais-le dans un NOUVEAU dossier.\n"
+            "Fais ensuite analyser l'EXE extrait avec Defender AVANT de l'exécuter.\n"
+            "Si aucune menace n'est détectée, ferme l'ancienne application et "
+            "lance la nouvelle version.\n\n"
+            "Aucune sauvegarde ni configuration n'a été modifiée."
+        )
 
     def _failed(self,message):
         self.busy=False

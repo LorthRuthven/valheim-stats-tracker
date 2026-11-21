@@ -1,5 +1,10 @@
-PySide6>=6.8,<7
-pyinstaller>=6.10,<7
-UnityPy>=1.23,<3
-Pillow>=10,<13
-beautifulsoup4>=4.12,<5
+# Versions exactes du build Windows candidat V2.5.0, observées dans la CI du 20/11/2026.
+# Un changement de dépendances nécessite une nouvelle compilation et un nouveau scan Defender.
+PySide6==6.12.0
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.10
+UnityPy==1.25.4
+Pillow==12.3.0
+beautifulsoup4==4.15.0
+fmod_toolkit==0.1.3
+archspec==0.2.7

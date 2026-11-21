@@ -16,9 +16,10 @@ from PySide6.QtWidgets import (
     QPushButton, QStackedWidget, QWidget, QSizePolicy,
     QGraphicsOpacityEffect, QProgressBar, QCheckBox, QComboBox, QScrollArea
 )
-from desktop_v2 import TrackerWindow as BaseTracker, TrendChart, label, panel
+from desktop_v2 import TrackerWindow as BaseTracker, TrendChart, label, panel, txt
 from restored_pages import RestoredPagesMixin
 from real_assets import hero_photo, achievement_icon, game_icon, reset_icon_cache
+from game_visuals import nav_game_icon, boss_game_icon
 from collection_page import CollectionPage
 from viking_stats_page import VikingStatsPage
 from windows_update_ui import UpdatePanel
@@ -28,26 +29,14 @@ from valheim_reader import BOSSES, prefab_label
 
 BG='#0c1117'; SIDEBAR='#111b22'; PANEL='#17232c'
 BRONZE='#e9b77b'; FG='#f1eee8'; MUTED='#afc0bd'
-ICON_PATH={
- 'home': 'M3 11l9-8 9 8v10H4V11 M9 21v-8h6v8',
- 'trophy': 'M7 4h10v5a5 5 0 0 1-10 0V4 M7 6H4v3c0 2 2 4 5 4M17 6h3v3c0 2-2 4-5 4M12 14v5 M7 21h10',
- 'skull': 'M5 12a7 7 0 1 1 14 0c0 3-2 4-3 5v4H8v-4c-1-1-3-2-3-5z M9 12v2m6-2v2 M10 18h4',
- 'history': 'M12 3a9 9 0 1 1-9 9 M12 7v5l4 3 M3 5v6h6',
- 'settings': 'M12 2v4m0 12v4M2 12h4m12 0h4M5 5l3 3m8 8 3 3M5 19l3-3m8-8 3-3 M12 9a3 3 0 1 1 0 6a3 3 0 0 1 0-6',
- 'paw': 'M7 18c0-4 4-6 5-6s5 2 5 6c0 4-10 4-10 0 M5 9v2 M10 6v2 M15 6v2 M20 9v2',
- 'shield': 'M12 2l9 4v7c-1 7-9 10-9 10S4 20 3 13V6z M12 6v13 M7 12h10',
- 'clock': 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 6v7l4 2',
- 'compass': 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M15 9l-2 6-5 2 2-6z',
- 'axe': 'M5 21L17 3M15 4c8-2 8 7 2 10l-5-6',
- 'tree': 'M12 2L5 12h4l-6 7h18l-6-7h4z M12 19v4',
- 'flame': 'M13 2c2 6-3 6 0 10 2-1 3-3 3-5 7 8 4 15-4 15S2 15 8 9c0 3 2 3 2 5 3-5 0-7 3-12z',
-}
 def rune_icon(name, size=28, color=BRONZE):
-    path=ICON_PATH.get(name,ICON_PATH['shield'])
-    xml=f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="{path}" fill="none" stroke="{color}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-    pix=QPixmap(size,size);pix.fill(Qt.GlobalColor.transparent)
-    painter=QPainter(pix);QSvgRenderer(QByteArray(xml.encode())).render(painter);painter.end()
-    return QIcon(pix)
+    """Compatibilité UI : renvoie exclusivement une image authentique Valheim.
+
+    Le paramètre color est conservé pour les anciens appels, sans recolorer
+    la texture originale du jeu.
+    """
+    return nav_game_icon(name)
+
 
 EMBLEM="""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
 <circle cx="60" cy="60" r="55" fill="#15262c" stroke="#d6a36c" stroke-width="4"/>
@@ -282,7 +271,14 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             btn.setMinimumHeight(35)
             btn.setIcon(rune_icon(nav_icons[idx]))
             btn.clicked.connect(lambda _=False,i=idx:self.show_page(i))
-            nav_layout.addWidget(btn);self.nav_buttons.append(btn)
+            # La page n°9 est conservée pour les anciens liens et les tests,
+            # mais accessible uniquement par Réglages > Diagnostic avancé.
+            if idx == 9:
+                btn.setParent(nav_container)
+                btn.hide()
+            else:
+                nav_layout.addWidget(btn)
+            self.nav_buttons.append(btn)
         nav_layout.addStretch(1)
         nav_scroller.setWidget(nav_container)
         menu.addWidget(nav_scroller,1)
@@ -292,6 +288,13 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.sidebar_character=label('Aucun personnage',wrap=True)
         self.sidebar_character.setStyleSheet('font-weight:bold;color:#f4d3a7;')
         menu.addWidget(self.sidebar_character)
+        self.sidebar_cumulative_button=QPushButton('Σ  Cumul des Vikings')
+        self.sidebar_cumulative_button.setObjectName('sidebarStatsShortcut')
+        self.sidebar_cumulative_button.setToolTip(
+            'Ouvrir les Statistiques du Viking en mode cumul de tous les personnages.'
+        )
+        self.sidebar_cumulative_button.clicked.connect(self.open_cumulative_stats)
+        menu.addWidget(self.sidebar_cumulative_button)
         row.addWidget(side)
         main=QWidget();ml=QVBoxLayout(main);ml.setContentsMargins(0,0,0,0);ml.setSpacing(0)
         top=QFrame();top.setObjectName('topbar')
@@ -308,7 +311,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.btn_file=QPushButton('Choisir un personnage');self.btn_file.setIcon(rune_icon('shield',23))
         self.btn_file.clicked.connect(self.choose_file);head.addWidget(self.btn_file)
         self.btn_refresh=QPushButton('Actualiser');self.btn_refresh.setObjectName('primary')
-        self.btn_refresh.setIcon(rune_icon('history',23,'#242b27'))
+        self.btn_refresh.setIcon(rune_icon('history',23))
         self.btn_refresh.clicked.connect(lambda:self.refresh_save(force=True));head.addWidget(self.btn_refresh)
         ml.addWidget(top)
         self.stack=QStackedWidget();ml.addWidget(self.stack,1)
@@ -331,6 +334,44 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         box.layout().insertWidget(0,lab)
         box.setMinimumHeight(128)
         return box,val
+    def _make_combat(self):
+        super()._make_combat()
+        page=self.stack.widget(2)
+        interior=page.widget() if hasattr(page, 'widget') else None
+        if interior is None:
+            return
+        layout=interior.layout()
+        if layout is None:
+            return
+        summary, sl=panel(
+            'CHRONIQUE DES COMBATS',
+            'Indicateurs enregistrés pour le groupe de difficulté choisi, sans double comptage.'
+        )
+        strip=QHBoxLayout()
+        self.combat_summary_labels={}
+        for key, heading in (
+            ('kills','CRÉATURES ÉLIMINÉES'),
+            ('species','ESPÈCES AVEC ÉLIMINATIONS'),
+            ('bosses','BOSS VAINCUS'),
+        ):
+            card=QFrame()
+            card.setObjectName('combatMetricCard')
+            card.setStyleSheet(
+                'QFrame#combatMetricCard {background:#172d39;'
+                'border:1px solid #425c64;border-radius:12px;}'
+            )
+            inner=QVBoxLayout(card)
+            inner.setContentsMargins(17,12,17,12)
+            small=label(heading,muted=True,wrap=True)
+            number=label('—')
+            number.setStyleSheet('color:#e9bb7b;font:bold 24pt Segoe UI;')
+            inner.addWidget(small)
+            inner.addWidget(number)
+            strip.addWidget(card,1)
+            self.combat_summary_labels[key]=number
+        sl.addLayout(strip)
+        layout.insertWidget(0,summary)
+
     def _make_dashboard(self):
         super()._make_dashboard()
         self.dash_priority.verticalHeader().setDefaultSectionSize(47)
@@ -340,7 +381,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.stack.addWidget(self.collection_page)
 
     def _make_viking_stats_page(self):
-        self.viking_stats_page=VikingStatsPage(self.store.directory, self)
+        self.viking_stats_page=VikingStatsPage(self.store.directory, self, store=self.store)
         self.stack.addWidget(self.viking_stats_page)
 
     def _make_achievements(self):
@@ -419,7 +460,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             self.motion_checkbox.setChecked(True)
             self.motion_checkbox.toggled.connect(self.set_motion)
             layout.addWidget(self.motion_checkbox)
-            layout.addWidget(label('Illustrations vectorielles, pictogrammes et effets discrets.',muted=True,wrap=True))
+            layout.addWidget(label('Vrais sprites Valheim pour les menus et les statistiques, sans pictogrammes maison.',muted=True,wrap=True))
             inner.layout().insertWidget(0,frame)
             display_panel, display_layout=panel(
                 'TAILLE DE L’INTERFACE',
@@ -442,7 +483,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             ))
             inner.layout().insertWidget(1,display_panel)
             updates, update_layout=panel('MISES À JOUR WINDOWS',
-                'Vérification GitHub, SHA-256, sauvegarde et redémarrage.')
+                'Téléchargement officiel vérifié (SHA-256) ; installation manuelle sans PowerShell.')
             self.update_controller=UpdatePanel(self)
             update_layout.addWidget(self.update_controller)
             inner.layout().insertWidget(2,updates)
@@ -471,6 +512,24 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
                 'Les téléchargements se font seulement au besoin ; maximum 20 par action. '
                 'Une attribution renvoie à chaque page du wiki.',muted=True,wrap=True))
             inner.layout().insertWidget(4,wiki)
+            diagnostics,diagnostic_layout=panel(
+                'DIAGNOSTIC AVANCÉ',
+                'Accès aux 205 compteurs techniques du fichier Valheim. '
+                'Cette vue ne modifie aucune sauvegarde.'
+            )
+            self.raw_diagnostic_button=QPushButton('Ouvrir les compteurs bruts')
+            self.raw_diagnostic_button.setObjectName('openRawDiagnostics')
+            self.raw_diagnostic_button.clicked.connect(
+                lambda _=False:self.show_page(9)
+            )
+            diagnostic_layout.addWidget(self.raw_diagnostic_button)
+            diagnostic_layout.addWidget(label(
+                'Les activités et statistiques utiles restent disponibles '
+                'dans leurs pages dédiées. Les noms et indices bruts '
+                'servent essentiellement au dépannage.',
+                muted=True, wrap=True
+            ))
+            inner.layout().insertWidget(5,diagnostics)
 
     def _open_collection_wiki(self):
         self.show_page(10)
@@ -534,6 +593,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             self._refresh_restored_pages()
             self.draw_achievements()
             self.draw_combat()
+            self.collection_page.invalidate_image_cache()
             self.collection_page.refresh(self.store.profile)
 
     def _appearance_path(self):
@@ -594,8 +654,24 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         if 0<=index<len(ranked):
             self.selected_achievement=ranked[index]['key']
             self.show_page(1);self.draw_achievements()
+    def open_cumulative_stats(self):
+        self.show_page(11)
+        self.viking_stats_page.show_total()
+
+    def resizeEvent(self,event):
+        super().resizeEvent(event)
+        if not hasattr(self,"activity_grid") or not hasattr(self,"activity_tiles"):
+            return
+        available=max(0,self.width()-300)
+        columns=4 if available>=1220 else 3 if available>=850 else 2
+        if self.activity_columns != columns:
+            self._render_activity_gallery()
+
     def show_page(self,index):
         super().show_page(index)
+        if index == 9:
+            # La navigation visible reste sur Réglages pour le diagnostic.
+            self.nav_buttons[4].setChecked(True)
         if index == 10 and hasattr(self, 'collection_page'):
             self.collection_page.activate()
         if not self.motion:return
@@ -677,10 +753,18 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         # Correspondances exactes des prefabs du bestiaire et des boss.
         for i,(token,name) in enumerate(BOSSES.items()):
             cell=self.combat_bosses.item(i,0)
-            icon=game_icon(token)
+            icon=boss_game_icon(token)
             if cell is not None and not icon.isNull():cell.setIcon(icon)
         group=self.combat_group.currentData()
         kills=self.store.profile['groups'][group]['enemies'][0]
+        if hasattr(self,'combat_summary_labels'):
+            self.combat_summary_labels['kills'].setText(txt(sum(max(0,v) for v in kills.values())))
+            self.combat_summary_labels['species'].setText(
+                str(sum(v>0 for v in kills.values()))
+            )
+            self.combat_summary_labels['bosses'].setText(
+                f"{sum(kills.get(tok,0)>0 for tok in BOSSES)} / {len(BOSSES)}"
+            )
         enemies=sorted(((prefab_label(token), count, token)
                         for token,count in kills.items() if count>0),
                        key=lambda row:(-row[1],row[0]))
@@ -773,32 +857,70 @@ def _verify_wiki_cache():
             raise RuntimeError('Le decodeur Pillow ImageOps ne fonctionne pas')
 
 
-def _verify_updater_bootstrap():
-    """Test reel du lanceur PowerShell depuis l'EXE Windows PyInstaller."""
-    import tempfile
+def _verify_safe_updater():
+    """Vérifie l'archive sans exécution ni extraction dans l'EXE PyInstaller."""
+    from tempfile import TemporaryDirectory
     from pathlib import Path
-    from windows_update import launch_powershell
-    with tempfile.TemporaryDirectory() as temporary:
-        root=Path(temporary)
-        marker=root/'child-started.txt'
-        script=root/'child-check.ps1'
-        script.write_text(
-            "param([string]$Marker)\n"
-            "Set-Content -LiteralPath $Marker -Value 'PowerShell demarre' -Encoding UTF8\n",
-            encoding='utf-8-sig')
-        child=launch_powershell(script,['-Marker',str(marker)],root)
-        result=child.wait(timeout=30)
-        if result!=0 or not marker.is_file():
-            log=(root/'updates'/'powershell-output.log')
-            output=log.read_text(encoding='utf-8',errors='replace') if log.exists() else ''
-            raise RuntimeError(
-                f'Lancement automatique de PowerShell impossible (code {result}). {output}')
-        if 'PowerShell demarre' not in marker.read_text(encoding='utf-8-sig'):
-            raise RuntimeError('Le processus PowerShell a termine sans executer le script.')
+    from zipfile import ZipFile
+    from windows_update import validate_archive, UpdateError
+    with TemporaryDirectory() as directory:
+        archive=Path(directory)/'windows.zip'
+        with ZipFile(archive,'w') as package:
+            package.writestr('ValheimStatsTracker/ValheimStatsTracker.exe',b'MZ')
+        validate_archive(archive)
+        archive.write_bytes(b'not a zip')
+        try:
+            validate_archive(archive)
+        except UpdateError:
+            pass
+        else:
+            raise RuntimeError('Archive corrompue acceptée par le vérificateur')
+
+
+
+
+def _verify_game_sprites_bundle():
+    """Dans le VRAI EXE, teste les pixels de chaque icône attendue par l'UI."""
+    import json
+    from PySide6.QtWidgets import QApplication
+    from real_assets import bundled_assets, manifest, game_icon
+    from game_visuals import (
+        required_inventory_items, STAT_ITEMS, NAV_ITEMS, BOSS_ITEMS, SKILL_ITEMS
+    )
+    from viking_stats import STATS
+    from valheim_reader import BOSSES, SKILLS
+    app = QApplication.instance() or QApplication([])
+    index_path = bundled_assets() / 'GAME_ICONS_AUDIT.json'
+    if not index_path.is_file():
+        raise RuntimeError('Audit du pack de sprites Valheim manquant dans le programme')
+    audit = json.loads(index_path.read_text(encoding='utf8'))
+    if audit.get('selected_icons', 0) < 38:
+        raise RuntimeError('Nombre insuffisant de sprites Valheim authentiques')
+    if set(STAT_ITEMS) != {stat.key for stat in STATS}:
+        raise RuntimeError('Statistiques manquant une association à un objet Valheim')
+    if set(BOSS_ITEMS) != set(BOSSES):
+        raise RuntimeError('Boss manquant une illustration du jeu')
+    if not set(SKILLS.values()).issubset(SKILL_ITEMS):
+        raise RuntimeError('Compétence manquant une illustration')
+    for item in sorted(required_inventory_items()):
+        icon = game_icon(item)
+        if icon.isNull() or icon.pixmap(53,53).isNull():
+            raise RuntimeError('Sprite Valheim absent du programme : ' + item)
+    print(f"{len(required_inventory_items())} icônes originales Valheim présentes dans l'EXE",flush=True)
+
+
 
 
 if __name__=='__main__':
     import sys
+    if '--verify-real-icons' in sys.argv:
+        try:
+            _verify_game_sprites_bundle()
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            sys.exit(24)
+        sys.exit(0)
     if '--verify-wiki-cache' in sys.argv:
         try:
             _verify_wiki_cache()
@@ -807,9 +929,9 @@ if __name__=='__main__':
             traceback.print_exc()
             sys.exit(23)
         sys.exit(0)
-    if '--verify-updater-bootstrap' in sys.argv:
+    if '--verify-safe-updater' in sys.argv:
         try:
-            _verify_updater_bootstrap()
+            _verify_safe_updater()
         except Exception:
             import traceback
             traceback.print_exc()
