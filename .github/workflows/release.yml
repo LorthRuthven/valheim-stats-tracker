@@ -92,6 +92,11 @@ jobs:
             throw "Base JSON archspec absente du programme construit : $bundledArchspec"
           }
           Write-Host "Archspec JSON present dans le bundle Windows : $bundledArchspec"
+          $pieceFolder = 'dist/ValheimStatsTracker/_internal/assets/pieces'
+          if (-not (Test-Path -LiteralPath $pieceFolder -PathType Container)) { throw 'Dossier images de constructions absent du vrai programme Windows' }
+          $pieceImages = @(Get-ChildItem -LiteralPath $pieceFolder -Filter '*.png' -File)
+          if ($pieceImages.Count -lt 380) { throw "Constructions absentes du programme Windows : $($pieceImages.Count) images" }
+          Write-Host "Pack constructions Valheim inclus dans le vrai EXE : $($pieceImages.Count) PNG"
           $version = (Get-Content version.json | ConvertFrom-Json).version
           $archive = "dist/Valheim_Stats_Tracker_v${version}_Windows.zip"
           Compress-Archive -Path dist/ValheimStatsTracker -DestinationPath $archive -CompressionLevel Optimal
