@@ -106,7 +106,7 @@ class UpdatePanel(QWidget):
             self, "Mettre à jour Valheim Stats Tracker",
             "Installer la version Windows " + self.info["version"] + " ?\n\n"
             "Le ZIP GitHub officiel sera contrôlé par SHA-256, puis analysé "
-            "avec Microsoft Defender. L'application vérifiera le lancement "
+            "avec Windows Security (antivirus actif). L'application vérifiera le lancement "
             "de la nouvelle version avant de l'activer.\n\n"
             "Une copie des données sera conservée et l'ancienne version "
             "restera installée. Aucun script PowerShell ni contournement "
@@ -128,7 +128,7 @@ class UpdatePanel(QWidget):
             archive = stage_release(info, app_dir() / "updates", progress)
             self.events.downloaded.emit(str(archive))
             self.events.phase.emit(
-                "Archive vérifiée. Extraction, analyse Defender et test de démarrage…"
+                "Archive vérifiée. Extraction, contrôle de l'antivirus Windows et test de démarrage…"
             )
             executable = install_release(info, archive)
             self.events.installed.emit(str(executable))
