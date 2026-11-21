@@ -16,7 +16,7 @@ import threading
 import time
 
 from collection_catalog import CATEGORIES, catalogue
-from collection_gallery import CollectionGallery
+from collection_gallery import CollectionGallery, thematic_material
 from desktop_v2 import label, panel
 from real_assets import game_icon, collection_icon, creature_trophy_icon, reset_icon_cache
 from wiki_images import WikiImageCache, wiki_title
@@ -435,6 +435,12 @@ class CollectionPage(QWidget):
             "Cela ne signifie pas que l'objet est absent ou jamais découvert."
         )
         visual = collection_icon(entry["token"])
+        thematic = False
+        if visual.isNull():
+            material = thematic_material(entry["token"])
+            if material is not None:
+                visual = material
+                thematic = True
         source=self.wiki_cache.source(entry["token"])
         if visual.isNull():
             self.preview.clear()
@@ -450,7 +456,12 @@ class CollectionPage(QWidget):
             )
             self.image_link.setEnabled(True)
         else:
-            if self.image_state(entry["token"]) == "trophy":
+            if thematic:
+                description = (
+                    "Vrai sprite du matériau Valheim associé à cette famille de constructions. "
+                    "Ce n'est pas une image exacte de cette pièce."
+                )
+            elif self.image_state(entry["token"]) == "trophy":
                 description = (
                     "Illustration : véritable trophée Valheim correspondant à cette créature. "
                     "Ce n'est pas un portrait officiel du monstre."
