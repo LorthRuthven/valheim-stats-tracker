@@ -10,7 +10,7 @@ from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QScrollArea, QVBoxLayout, QWidget,
-    QFileDialog, QMessageBox, QDialog, QProgressBar,
+    QFileDialog, QMessageBox, QDialog, QProgressBar, QApplication,
 )
 
 from desktop_v2 import label, panel
@@ -231,6 +231,38 @@ class CumulativeStatDialog(QDialog):
         rule_description = label(rule_text + " " + stat.note, muted=True, wrap=True)
         outer.addWidget(rule_description)
 
+        # Lecture immédiate du résultat, sans modifier les règles de cumul.
+        highlighted = []
+        if self.model.policy == "sum" and self.model.total is not None and self.model.total > 0:
+            leaders = [row for row in self.rows if row.percentage is not None]
+            if leaders:
+                top = max(leaders, key=lambda row: row.percentage)
+                highlighted.append(
+                    f"Plus forte contribution : {top.name} • "
+                    f"{top.percentage:.1f} % du total".replace(".", ",")
+                )
+        elif self.model.policy == "max":
+            leading = [row.name for row in self.rows if row.leading]
+            if leading:
+                highlighted.append("Record détenu par : " + ", ".join(leading))
+        elif self.model.policy == "any":
+            leading = [row.name for row in self.rows if row.leading]
+            if leading:
+                highlighted.append(
+                    f"Objectif validé par {len(leading)} Viking(s) : " + ", ".join(leading)
+                )
+        self.highlight = label(
+            " • ".join(highlighted) if highlighted else
+            "Aucun résultat individuel disponible pour ce compteur.",
+            wrap=True
+        )
+        self.highlight.setObjectName("breakdownHighlight")
+        self.highlight.setStyleSheet(
+            "color:#ffe0a3;font:bold 11pt 'Segoe UI';"
+            "padding:9px;background:#253a40;border:1px solid #566f65;border-radius:8px;"
+        )
+        outer.addWidget(self.highlight)
+
         section = label("DÉTAIL PAR PERSONNAGE", section=True)
         outer.addWidget(section)
         scroll = QScrollArea()
@@ -296,9 +328,31 @@ class CumulativeStatDialog(QDialog):
             muted=True, wrap=True,
         )
         outer.addWidget(hint)
+        actions = QHBoxLayout()
+        self.copy_button = QPushButton("Copier le détail des Vikings")
+        self.copy_button.setObjectName("breakdownCopy")
+        self.copy_button.clicked.connect(self.copy_breakdown)
+        actions.addWidget(self.copy_button)
+        actions.addStretch(1)
         close_button = QPushButton("Fermer le détail")
         close_button.clicked.connect(self.close)
-        outer.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignRight)
+        actions.addWidget(close_button)
+        outer.addLayout(actions)
+
+    def copy_breakdown(self):
+        """Export texte local, sans envoyer de fichier .fch ni de données réseau."""
+        data = [
+            f"{self.stat.title} • {self.model.group}",
+            f"Règle : {self.RULES[self.model.policy][0]}",
+            "Total : " + pretty(self.model.total, self.stat.unit),
+        ]
+        for entry in self.rows:
+            amount = pretty(entry.amount, self.stat.unit)
+            share = (f" • {entry.percentage:.1f} %".replace(".", ",")
+                     if entry.percentage is not None else "")
+            source = "actif" if entry.source == "active" else "archive"
+            data.append(f"{entry.name} ({source}) : {amount}{share}")
+        QApplication.clipboard().setText("\n".join(data))
 
 
 class VikingStatsPage(QScrollArea):
