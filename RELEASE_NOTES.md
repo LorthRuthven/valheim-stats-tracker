@@ -3,7 +3,7 @@
 ## Mise à jour Windows : installation et redémarrage
 - Réglages → Mises à jour Windows → Télécharger et installer : contrôle GitHub Releases et SHA-256 conservé.
 - Après confirmation explicite, extraction dans un dossier versionné sous %LOCALAPPDATA%\Programs\ValheimStatsTracker\versions. L'EXE en cours n'est jamais remplacé.
-- ZIP et nouveau dossier analysés avec Microsoft Defender. Si Defender est indisponible ou signale un problème, activation refusée ; le ZIP reste accessible.
+- Avant activation, l'application consulte Windows Security Center (WSC) : un antivirus sain doit être signalé. Windows Defender ou l'antivirus tiers actif protège les fichiers en temps réel lors de l'extraction et du premier lancement. Le programme n'effectue **pas** de scan antivirus à la demande et ne requiert pas d'élévation UAC. Si WSC ne confirme pas un antivirus sain, l'activation est refusée.
 - Vérification du démarrage du nouvel EXE et de son interface Qt avant activation.
 - Activation atomique, puis proposition de redémarrage. Les raccourcis V2.5.2 ou ultérieurs redirigent vers une version installée plus récente.
 - Anciennes installations conservées pour retour manuel en arrière. Aucun PowerShell, script masqué, tâche planifiée ni exception antivirus.
