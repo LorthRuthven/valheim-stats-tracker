@@ -11,6 +11,7 @@ import os
 import sqlite3
 import tempfile
 import shutil
+from contextlib import closing
 import zlib
 from datetime import datetime
 from pathlib import Path
@@ -55,9 +56,9 @@ def backup_before_update(directory: Path, version: str = VERSION) -> Path | None
         if original.is_file():
             # L'API sqlite3.backup inclut les transactions validées, sans
             # dépendre d'une copie incohérente de -wal ou de -shm.
-            with sqlite3.connect(original) as source:
+            with closing(sqlite3.connect(original)) as source:
                 source.execute("PRAGMA query_only=ON")
-                with sqlite3.connect(working / original.name) as target:
+                with closing(sqlite3.connect(working / original.name)) as target:
                     source.backup(target)
                     if target.execute("PRAGMA quick_check").fetchone()[0] != "ok":
                         raise sqlite3.DatabaseError("Copie de la base SQLite invalide")
