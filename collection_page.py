@@ -378,7 +378,7 @@ class CollectionPage(QWidget):
         self.summary.setText(
             f"{len(self.entries)} entrées • {len(filtered)} résultats • "
             f"{observed} activités enregistrées • "
-            f"{stats['game']} sprites exacts • {stats['wiki']} images Wiki • "
+            f"Illustrations : {stats['game']} sprites exacts • {stats['wiki']} images Wiki • "
             f"{stats['trophy']} trophées associés • {stats['missing']} sans image"
         )
         self.table.blockSignals(True)
