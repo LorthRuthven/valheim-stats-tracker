@@ -117,21 +117,28 @@ def build_inventory_icons():
     root = BASE / "items"
     root.mkdir(parents=True, exist_ok=True)
     result = {}
-    generated = set()
+    failed_optional = {}
     with ThreadPoolExecutor(max_workers=8) as pool:
-        tasks = {pool.submit(read_icon, item, entries[item]): item for item in names}
+        tasks = {pool.submit(read_icon, item, entries[item]): item for item in sorted(names)}
         for future in as_completed(tasks):
-            item, source_sprite, data = future.result()
+            item = tasks[future]
+            try:
+                _item, source_sprite, data = future.result()
+            except (OSError, RuntimeError, ValueError, urllib.error.URLError) as error:
+                if item in must_have:
+                    raise RuntimeError(
+                        "Sprite Valheim obligatoire non disponible : " + item
+                    ) from error
+                failed_optional[item] = str(error)[:180]
+                continue
             alias = slug(item)
             filename = "jeu_" + alias + ".png"
-            # Le même nom ne peut jamais être associé à plusieurs sprites.
             (root / filename).write_bytes(data)
-            generated.add(filename)
             result[alias] = filename
             print(f"SPRITE VALHEIM {item} -> {source_sprite}, {len(data)} octets",
                   flush=True)
-    if len(result) != len(names):
-        raise RuntimeError("Des icônes demandées manquent dans le pack")
+    if not all(slug(item) in result for item in must_have):
+        raise RuntimeError("Des icônes requises manquent dans le pack")
     # L'index Steam et les petites ressources officielles déjà présentes
     # restent utilisables ; le jeu authentique est prioritaire pour nos alias.
     catalog.setdefault("items", {}).update(result)
@@ -155,17 +162,26 @@ def build_inventory_icons():
         "source_repo": "djcdevelopment/chest-seer",
         "source_revision": REVISION,
         "selected_icons": len(result),
-        "catalogue_exact_matches": len(matches),
+        "catalogue_exact_matches": sum(
+            1 for item in matches.values() if slug(item) in result
+        ),
         "catalogue_total": len(catalogue()),
-        "catalogue_tokens_matched": sorted(matches),
+        "catalogue_tokens_matched": sorted(
+            token for token, item in matches.items() if slug(item) in result
+        ),
+        "catalogue_optional_unavailable": failed_optional,
         "sha256": {name: hashlib.sha256((root / filename).read_bytes()).hexdigest()
                    for name, filename in sorted(result.items())},
     }
     (BASE / "GAME_ICONS_AUDIT.json").write_text(
         json.dumps(audit, indent=2) + "\n", encoding="utf-8"
     )
-    print(f"BILAN : {len(result)} véritables icônes d'inventaire Valheim dans le bundle",
-          flush=True)
+    print(
+        f"BILAN : {len(result)} véritables icônes d'inventaire Valheim dans le bundle, "
+        f"{audit['catalogue_exact_matches']} entrées de l'encyclopédie illustrées "
+        f"({len(failed_optional)} sprites supplémentaires indisponibles)",
+        flush=True,
+    )
     return result
 
 
