@@ -102,3 +102,11 @@ Le nouveau programme se trouve dans %LOCALAPPDATA%\Programs\ValheimStatsTracker\
 Une dernière installation manuelle est nécessaire depuis V2.5.1. Si Windows Security ne confirme pas un antivirus sain, le ZIP vérifié reste accessible via « Ouvrir le dossier du ZIP », mais l'application refuse de l'exécuter automatiquement. Aucun contournement de Defender n'est recommandé.
 
 **Retour manuel :** l'ancien EXE reste disponible. Pour démarrer une version V2.5.2 ou ultérieure sans redirection automatique vers la dernière version installée, ajoute l'argument de lancement `--no-update-handoff` au raccourci de secours. Ce mode ne désactive aucune protection antivirus et ne modifie pas les données.
+
+### V2.6.0 — Une véritable galerie pour l'Encyclopédie
+
+La page Encyclopédie affiche désormais par défaut une **galerie de 18 images par page** avec la provenance vérifiable (sprite Valheim, portrait wiki ou trophée associé). Toutes les entrées référencées restent consultables : pas de coupure à 350 comme dans l'ancien tableau. Le bouton **Liste détaillée** donne toujours accès au tableau traditionnel. Cliquer sur une carte ouvre sa fiche de collection.
+
+La page Activités affiche la répartition graphique des cinq principales familles, selon les filtres ; les tableaux techniques restent disponibles. En mode Statistiques du Viking → CUMUL, le panneau de détail met en avant le meilleur contributeur et permet de copier les valeurs de chaque Viking.
+
+Les données locales sont sauvegardées avant la première ouverture V2.6.0. Les mises à jour intégrées de la V2.5.2 restent compatibles.
