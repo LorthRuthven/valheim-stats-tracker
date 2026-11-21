@@ -1,3 +1,9 @@
+## V2.5.2 — retour de l'installation Windows intégrée
+- ZIP vérifié, extraction versionnée, scan Defender, contrôle du démarrage, activation atomique et redémarrage après confirmation.
+- Ancienne installation préservée, sans PowerShell ni remplacement de l'EXE en cours ; données du joueur protégées.
+- Sauvegarde transactionnelle avant activation et refus en cas d'échec des contrôles.
+- Ancien raccourci compatible grâce à la redirection vers la version activée.
+
 ## V2.2.3 — lisibilité et extraction des objets
 - Quatre tailles d’interface, « Grand » par défaut ; modification immédiate et sauvegarde de la préférence.
 - Analyse Sprite et Texture2D, alias entre noms Unity et objets Valheim, compteur de progression.

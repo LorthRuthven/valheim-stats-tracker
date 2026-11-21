@@ -777,9 +777,32 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
 
 def main():
     import sys
-    app=QApplication(sys.argv);app.setApplicationName('Valheim Stats Tracker');app.setStyle('Fusion')
+    from windows_install import handoff_if_newer
+    bypass = '--no-update-handoff' in sys.argv
+    if not bypass and handoff_if_newer(VERSION):
+        return 0
+    qt_args = [arg for arg in sys.argv if arg != '--no-update-handoff']
+    app=QApplication(qt_args);app.setApplicationName('Valheim Stats Tracker');app.setStyle('Fusion')
     window=NordicWindow();window.show()
     return app.exec()
+
+def _verify_update_ready(expected_version):
+    """Controle reel du nouveau programme avant son activation automatique."""
+    if VERSION != expected_version:
+        raise RuntimeError("La version du programme ne correspond pas au ZIP.")
+    from tempfile import TemporaryDirectory
+    from v2_core import TrackerStore
+    app = QApplication.instance() or QApplication([])
+    with TemporaryDirectory() as folder:
+        store = TrackerStore(folder)
+        try:
+            window = NordicWindow(store)
+            if window.stack.count() != 12 or window.update_controller is None:
+                raise RuntimeError("Interface incomplete dans l'EXE candidat.")
+            window.close()
+        finally:
+            store.close()
+
 
 def _verify_unitypy_bundle():
     """Teste l'exécutable réellement compilé : régression UnityPy.resources."""
@@ -913,6 +936,22 @@ def _verify_game_sprites_bundle():
 
 if __name__=='__main__':
     import sys
+    if '--verify-update-ready' in sys.argv:
+        try:
+            expected = sys.argv[sys.argv.index('--verify-update-ready') + 1]
+            _verify_update_ready(expected)
+        except Exception:
+            import traceback
+            details = traceback.format_exc()
+            if '--update-diagnostics' in sys.argv:
+                try:
+                    logpath = Path(sys.argv[sys.argv.index('--update-diagnostics') + 1])
+                    logpath.write_text(details, encoding='utf-8')
+                except (OSError, IndexError):
+                    pass
+            traceback.print_exc()
+            sys.exit(25)
+        sys.exit(0)
     if '--verify-real-icons' in sys.argv:
         try:
             _verify_game_sprites_bundle()

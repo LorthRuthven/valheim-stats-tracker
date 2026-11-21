@@ -1,4 +1,4 @@
-"""La première exécution de V2.5.1 protège les progrès de l'utilisateur."""
+"""La première exécution de V2.5.2 protège les progrès de l'utilisateur."""
 import json
 import sqlite3
 import tempfile
@@ -43,9 +43,9 @@ class ReleaseBackupTests(unittest.TestCase):
         (self.root / "config.json").write_text('{"path":""}', encoding="utf8")
 
     def test_backup_is_atomic_and_keeps_all_progress(self):
-        self.assertEqual(VERSION, "2.5.1")
+        self.assertEqual(VERSION, "2.5.2")
         store = TrackerStore(self.root)
-        copy = self.root / "backups" / "avant_v2.5.1"
+        copy = self.root / "backups" / "avant_v2.5.2"
         self.assertEqual(store.release_backup, copy)
         store.close()
         self.assertTrue((copy / "sauvegarde_complete.json").is_file())
@@ -77,7 +77,7 @@ class ReleaseBackupTests(unittest.TestCase):
             TrackerStore(self.root)
         self.assertEqual(db.read_bytes(), original)
         self.assertFalse(
-            (self.root / "backups" / "avant_v2.5.1" / "sauvegarde_complete.json").exists()
+            (self.root / "backups" / "avant_v2.5.2" / "sauvegarde_complete.json").exists()
         )
 
 
