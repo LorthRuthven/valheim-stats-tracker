@@ -10,6 +10,7 @@ import json
 import os
 import sqlite3
 import tempfile
+import shutil
 import zlib
 from datetime import datetime
 from pathlib import Path
@@ -21,7 +22,7 @@ from valheim_reader import (
     metrics, prefab_label,
 )
 
-VERSION = "2.5.0"
+VERSION = "2.5.1"
 DATA_FOLDER = "ValheimStatsTracker"
 GAP_SECONDS = 90 * 60
 
@@ -30,6 +31,58 @@ def app_dir() -> Path:
     folder = Path(os.getenv("LOCALAPPDATA") or (Path.home() / ".local" / "share")) / DATA_FOLDER
     folder.mkdir(parents=True, exist_ok=True)
     return folder
+
+
+def backup_before_update(directory: Path, version: str = VERSION) -> Path | None:
+    """Sauvegarde les données de progression avant la première ouverture 2.5.1.
+
+    La copie SQLite est cohérente, même si le journal WAL existe ; elle inclut
+    les snapshots et archives de personnages. On conserve en plus les réglages
+    et favoris du dossier racine. Si cette protection échoue, le tracker ne
+    modifie pas la base : il vaut mieux signaler l'erreur qu'ouvrir sans copie.
+    """
+    directory = Path(directory)
+    original = directory / "historique.sqlite3"
+    json_files = sorted(p for p in directory.glob("*.json") if p.is_file())
+    if not original.is_file() and not json_files:
+        return None
+    destination = directory / "backups" / ("avant_v" + version)
+    if destination.is_dir() and (destination / "sauvegarde_complete.json").is_file():
+        return destination
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    working = Path(tempfile.mkdtemp(prefix=".sauvegarde_en_cours_", dir=destination.parent))
+    try:
+        if original.is_file():
+            # L'API sqlite3.backup inclut les transactions validées, sans
+            # dépendre d'une copie incohérente de -wal ou de -shm.
+            with sqlite3.connect(original) as source:
+                source.execute("PRAGMA query_only=ON")
+                with sqlite3.connect(working / original.name) as target:
+                    source.backup(target)
+                    if target.execute("PRAGMA quick_check").fetchone()[0] != "ok":
+                        raise sqlite3.DatabaseError("Copie de la base SQLite invalide")
+        for file in json_files:
+            shutil.copy2(file, working / file.name)
+        summary = {
+            "version_before_start": version,
+            "database_included": original.is_file(),
+            "settings": [f.name for f in json_files],
+            "restoration": "Fermer le tracker avant toute restauration manuelle.",
+        }
+        (working / "sauvegarde_complete.json").write_text(
+            json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+        # Ce remplacement n'arrive qu'une seule fois, le dossier est
+        # indépendant de l'application installée et n'est pas écrasé.
+        if destination.exists():
+            if (destination / "sauvegarde_complete.json").is_file():
+                return destination
+            raise OSError("Une sauvegarde incomplète existe déjà : " + str(destination))
+        working.rename(destination)
+        return destination
+    finally:
+        if working.is_dir():
+            shutil.rmtree(working)
 
 
 def db_open(directory: Path | None = None):
@@ -230,6 +283,7 @@ class TrackerStore:
     """État partagé avec la V1.x, aucune écriture sur les sauvegardes."""
     def __init__(self, directory: Path | None = None):
         self.directory = Path(directory) if directory is not None else app_dir()
+        self.release_backup = backup_before_update(self.directory)
         self.db = db_open(self.directory)
         self.archive = CharacterArchive(self.db)
         config = read_config(self.directory)
