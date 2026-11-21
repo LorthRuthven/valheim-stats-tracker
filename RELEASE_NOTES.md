@@ -16,6 +16,14 @@
 - Le personnage actif prévaut sur une archive portant le même identifiant : aucun double comptage.
 - La progression des succès Steam et celle du personnage actif ne sont pas affectées par la somme du tracker.
 
+## Encyclopédie — illustrations enrichies après les premiers tests sur PC
+- **Problème constaté :** 1 379 entrées mais seulement 16 images Wiki en cache, et « 0/20 » nouvelles illustrations sur la capture réelle. Ce compteur ne reflétait pas les sprites du jeu déjà inclus dans le paquet.
+- **Inventaire élargi :** en plus des 104 sprites indispensables à l'interface, le build identifie les correspondances **exactes** entre les prefabs d'objets de l'Encyclopédie et le registre de sprites Valheim. Chaque image facultative est validée en tant que PNG ; les éléments sans sprite exact restent visibles sans dessin inventé.
+- **Créatures :** priorité au portrait Wiki si déjà disponible. À défaut, un **véritable trophée de cette créature** peut être affiché quand il existe, avec un libellé explicite pour ne pas le confondre avec une photo du monstre.
+- **Bilan transparent :** les chiffres distinguent les sprites exacts du jeu, les portraits Wiki, les trophées associés et les éléments toujours sans illustration. Nouveau filtre « Avec illustration / Sans illustration ».
+- **Wiki moins frustrant :** le bouton sélectionne désormais jusqu'à 20 nouvelles cibles parmi toutes les entrées filtrées, en excluant pendant six heures les recherches négatives. Les raisons des échecs sont affichées au lieu de toujours présenter « 0/20 » sans explication. Un diagnostic réseau non bloquant teste aussi trois pages connues sur le runner Windows.
+- **Protection des sauvegardes :** toutes les images supplémentaires appartiennent au programme ou au cache utilisateur et n'altèrent jamais les fichiers `.fch`, la base des succès ni les favoris.
+
 ## Visuels 100 % issus du jeu — sprites Valheim
 - Tous les anciens **pictogrammes dessinés** des cartes Statistiques du Viking et de la fenêtre de détail du cumul sont remplacés par des **objets et ressources authentiques du jeu**. Les associations sont thématiques pour les statistiques sans icône officielle dédiée.
 - La barre latérale, les boutons et les cartes du tableau de bord utilisent maintenant des sprites du jeu à la place des icônes SVG maison.
