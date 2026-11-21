@@ -18,12 +18,14 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y python3-tk
       - name: Vérifier les fichiers Python
-        run: python3 -m py_compile character_archive.py viking_stats_page.py nordic_ui.py valheim_reader.py v2_core.py
+        run: python3 -m py_compile character_archive.py viking_stats_page.py nordic_ui.py valheim_reader.py v2_core.py windows_install.py windows_update_ui.py
       - name: Tester le moteur et le cumul des personnages
         run: python3 -m unittest discover -s tests -v
 
       - name: Vérifier l'updater Windows sans scripts exécutables
-        run: python3 -m unittest discover -s tests -p test_windows_update_safe.py -v
+        run: |
+          python3 -m unittest discover -s tests -p test_windows_update_safe.py -v
+          python3 -m unittest discover -s tests -p test_windows_install.py -v
 
       - name: Télécharger une vraie sauvegarde Valheim 1.0 v46 publique (source figée)
         env:
