@@ -137,7 +137,10 @@ def build_inventory_icons():
     result = {}
     failed_optional = {}
     with ThreadPoolExecutor(max_workers=8) as pool:
-        tasks = {pool.submit(read_icon, item, entries[item]): item for item in sorted(names)}
+        # Protéger d'abord les 104 sprites obligatoires ; une ressource
+        # facultative indisponible ne doit jamais rendre l'EXE inutilisable.
+        ordered = sorted(must_have) + sorted(names - set(must_have))
+        tasks = {pool.submit(read_icon, item, entries[item]): item for item in ordered}
         for future in as_completed(tasks):
             item = tasks[future]
             try:
