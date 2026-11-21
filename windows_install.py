@@ -103,17 +103,23 @@ def check_antivirus_protection(archive: Path, folder: Path):
 
 def probe_candidate(executable: Path, version: str):
     """Vérifie que la version extraite démarre sans ouvrir une deuxième fenêtre."""
+    diagnostic = executable.parent / "_verification_update.log"
+    diagnostic.unlink(missing_ok=True)
     try:
         result = subprocess.run(
-            [str(executable), "--verify-update-ready", version],
+            [str(executable), "--verify-update-ready", version,
+             "--update-diagnostics", str(diagnostic)],
             cwd=str(executable.parent), timeout=120,
             capture_output=True, text=True, check=False,
         )
+        if result.returncode != 0:
+            detail = diagnostic.read_text(encoding="utf-8", errors="replace")[-1600:] if diagnostic.is_file() else ""
+            raise UpdateError("Le nouveau programme a échoué au contrôle de démarrage "
+                              f"(code {result.returncode}). Ancienne version conservée. " + detail)
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise UpdateError("Le nouveau programme ne démarre pas : installation annulée.") from exc
-    if result.returncode != 0:
-        raise UpdateError("Le nouveau programme a échoué au contrôle de démarrage "
-                          f"(code {result.returncode}). Ancienne version conservée.")
+    finally:
+        diagnostic.unlink(missing_ok=True)
 
 
 def _valid_receipt(directory: Path, version: str, digest: str):
