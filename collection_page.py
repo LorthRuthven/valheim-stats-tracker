@@ -128,10 +128,13 @@ class CollectionPage(QWidget):
         outer.addLayout(filters)
 
         split = QSplitter(Qt.Orientation.Horizontal)
-        list_frame, list_layout = panel(
-            "CATALOGUE ILLUSTRÉ",
-            "Icônes authentiques du jeu et images Wiki attribuées, sans illustrations inventées."
-        )
+        list_frame = QFrame()
+        list_frame.setObjectName("collectionWideGalleryFrame")
+        list_frame.setStyleSheet("QFrame#collectionWideGalleryFrame{background:#1b3039;"
+                                 "border:1px solid #42626a;border-radius:10px;}")
+        list_layout = QVBoxLayout(list_frame)
+        list_layout.setContentsMargins(7, 7, 7, 7)
+        list_layout.setSpacing(5)
         self.table = QTableWidget(0, 3)
         self.table.setObjectName("collectionTable")
         self.table.setHorizontalHeaderLabels(("Objet ou créature", "Catégorie", "Statut"))
@@ -161,6 +164,22 @@ class CollectionPage(QWidget):
         modes.addWidget(self.gallery_button)
         modes.addWidget(self.list_button)
         modes.addStretch(1)
+        modes.addWidget(label("TAILLE", muted=True))
+        self.card_size = QComboBox()
+        self.card_size.setObjectName("collectionCardSize")
+        for name, key in (("Compact", "compact"),
+                          ("Normal", "normal"), ("Grand", "large")):
+            self.card_size.addItem(name, key)
+        self.card_size.setCurrentIndex(1)
+        self.card_size.currentIndexChanged.connect(
+            lambda: self.gallery.set_card_size(self.card_size.currentData()))
+        modes.addWidget(self.card_size)
+        self.detail_toggle = QPushButton("Afficher la fiche")
+        self.detail_toggle.setObjectName("collectionDetailToggle")
+        self.detail_toggle.setCheckable(True)
+        self.detail_toggle.clicked.connect(
+            lambda: self._set_detail_visible(self.detail_toggle.isChecked()))
+        modes.addWidget(self.detail_toggle)
         list_layout.addLayout(modes)
         self.gallery = CollectionGallery(self.image_state)
         self.gallery.setObjectName("collectionGallery")
@@ -177,6 +196,10 @@ class CollectionPage(QWidget):
             "FICHE DE COLLECTION",
             "Les objets sans image authentique ne reçoivent pas d'icône inventée."
         )
+        self.detail_close_button = QPushButton("✕ Fermer la fiche")
+        self.detail_close_button.setObjectName("collectionCloseDetail")
+        self.detail_close_button.clicked.connect(lambda: self._set_detail_visible(False))
+        detail_layout.addWidget(self.detail_close_button)
         self.detail_title = label("Sélectionne une entrée", section=True, wrap=True)
         self.detail_title.setObjectName("collectionDetailTitle")
         detail_layout.addWidget(self.detail_title)
@@ -217,7 +240,7 @@ class CollectionPage(QWidget):
         detail_layout.addStretch(1)
         # Un panneau scrollable évite que Qt compresse ses QLabel au point
         # de superposer le nom de l'objet et l'illustration sur un écran Full HD.
-        details.setMinimumHeight(645)
+        details.setMinimumHeight(0)
         self.detail_scroll = QScrollArea()
         self.detail_scroll.setObjectName("collectionDetailScroll")
         self.detail_scroll.setWidgetResizable(True)
@@ -225,11 +248,27 @@ class CollectionPage(QWidget):
         self.detail_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.detail_scroll.setWidget(details)
         split.addWidget(self.detail_scroll)
-        split.setStretchFactor(0, 3)
-        split.setStretchFactor(1, 2)
-        split.setSizes((780, 360))
+        split.setStretchFactor(0, 4)
+        split.setStretchFactor(1, 1)
+        self.detail_scroll.setMinimumWidth(320)
+        self.detail_scroll.hide()
+        self.split = split
+        self._detail_visible = False
         outer.addWidget(split, 1)
         self.refresh(None)
+
+    def _set_detail_visible(self, visible):
+        self._detail_visible = bool(visible)
+        self.detail_scroll.setVisible(self._detail_visible)
+        self.detail_toggle.blockSignals(True)
+        self.detail_toggle.setChecked(self._detail_visible)
+        self.detail_toggle.setText(
+            "Masquer la fiche" if self._detail_visible else "Afficher la fiche")
+        self.detail_toggle.blockSignals(False)
+        if self._detail_visible:
+            width = max(self.split.width(), 800)
+            self.split.setSizes((round(width * 0.73), round(width * 0.27)))
+            self.show_selected()
 
     def refresh(self, profile):
         """Rafraîchit les compteurs sans changer les filtres choisis."""
@@ -248,6 +287,10 @@ class CollectionPage(QWidget):
             self._image_state_cache.clear()
         else:
             self._image_state_cache.pop(token, None)
+        if token is None:
+            self.gallery.invalidate_images()
+        else:
+            self.gallery.update_token(token)
 
     def image_state(self, token):
         """Distingue un vrai sprite Valheim, une image Wiki et une absence."""
@@ -289,10 +332,12 @@ class CollectionPage(QWidget):
         self.show_selected()
 
     def _select_gallery_entry(self, token):
+        self.gallery.select_token(token)
         for index, entry in enumerate(self.visible_entries):
             if entry["token"] == token:
                 self.table.selectRow(index)
                 break
+        self._set_detail_visible(True)
         self.show_selected()
 
     def render(self, *_):
@@ -331,13 +376,10 @@ class CollectionPage(QWidget):
             f"sur {len(self.entries)} entrées."
         )
         self.summary.setText(
-            f"{len(self.entries)} entrées référencées  •  {observed} avec activité enregistrée"
-            f"  •  {len(filtered)} correspondent aux filtres"
-            + (f"  •  {MAX_VISIBLE} premières dans la liste ; toutes les pages en galerie"
-               if len(filtered) > MAX_VISIBLE else "")
-            + f"\nIllustrations : {stats['game']} sprites du jeu  •  "
-              f"{stats['wiki']} images Wiki  •  {stats['trophy']} trophées associés  •  "
-              f"{stats['missing']} sans image"
+            f"{len(self.entries)} entrées • {len(filtered)} résultats • "
+            f"{observed} activités enregistrées • "
+            f"{stats['game']} sprites exacts • {stats['wiki']} images Wiki • "
+            f"{stats['trophy']} trophées associés • {stats['missing']} sans image"
         )
         self.table.blockSignals(True)
         self.table.setUpdatesEnabled(False)
@@ -488,6 +530,7 @@ class CollectionPage(QWidget):
         self.wiki_timer.stop()
         self.wiki_button.setEnabled(False)
         self.wiki_clear.setEnabled(False)
+        self.image_options_button.setChecked(True)
         self.wiki_status.setText(
             f"Valheim Wiki : recherche de {len(tokens)} image(s) manquante(s)…"
         )
