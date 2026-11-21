@@ -152,7 +152,7 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: |
           $version = (Get-Content version.json | ConvertFrom-Json).version
-          python tools/verify_windows_install.py "dist/Valheim_Stats_Tracker_v${version}_Windows.zip" $version
+          python -m tools.verify_windows_install "dist/Valheim_Stats_Tracker_v${version}_Windows.zip" $version
           if ($LASTEXITCODE -ne 0) { throw 'Installation et lancement du ZIP Windows échoués.' }
 
       - name: Vérifier l'EXE compilé et ses DLL
