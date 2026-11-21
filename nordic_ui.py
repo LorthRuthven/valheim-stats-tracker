@@ -593,6 +593,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             self._refresh_restored_pages()
             self.draw_achievements()
             self.draw_combat()
+            self.collection_page.invalidate_image_cache()
             self.collection_page.refresh(self.store.profile)
 
     def _appearance_path(self):
