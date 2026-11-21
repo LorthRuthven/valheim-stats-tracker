@@ -1,8 +1,8 @@
 """Test de bout en bout de l'installateur avec le vrai ZIP PyInstaller Windows.
 
 À lancer uniquement dans une CI Windows, après construction du ZIP.
-Le scan est remplacé par un espion de test ; le vrai contrôle Defender est
-réalisé par une autre étape distincte du workflow sur les binaires publiables.
+Le contrôle Windows Security est simulé ; le scan du binaire candidat est
+réalisé dans une autre étape CI sur les binaires publiables, si Defender est actif.
 """
 from __future__ import annotations
 
