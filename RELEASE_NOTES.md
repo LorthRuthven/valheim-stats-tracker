@@ -1,3 +1,13 @@
+# Valheim Stats Tracker V2.7.3 — Finitions de couverture de l'Encyclopédie
+
+- Images réelles ajoutées pour les quatre bateaux du catalogue (Karve, drakkar, drakkar des Ashlands, radeau), ainsi que la roche spéciale HardRock.
+- Rectification de deux images précédemment mal associées : baignoire (montrée comme un radeau) et pile de bois (montrée comme un matériau minéral).
+- Toutes les images proviennent du référentiel Jötunn épinglé et sont validées par empreinte Git et PNG au build.
+- Contrôle automatisé exhaustif de toutes les entrées du catalogue standard de Valheim ; la publication est bloquée si une entrée y reste sans véritable image. Pour les identifiants supplémentaires propres aux sauvegardes, le rapport intégré détaille les manquants encore non résolus.
+- L'historique des succès, les sauvegardes SQLite et JSON et le lecteur .fch en lecture seule ne changent pas ; copie de sécurité avant le premier lancement V2.7.3.
+
+---
+
 # Valheim Stats Tracker V2.7.2 — Catalogue Valheim illustré à grande échelle
 
 ## Le vrai problème des images manquantes

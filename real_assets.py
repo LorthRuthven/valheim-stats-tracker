@@ -151,8 +151,9 @@ def character_icon(prefab):
 
 def world_icon(prefab):
     """Capture de prefab ou d'outil du monde, avec correspondance exacte."""
-    if not isinstance(prefab,str) or not prefab.casefold().startswith(
-            ('$ship_', '$tool_', '$pickable_', '$piece_')):
+    if not isinstance(prefab,str) or not (
+            prefab.casefold().startswith(('$ship_', '$tool_', '$pickable_', '$piece_'))
+            or prefab.casefold() == '$item_hardrock'):
         return QIcon()
     for key in _icon_candidates(prefab):
         icon = _find_asset('jotunn_world', key)
