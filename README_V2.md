@@ -126,3 +126,8 @@ L'exécutable inclut maintenant 1 530 illustrations authentiques d'objets, créa
 ### V2.7.3 — Les derniers prefabs standard sans image
 
 Images vérifiées pour Karve, Drakkar, Drakkar des Ashlands, radeau et matériau rocheux ; photos corrigées pour baignoire et empilement de bois. Un test de couverture sur chaque token de l'Encyclopédie standard empêche désormais toute publication Windows si le catalogue standard conserve des images manquantes. Les éléments uniques à ton personnage sont toujours identifiés dans le rapport « Copier les images manquantes ».
+
+
+## Développement V2.8 — Journal de forge (branche de préparation)
+
+L'Encyclopédie propose un bouton **Marquer comme fabriqué** dans la fiche des armes et armures lorsque le profil possède un nom de personnage. L'état est réversible et conservé séparément par Viking dans `%LOCALAPPDATA%\\ValheimStatsTracker\\forge_checklist.json` (écriture atomique). Il s'agit d'une **déclaration manuelle** : ni les succès Steam ni les compteurs du fichier `.fch` ne sont modifiés. Si le JSON existant est corrompu, l'application refuse son écrasement silencieux. Cette fonctionnalité est sur une branche de développement, pas encore dans la release Windows.
