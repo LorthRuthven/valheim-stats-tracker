@@ -16,6 +16,7 @@ import threading
 import time
 
 from collection_catalog import CATEGORIES, catalogue
+from forge_checklist import ForgeChecklist
 from collection_gallery import CollectionGallery, thematic_material
 from desktop_v2 import label, panel
 from real_assets import game_icon, piece_icon, character_icon, world_icon, related_icon, collection_icon, creature_trophy_icon, reset_icon_cache
@@ -39,6 +40,8 @@ class CollectionPage(QWidget):
         self.wiki_timer = QTimer(self)
         self.wiki_timer.setSingleShot(True)
         self.wiki_timer.timeout.connect(self._fetch_selected)
+        self.forge_checklist = ForgeChecklist()
+        self.forge_character = None
         self.entries = []
         self.visible_entries = []
         self.filtered_entries = []
@@ -240,6 +243,10 @@ class CollectionPage(QWidget):
         self.detail_status = label("", wrap=True)
         self.detail_status.setObjectName("collectionDetailStatus")
         detail_layout.addWidget(self.detail_status)
+        self.forge_button = QPushButton('Marquer comme fabriqué (suivi manuel)')
+        self.forge_button.setObjectName('collectionForgeChecklist')
+        self.forge_button.clicked.connect(self._toggle_forge)
+        detail_layout.addWidget(self.forge_button)
         self.detail_evidence = label("", muted=True, wrap=True)
         detail_layout.addWidget(self.detail_evidence)
         self.image_source=label("",muted=True,wrap=True)
@@ -291,6 +298,7 @@ class CollectionPage(QWidget):
     def refresh(self, profile):
         """Rafraîchit les compteurs sans changer les filtres choisis."""
         selected = self._selected_token()
+        self.forge_character = (profile.get('name') if isinstance(profile, dict) else None)
         self.entries = catalogue(profile)
         self.render()
         if selected:
@@ -298,6 +306,18 @@ class CollectionPage(QWidget):
                 if entry["token"] == selected:
                     self.table.selectRow(index)
                     break
+
+    def _toggle_forge(self):
+        token = self._selected_token()
+        if not self.forge_character or not token:
+            return
+        try:
+            current = self.forge_checklist.checked(self.forge_character, token)
+            self.forge_checklist.set_checked(self.forge_character, token, not current)
+        except (OSError, ValueError) as error:
+            QMessageBox.warning(self, "Journal de forge", str(error))
+            return
+        self.show_selected()
 
     def invalidate_image_cache(self, token=None):
         """Invalide le bilan après un téléchargement ou une extraction locale."""
@@ -455,7 +475,20 @@ class CollectionPage(QWidget):
             self.preview.clear()
             self.preview.setText("Aucune icône à afficher")
             self.wiki_selected_button.hide()
+            self.forge_button.hide()
             return
+        forge_category = entry["category"] in ("Armes", "Armures")
+        available = bool(self.forge_character and forge_category)
+        self.forge_button.setVisible(forge_category)
+        self.forge_button.setEnabled(available)
+        if available:
+            done = self.forge_checklist.checked(self.forge_character, entry["token"])
+            self.forge_button.setText(
+                "✓ Fabriqué — annuler" if done else "Marquer comme fabriqué (manuel)")
+            self.forge_button.setToolTip(
+                "Journal personnel : ne valide pas un succès Steam ni une preuve .fch.")
+        else:
+            self.forge_button.setText("Choisir un personnage pour suivre la forge")
         self.detail_title.setText(entry["name"])
         self.detail_category.setText(f"{entry['category']}  •  {entry['token']}")
         self.detail_status.setText(entry["status"])
