@@ -51,17 +51,17 @@ def session_insights(rows, gap_seconds=GAP_SECONDS, limit=12):
         resets = []
         for label, key in METRICS:
             try:
-                earlier = _stat(first[3], key)
-                later = _stat(last[3], key)
+                values = [float(_stat(row[3], key)) for row in group]
             except (KeyError, ValueError, TypeError, IndexError, OverflowError):
                 continue
-            if not (math.isfinite(earlier) and math.isfinite(later)):
+            if not all(math.isfinite(number) for number in values):
                 continue
-            delta = later - earlier
-            if delta < -0.0001:
+            # Un reset intermédiaire doit rester visible même si le compteur
+            # final est repassé au-dessus de son niveau initial.
+            if any(b < a - 0.0001 for a, b in zip(values, values[1:])):
                 resets.append(label)
-            else:
-                gains[label] = max(0.0, delta)
+                continue
+            gains[label] = max(0.0, values[-1] - values[0])
         results.append({
             "start": float(first[1]),
             "end": float(last[1]),
