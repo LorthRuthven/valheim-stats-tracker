@@ -1,6 +1,6 @@
 import unittest
 
-from session_insights import session_insights
+from session_insights import session_insights, session_records
 
 
 def row(number, timestamp, kills, builds=0, crafts=0, deaths=0):
@@ -32,6 +32,24 @@ class SessionInsightsTests(unittest.TestCase):
     def test_no_fake_duration_for_single_snapshot(self):
         self.assertEqual(session_insights([row(1, 100, 1)]), [])
         self.assertEqual(session_insights([]), [])
+
+
+    def test_records_choose_highest_positive_gain(self):
+        sessions = [
+            {"start": 10, "end": 20, "gains": {"kills": 7, "builds": 3}},
+            {"start": 30, "end": 40, "gains": {"kills": 2, "builds": 9}},
+            {"start": 50, "end": 60, "gains": {"builds": 0}, "resets": ["kills"]},
+        ]
+        found = {item["key"]: item for item in session_records(sessions)}
+        self.assertEqual(found["kills"]["value"], 7)
+        self.assertEqual(found["kills"]["start"], 10)
+        self.assertEqual(found["builds"]["value"], 9)
+        self.assertNotIn("crafts", found)
+        self.assertNotIn("deaths", found)
+
+    def test_invalid_gap_rejected(self):
+        with self.assertRaises(ValueError):
+            session_insights([], gap_seconds=0)
 
 
 if __name__ == "__main__":
