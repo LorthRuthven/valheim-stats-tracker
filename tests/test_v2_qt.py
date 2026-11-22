@@ -229,7 +229,9 @@ class QtWindowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
             cache=WikiImageCache(root/'wiki_cache')
-            token='$enemy_greyling'
+            # Greyling possède désormais un vrai portrait local : le test du
+            # fallback Wiki doit utiliser une entrée réellement sans image native.
+            token='$item_hardrock'
             path,meta,_=cache._paths(token)
             path.parent.mkdir(parents=True,exist_ok=True)
             picture=QPixmap(120,120)
@@ -237,8 +239,8 @@ class QtWindowTests(unittest.TestCase):
             self.assertTrue(picture.save(str(path)))
             meta.write_text(json.dumps({
                 'token':token,
-                'wiki_title':'Greyling',
-                'page_url':'https://valheim.wiki/w/Greyling',
+                'wiki_title':'Hardrock',
+                'page_url':'https://valheim.wiki/w/Hardrock',
                 'source':'Valheim Wiki'
             }),encoding='utf-8')
             with patch('v2_core.app_dir',return_value=root), patch(
