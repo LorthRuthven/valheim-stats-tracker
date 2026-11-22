@@ -75,6 +75,32 @@ def session_insights(rows, gap_seconds=GAP_SECONDS, limit=12):
     return results
 
 
+def session_records(sessions):
+    """Records des gains mesurables entre les sauvegardes d'une session.
+
+    Un recul de compteur est exclu et non transformé en record.
+    """
+    descriptions = {
+        "kills": "Créatures vaincues",
+        "builds": "Constructions",
+        "crafts": "Objets fabriqués",
+        "deaths": "Décès",
+    }
+    records = []
+    for key, title in descriptions.items():
+        candidates = [s for s in sessions
+                      if key in s.get("gains", {}) and s["gains"][key] > 0]
+        if not candidates:
+            continue
+        winning = max(candidates, key=lambda s: (s["gains"][key], s["end"]))
+        records.append({
+            "key": key, "title": title,
+            "value": winning["gains"][key], "start": winning["start"],
+            "end": winning["end"],
+        })
+    return records
+
+
 def readable_session(item):
     start = datetime.fromtimestamp(item["start"]).strftime("%d/%m %H:%M")
     end = datetime.fromtimestamp(item["end"]).strftime("%H:%M")
