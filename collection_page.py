@@ -10,7 +10,7 @@ from PySide6.QtGui import QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QAbstractItemView, QComboBox, QHBoxLayout, QLabel, QLineEdit,
     QMessageBox, QPushButton, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
-    QScrollArea, QFrame, QStackedWidget, QProgressBar,
+    QScrollArea, QFrame, QStackedWidget, QProgressBar, QApplication,
 )
 import threading
 import time
@@ -18,7 +18,7 @@ import time
 from collection_catalog import CATEGORIES, catalogue
 from collection_gallery import CollectionGallery, thematic_material
 from desktop_v2 import label, panel
-from real_assets import game_icon, piece_icon, collection_icon, creature_trophy_icon, reset_icon_cache
+from real_assets import game_icon, piece_icon, character_icon, world_icon, collection_icon, creature_trophy_icon, reset_icon_cache
 from wiki_images import WikiImageCache, wiki_title
 
 MAX_VISIBLE = 350
@@ -91,6 +91,11 @@ class CollectionPage(QWidget):
         self.wiki_clear = QPushButton("Vider seulement le cache Wiki")
         self.wiki_clear.clicked.connect(self._clear_wiki_cache)
         options.addWidget(self.wiki_clear)
+        self.copy_missing_button = QPushButton("Copier les images manquantes")
+        self.copy_missing_button.setObjectName("collectionCopyMissing")
+        self.copy_missing_button.setToolTip("Copie tous les identifiants encore sans vraie illustration pour les compléter précisément.")
+        self.copy_missing_button.clicked.connect(self._copy_missing_report)
+        options.addWidget(self.copy_missing_button)
         self.wiki_status = label(
             "Téléchargements facultatifs ; images enregistrées en cache local.",
             muted=True, wrap=True)
@@ -122,6 +127,8 @@ class CollectionPage(QWidget):
         self.image_filter.addItem("Sans illustration", "missing")
         self.image_filter.addItem("Sprites exacts du jeu", "game")
         self.image_filter.addItem("Images de constructions", "piece")
+        self.image_filter.addItem("Images de créatures", "character")
+        self.image_filter.addItem("Images du monde", "world")
         self.image_filter.addItem("Images du Wiki", "wiki")
         self.image_filter.addItem("Trophées associés", "trophy")
         self.image_filter.currentIndexChanged.connect(self.render)
@@ -302,6 +309,10 @@ class CollectionPage(QWidget):
             state = "game"
         elif not piece_icon(token).isNull():
             state = "piece"
+        elif not character_icon(token).isNull():
+            state = "character"
+        elif not world_icon(token).isNull():
+            state = "world"
         elif self.wiki_cache.cached_image(token) is not None:
             state = "wiki"
         elif not creature_trophy_icon(token).isNull():
@@ -359,7 +370,7 @@ class CollectionPage(QWidget):
                 picture_filter == "all"
                 or (picture_filter == "available" and self.image_state(e["token"]) != "missing")
                 or (picture_filter == "missing" and self.image_state(e["token"]) == "missing")
-                or (picture_filter in ("game", "piece", "wiki", "trophy")
+                or (picture_filter in ("game", "piece", "character", "world", "wiki", "trophy")
                     and self.image_state(e["token"]) == picture_filter)
             )
         ]
@@ -368,7 +379,7 @@ class CollectionPage(QWidget):
         self.visible_entries = shown
         self.gallery.set_entries(filtered, selected)
         observed = sum(1 for e in self.entries if e["observed"])
-        stats = {"game": 0, "piece": 0, "wiki": 0, "trophy": 0, "missing": 0}
+        stats = {"game": 0, "piece": 0, "character": 0, "world": 0, "wiki": 0, "trophy": 0, "missing": 0}
         for entry in self.entries:
             stats[self.image_state(entry["token"])] += 1
         illustrated=len(self.entries)-stats["missing"]
@@ -382,7 +393,9 @@ class CollectionPage(QWidget):
             f"{len(self.entries)} entrées • {len(filtered)} résultats • "
             f"{observed} activités enregistrées • "
             f"Illustrations : {stats['game']} sprites d’inventaire • "
-            f"{stats['piece']} images de constructions • {stats['wiki']} images Wiki • "
+            f"{stats['piece']} images de constructions • "
+            f"{stats['character']} créatures • {stats['world']} monde • "
+            f"{stats['wiki']} images Wiki • "
             f"{stats['trophy']} trophées associés • {stats['missing']} sans image"
         )
         self.table.blockSignals(True)
@@ -453,7 +466,9 @@ class CollectionPage(QWidget):
             self.preview.setText("")
             self.preview.setPixmap(visual.pixmap(QSize(155, 155)))
         if (source and game_icon(entry["token"]).isNull()
-                and piece_icon(entry["token"]).isNull()):
+                and piece_icon(entry["token"]).isNull()
+                and character_icon(entry["token"]).isNull()
+                and world_icon(entry["token"]).isNull()):
             self.image_source.setText(
                 "Image : Valheim Wiki (cache local)\n"
                 "Source : " + source.get("wiki_title","") +
@@ -461,7 +476,14 @@ class CollectionPage(QWidget):
             )
             self.image_link.setEnabled(True)
         else:
-            if self.image_state(entry["token"]) == "piece":
+            if self.image_state(entry["token"]) == "character":
+                description = ("Image de la créature Valheim correspondant à ce prefab, "
+                               "issue de la documentation Jötunn. "
+                               "© Iron Gate AB / Coffee Stain Publishing.")
+            elif self.image_state(entry["token"]) == "world":
+                description = ("Image authentique de l'objet ou élément du monde Valheim, "
+                               "issue de la documentation Jötunn.")
+            elif self.image_state(entry["token"]) == "piece":
                 description = ("Image de cette construction Valheim, référencée par le "
                                "prefab exact dans la documentation Jötunn. "
                                "© Iron Gate AB / Coffee Stain Publishing.")
@@ -483,6 +505,8 @@ class CollectionPage(QWidget):
             self.image_link.setEnabled(False)
         can_wiki = (game_icon(entry["token"]).isNull()
                     and piece_icon(entry["token"]).isNull()
+                    and character_icon(entry["token"]).isNull()
+                    and world_icon(entry["token"]).isNull()
                     and self.wiki_cache.cached_image(entry["token"]) is None
                     and wiki_title(entry["token"]) is not None)
         retry_available = (can_wiki and self.wiki_cache.can_attempt(entry["token"]))
@@ -515,6 +539,24 @@ class CollectionPage(QWidget):
             return
         if self.wiki_cache.can_attempt(token):
             self._start_wiki_download([token])
+
+    def _copy_missing_report(self):
+        """Diagnostic local de chaque prefab sans illustration (sans .fch)."""
+        missing = [entry for entry in self.entries
+                   if self.image_state(entry["token"]) == "missing"]
+        categories = sorted({entry["category"] for entry in missing})
+        lines = [
+            "Valheim Stats Tracker — images encore manquantes",
+            f"Catalogue : {len(self.entries)} entrées / {len(missing)} sans image",
+            "Liste exacte des identifiants (sans données personnelles ni sauvegarde) :",
+        ]
+        for category in categories:
+            entries = [entry for entry in missing if entry["category"] == category]
+            lines.append(f"\n[{category}] {len(entries)}")
+            lines.extend(f'{entry["token"]} | {entry["name"]}' for entry in entries)
+        QApplication.clipboard().setText("\n".join(lines))
+        self.copy_missing_button.setText(
+            f"Copié : {len(missing)} entrées manquantes")
 
     def _fetch_missing(self):
         if self._wiki_busy:

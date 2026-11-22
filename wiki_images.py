@@ -101,6 +101,15 @@ WIKI_PIECES = {
 }
 
 
+# Noms exacts vérifiés dans le Wiki pour les bateaux.
+WIKI_SHIPS = {
+    "karve": "Karve",
+    "longship": "Longship",
+    "longship_ashlands": "Drakkar",
+    "raft": "Raft",
+}
+
+
 class WikiImageError(Exception):
     """Problème non critique : l'application continue sans image."""
 
@@ -127,11 +136,13 @@ def wiki_title(token):
     if not isinstance(token, str):
         return None
     raw = token.strip().lstrip("$")
-    match = re.match(r"^(enemy|animal|item|piece|pickable)_([a-z0-9_]+)$", raw, re.I)
+    match = re.match(r"^(enemy|animal|item|piece|pickable|ship)_([a-z0-9_]+)$", raw, re.I)
     if not match:
         return None
     group, name = match.groups()
     name = name.lower()
+    if group.lower() == "ship":
+        return WIKI_SHIPS.get(name)
     if name in WIKI_NAMES:
         return WIKI_NAMES[name]
     # Constructions à noms internes opaques : ne jamais confondre deux pages.
