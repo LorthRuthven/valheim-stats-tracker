@@ -22,6 +22,7 @@ from valheim_reader import (
     localized_name, prefab_label,
 )
 from v2_core import progress_ranking, pending_actions, session_report
+from session_insights import session_insights, readable_session
 from real_assets import achievement_icon, game_icon, collection_icon
 from game_visuals import boss_game_icon, skill_game_icon, THEMATIC_BOSS_ICONS
 
@@ -645,6 +646,20 @@ class RestoredPagesMixin:
         controls.addWidget(self.history_changes_restored)
         controls.addWidget(export)
         container.insertLayout(1,controls)
+        # La liste des sessions ne remplace pas les graphiques et rapports existants.
+        session_panel, session_layout = panel(
+            "CHRONOLOGIE DES SESSIONS",
+            "Intervalles estimés entre sauvegardes rapprochées ; aucune durée de jeu inventée.")
+        self.history_session_count = label("Aucun historique analysable.", muted=True, wrap=True)
+        session_layout.addWidget(self.history_session_count)
+        self.history_session_table = table([
+            "Période", "Relevés", "Intervalle", "Créatures", "Constructions",
+            "Fabrications", "Décès"
+        ])
+        self.history_session_table.setObjectName("historySessionTimeline")
+        self.history_session_table.setMinimumHeight(240)
+        session_layout.addWidget(self.history_session_table)
+        interior.layout().addWidget(session_panel)
         self.history_metric.currentIndexChanged.connect(self._draw_history_restored)
         self.history_period.currentIndexChanged.connect(self._draw_history_restored)
 
@@ -734,6 +749,35 @@ class RestoredPagesMixin:
         self._refresh_raw()
         self._refresh_combat_detail()
         self._draw_history_restored()
+        self._refresh_session_insights()
+
+    def _refresh_session_insights(self):
+        if not self.store.profile or not hasattr(self, "history_session_table"):
+            return
+        sessions = session_insights(self.store.rows(limit=5000))
+        self.history_session_count.setText(
+            (f"{len(sessions)} sessions estimées affichées (au plus 12). "
+             "Intervalle = temps entre les sauvegardes, pas temps réellement joué.")
+            if sessions else
+            "Pas de session avec au moins deux sauvegardes rapprochées. "
+            "Aucune progression supplémentaire n'est supposée."
+        )
+        names = ("kills", "builds", "crafts", "deaths")
+        rows = []
+        for item in sessions:
+            gain = item["gains"]
+            def show(name):
+                return "—" if name not in gain else "+" + txt(gain[name])
+            rows.append((
+                readable_session(item), str(item["samples"]),
+                f'{item["span_minutes"]:.0f} min',
+                *(show(name) for name in names)
+            ))
+        _fill_table(self.history_session_table, rows)
+        for i, item in enumerate(sessions):
+            if item["resets"]:
+                self.history_session_table.item(i, 0).setToolTip(
+                    "Compteurs en recul ignorés : " + ", ".join(item["resets"]))
 
     def _refresh_progress_center(self):
         if not self.store.profile or not hasattr(self,'focus_table'):return
