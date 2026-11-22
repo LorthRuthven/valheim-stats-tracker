@@ -6,6 +6,7 @@
 - Le code peut utiliser les nouveaux fichiers par identifiant/prefab exact, y compris les entrées ajoutées dynamiquement par les sauvegardes des joueurs.
 - Noms, tailles, empreintes Git et décodage de chaque PNG sont vérifiés au build contre un commit épinglé. Le programme Windows est contrôlé pour s'assurer que les 1 530 PNG ont vraiment été empaquetés.
 - Les images de créatures et d'éléments du monde ont leur propre provenance visible ; les images de matériaux associées ne sont jamais présentées comme la pièce exacte.
+- Identifiants internes de Hildir contrôlés : Brenna (`Skeleton_Hildir`) et Zil (`GoblinShaman_Hildir`) reçoivent leur portrait exact.
 
 ## Audit des derniers manquants
 - Dans les options de l'Encyclopédie : **« Copier les images manquantes »** fournit l'intégralité des identifiants encore non illustrés, groupés par catégorie, sans fichier de sauvegarde ni information personnelle.

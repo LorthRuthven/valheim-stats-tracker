@@ -7051,7 +7051,9 @@
     "$spiritcaller_bjorn": "Bjorn_spiritcaller.png",
     "$spiritcaller_boar": "Boar_spiritcaller.png",
     "$spiritcaller_moose": "Moose_spiritcaller.png",
-    "$spiritcaller_wolf": "Wolf_spiritcaller.png"
+    "$spiritcaller_wolf": "Wolf_spiritcaller.png",
+    "$enemy_skeletonfire": "Skeleton_Hildir.png",
+    "$enemy_goblin_hildir": "GoblinShaman_Hildir.png"
   },
   "world_token_aliases": {
     "$tool_batteringram": "BatteringRam.png",

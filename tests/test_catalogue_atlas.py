@@ -25,6 +25,10 @@ class AtlasManifestTests(unittest.TestCase):
         self.assertIn("$enemy_greydwarfbrute",atlas["creature_token_aliases"])
         self.assertEqual(atlas["creature_token_aliases"]["$enemy_greydwarfbrute"],
                          "Greydwarf_Elite.png")
+        self.assertEqual(atlas["creature_token_aliases"]["$enemy_skeletonfire"],
+                         "Skeleton_Hildir.png")
+        self.assertEqual(atlas["creature_token_aliases"]["$enemy_goblin_hildir"],
+                         "GoblinShaman_Hildir.png")
 
     def test_ambiguous_filenames_get_distinct_real_png_paths(self):
         manifest = load_manifest()
