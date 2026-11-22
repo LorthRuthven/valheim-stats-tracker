@@ -46,7 +46,9 @@ def _qicon(path):
                             visible=sum(alpha.histogram()[1:])
                             if visible == 0:
                                 return QIcon()
-                            if "jotunn_characters" in path.parts and visible < 100:
+                            if "jotunn_characters" in path.parts and (
+                                    visible < 100 or
+                                    ("aspect" in path.name.casefold() and visible < 250)):
                                 return QIcon()
                 except (OSError, ValueError):
                     return QIcon()
@@ -188,6 +190,9 @@ RELATED_VALHEIM_IMAGES = {
     "$enemy_aspect_eikthyr": ("jotunn_characters", "Eikthyr"),
     "$enemy_aspect_gdking": ("jotunn_characters", "gd_king"),
     "$enemy_aspect_dragon": ("jotunn_characters", "Dragon"),
+    "$enemy_aspect_fader": ("jotunn_characters", "Fader"),
+    "$enemy_aspect_goblinking": ("jotunn_characters", "GoblinKing"),
+    "$enemy_aspect_seekerqueen": ("jotunn_characters", "SeekerQueen"),
     "$enemy_aspect_tentaroot": ("jotunn_characters", "TentaRoot"),
     "$item_lingonberries": ("jotunn_prefabs", "LingonberryBush"),
     "$enemy_ghost_old": ("jotunn_characters", "Ghost"),
