@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# Un seul candidat par PR : ne pas refaire 1 500 téléchargements en parallèle.
+concurrency:
+  group: valheim-verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   archives:
     runs-on: ubuntu-latest
