@@ -42,6 +42,11 @@ class PieceImageManifestTests(unittest.TestCase):
         if "$piece_repair" in pieces:
             self.assertNotEqual(pieces["$piece_repair"]["file"], "Raspberry.png")
 
+    def test_previous_wrong_piece_photos_are_corrected(self):
+        images = load_piece_manifest()["pieces"]
+        self.assertEqual(images["$piece_bathtub"]["file"], "piece_bathtub.png")
+        self.assertEqual(images["$piece_woodstack"]["file"], "wood_stack.png")
+
     def test_git_blob_digest_is_for_entire_binary_file(self):
         import hashlib
         blob = b"\x89PNG\r\n\x1a\ncontents"

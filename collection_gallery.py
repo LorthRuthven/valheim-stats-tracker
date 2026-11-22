@@ -13,7 +13,7 @@ SIZES = {"compact": (156, 155, 66), "normal": (205, 192, 94),
 SOURCE_LABELS = {"game": "SPRITE DU JEU", "wiki": "IMAGE DU WIKI",
                  "trophy": "TROPHÉE ASSOCIÉ", "piece": "IMAGE DE CONSTRUCTION",
                  "character": "IMAGE DE CRÉATURE", "world": "IMAGE DU MONDE",
-                 "missing": "IMAGE MANQUANTE"}
+                 "related": "VISUEL ASSOCIÉ", "missing": "IMAGE MANQUANTE"}
 # Un vrai sprite de matériau peut illustrer une famille de constructions.
 # Cette association reste toujours indiquée comme thématique et n'est jamais
 # comptée comme une illustration exacte de la construction.

@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# Un seul candidat par PR : ne pas refaire 1 500 téléchargements en parallèle.
+concurrency:
+  group: valheim-verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   archives:
     runs-on: ubuntu-latest
@@ -157,7 +162,7 @@ jobs:
           $pieceImages = @(Get-ChildItem -LiteralPath $pieceFolder -Filter '*.png' -File)
           if ($pieceImages.Count -lt 380) { throw "Constructions absentes du programme Windows : $($pieceImages.Count) images" }
           Write-Host "Pack constructions Valheim inclus dans le vrai EXE : $($pieceImages.Count) PNG"
-          $counts = @{ jotunn_items=1231; jotunn_characters=162; jotunn_prefabs=134; jotunn_world=3 }
+          $counts = @{ jotunn_items=1231; jotunn_characters=162; jotunn_prefabs=134; jotunn_world=8 }
           foreach ($name in $counts.Keys) {
             $folder = "dist/ValheimStatsTracker/_internal/assets/$name"
             if (-not (Test-Path -LiteralPath $folder -PathType Container)) { throw "Atlas $name absent du vrai EXE" }

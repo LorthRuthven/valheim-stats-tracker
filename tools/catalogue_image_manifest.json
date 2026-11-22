@@ -6129,6 +6129,26 @@
       "Catapult.png": {
         "sha": "d24fb2b7b31db5e59e2fc4cab9073d836aaf88bc",
         "size": 12902
+      },
+      "Karve.png": {
+        "sha": "146baf375af0db8079e18316fcbc08a469adb42e",
+        "size": 11151
+      },
+      "VikingShip.png": {
+        "sha": "d5cdab765f79ed710e7d18dcf2133c7e962d1301",
+        "size": 10950
+      },
+      "VikingShip_Ashlands.png": {
+        "sha": "dad0c1a75ab1b8bcb2bad7eb0045b0f2b67c53ae",
+        "size": 12554
+      },
+      "Raft.png": {
+        "sha": "e9b2568718807b2168362e4e3ab7c1c899a7e510",
+        "size": 16987
+      },
+      "Placeable_HardRock.png": {
+        "sha": "81a51fdd12ad2509fbc55fd5fc5f7c384c65f881",
+        "size": 7850
       }
     }
   },
@@ -7058,6 +7078,11 @@
   "world_token_aliases": {
     "$tool_batteringram": "BatteringRam.png",
     "$tool_cart": "Cart.png",
-    "$tool_catapult": "Catapult.png"
+    "$tool_catapult": "Catapult.png",
+    "$ship_karve": "Karve.png",
+    "$ship_longship": "VikingShip.png",
+    "$ship_longship_ashlands": "VikingShip_Ashlands.png",
+    "$ship_raft": "Raft.png",
+    "$item_hardrock": "Placeable_HardRock.png"
   }
 }

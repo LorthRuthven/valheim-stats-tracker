@@ -1,10 +1,10 @@
-# Valheim Stats Tracker V2.7.2
+# Valheim Stats Tracker V2.7.3
 
 **Windows 10/11 :** dans la V2.5.2 ou une version ultérieure, choisir **Réglages → Mises à jour Windows → Vérifier les mises à jour**. L'application vérifie l'archive officielle GitHub Releases et son SHA-256, installe la nouvelle version dans un dossier séparé après contrôle de la protection antivirus Windows, puis propose de redémarrer.
 
 **Encyclopédie V2.7.0 :** galerie virtuelle en défilement continu sans pages, plein écran par défaut, fiche repliable et tailles Compact/Normal/Grand. Le filtre par provenance, les Activités et les détails cumulés sont conservés.
 
-**Protection des données :** au premier lancement V2.7.2, une nouvelle sauvegarde transactionnelle de l'historique, des archives et des réglages/favoris est créée dans `%LOCALAPPDATA%\\ValheimStatsTracker\\backups\\avant_v2.7.2`. Les sauvegardes de personnages Valheim `.fch` restent en lecture seule. Les anciennes versions ne sont pas supprimées automatiquement.
+**Protection des données :** au premier lancement V2.7.3, une nouvelle sauvegarde transactionnelle de l'historique, des archives et des réglages/favoris est créée dans `%LOCALAPPDATA%\\ValheimStatsTracker\\backups\\avant_v2.7.3`. Les sauvegardes de personnages Valheim `.fch` restent en lecture seule. Les anciennes versions ne sont pas supprimées automatiquement.
 
 # Valheim Stats Tracker V2.1
 
@@ -122,3 +122,7 @@ Cette version ajoute au ZIP Windows 386 images des pièces Valheim issues de la 
 ### V2.7.2 — Grand atlas documentaire Valheim
 
 L'exécutable inclut maintenant 1 530 illustrations authentiques d'objets, créatures et éléments du monde tirées d'une révision épinglée de Jötunn, en plus des 386 images de constructions de la V2.7.1 et des sprites historiques. Le filtre de provenance différencie créatures, monde, inventaire et constructions. **Options images → Copier les images manquantes** permet d'obtenir les identifiants encore non couverts sans partager les sauvegardes `.fch`. Toutes les données existantes sont conservées.
+
+### V2.7.3 — Les derniers prefabs standard sans image
+
+Images vérifiées pour Karve, Drakkar, Drakkar des Ashlands, radeau et matériau rocheux ; photos corrigées pour baignoire et empilement de bois. Un test de couverture sur chaque token de l'Encyclopédie standard empêche désormais toute publication Windows si le catalogue standard conserve des images manquantes. Les éléments uniques à ton personnage sont toujours identifiés dans le rapport « Copier les images manquantes ».

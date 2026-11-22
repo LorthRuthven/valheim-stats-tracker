@@ -1,3 +1,7 @@
+## V2.7.3 — Terminer la couverture du catalogue standard
+- Quatre bateaux, HardRock et deux corrections de photographies mal associées.
+- Tests pixel par pixel de chaque prefab standard de l'Encyclopédie et protections Windows conservées.
+
 ## V2.7.2 — 1 530 visuels authentiques supplémentaires
 - Atlas documentaire Jötunn : objets, créatures et monde, empreintes Git et tests intégralement empaquetés.
 - Audit local copiable des derniers identifiants sans illustration, regroupés par catégorie.

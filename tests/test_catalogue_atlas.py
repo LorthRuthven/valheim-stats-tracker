@@ -13,13 +13,13 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
 class AtlasManifestTests(unittest.TestCase):
-    def test_pinned_source_and_1530_real_image_records(self):
+    def test_pinned_source_and_1535_real_image_records(self):
         atlas = load_manifest()
         self.assertEqual(
             atlas["source_commit"],
             "18a0b624ceaf757abcfeb5cb1386d111a6dec9b2",
         )
-        expected = {"items":1231, "characters":162, "prefabs":134, "world":3}
+        expected = {"items":1231, "characters":162, "prefabs":134, "world":8}
         self.assertEqual({k:len(atlas["images"][k]) for k in KINDS},expected)
         self.assertGreaterEqual(len(atlas["item_token_aliases"]), 895)
         self.assertIn("$enemy_greydwarfbrute",atlas["creature_token_aliases"])
@@ -29,6 +29,61 @@ class AtlasManifestTests(unittest.TestCase):
                          "Skeleton_Hildir.png")
         self.assertEqual(atlas["creature_token_aliases"]["$enemy_goblin_hildir"],
                          "GoblinShaman_Hildir.png")
+
+    def test_identified_ships_and_hardrock_have_exact_images(self):
+        atlas = load_manifest()
+        expected = {
+            "$ship_karve": "Karve.png",
+            "$ship_longship": "VikingShip.png",
+            "$ship_longship_ashlands": "VikingShip_Ashlands.png",
+            "$ship_raft": "Raft.png",
+            "$item_hardrock": "Placeable_HardRock.png",
+        }
+        for token, file in expected.items():
+            with self.subTest(token=token):
+                self.assertEqual(atlas["world_token_aliases"][token], file)
+                self.assertIn(file, atlas["images"]["world"])
+
+    def test_standard_catalogue_has_no_missing_images(self):
+        """No 100% claim before all 1012 standard prefabs render real pixels."""
+        report = ROOT / "assets" / "CATALOGUE_ATLAS_AUDIT.json"
+        if not report.exists():
+            self.skipTest("Pack valide uniquement apres compilation des images Windows")
+        from PySide6.QtWidgets import QApplication
+        from collection_catalog import catalogue
+        from real_assets import collection_icon
+        app = QApplication.instance() or QApplication([])
+        missing = [entry["token"] for entry in catalogue()
+                   if collection_icon(entry["token"]).isNull()]
+        self.assertEqual(missing, [],
+                         f"{len(missing)} identifiants du catalogue de base sans image : "
+                         + ", ".join(missing))
+
+    def test_transparent_images_are_not_marked_as_authentic_icons(self):
+        if not (ROOT / "assets" / "CATALOGUE_ATLAS_AUDIT.json").exists():
+            self.skipTest("Contrôles de pixels sur le paquet Windows construit.")
+        try:
+            from PySide6.QtWidgets import QApplication
+            from real_assets import (
+                bundled_assets, related_icon, character_icon, game_icon, collection_icon,
+            )
+        except ImportError:
+            self.skipTest("Qt non installé dans l'environnement Linux.")
+        app = QApplication.instance() or QApplication([])
+        root = bundled_assets()
+        # Ces sprites Jötunn sont réellement transparents, malgré un PNG valide.
+        for token in (
+            "$enemy_aspect_bonemass", "$enemy_aspect_eikthyr",
+            "$enemy_aspect_gdking", "$enemy_aspect_dragon",
+            "$enemy_aspect_fader", "$enemy_aspect_goblinking",
+            "$enemy_aspect_seekerqueen",
+        ):
+            with self.subTest(effect=token):
+                self.assertTrue(character_icon(token).isNull())
+                self.assertFalse(related_icon(token).isNull())
+                self.assertFalse(collection_icon(token).isNull())
+        self.assertTrue(game_icon("$item_lingonberries").isNull())
+        self.assertFalse(related_icon("$item_lingonberries").isNull())
 
     def test_ambiguous_filenames_get_distinct_real_png_paths(self):
         manifest = load_manifest()
@@ -51,7 +106,7 @@ class AtlasManifestTests(unittest.TestCase):
         except ImportError:
             self.skipTest("Qt et Pillow indisponibles hors Windows.")
         audit=json.loads(report.read_text(encoding="utf-8"))
-        self.assertEqual(audit["total"],1530)
+        self.assertEqual(audit["total"],1535)
         self.assertEqual(audit["errors"],{})
         app=QApplication.instance() or QApplication([])
         manifest=load_manifest()
