@@ -223,45 +223,58 @@ class QtWindowTests(unittest.TestCase):
                 reset_icon_cache()
 
     def test_cached_wiki_fallback_illustrates_catalogue_and_credits_source(self):
-        app=QApplication.instance() or QApplication([])
+        """Le fallback Wiki fonctionne même lorsque tous les prefabs réels ont une image."""
+        app = QApplication.instance() or QApplication([])
         import json
         from pathlib import Path
         from unittest.mock import patch
         from PySide6.QtGui import QColor, QPixmap
         from wiki_images import WikiImageCache
         from real_assets import reset_icon_cache
+        from collection_catalog import catalogue
+
+        # Une entrée de test distincte du jeu évite de rendre ce test obsolète
+        # chaque fois qu'une nouvelle image authentique arrive dans le pack.
+        token = "$item_test_wiki_fallback_987"
+        fake = {
+            "token": token, "name": "Objet de test Wiki",
+            "category": "Divers", "observed": False,
+            "amount": 0.0, "evidence": [], "status": "Statut inconnu",
+        }
         with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp)
-            cache=WikiImageCache(root/'wiki_cache')
-            # Greyling possède désormais un vrai portrait local : le test du
-            # fallback Wiki doit utiliser une entrée réellement sans image native.
-            token='$item_hardrock'
-            path,meta,_=cache._paths(token)
-            path.parent.mkdir(parents=True,exist_ok=True)
-            picture=QPixmap(120,120)
-            picture.fill(QColor(74,138,81))
+            root = Path(tmp)
+            cache = WikiImageCache(root / "wiki_cache")
+            path, meta, _ = cache._paths(token)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            picture = QPixmap(120, 120)
+            picture.fill(QColor(74, 138, 81))
             self.assertTrue(picture.save(str(path)))
             meta.write_text(json.dumps({
-                'token':token,
-                'wiki_title':'Hardrock',
-                'page_url':'https://valheim.wiki/w/Hardrock',
-                'source':'Valheim Wiki'
-            }),encoding='utf-8')
-            with patch('v2_core.app_dir',return_value=root), patch(
-                    'real_assets._wiki_cache',return_value=cache):
-                w=NordicWindow(TrackerStore(tmp))
-                w.collection_page.wiki_cache=cache
-                w.collection_page.search.setText(token)
-                app.processEvents()
-                self.assertEqual(w.collection_page.table.rowCount(),1)
-                item=w.collection_page.table.item(0,0)
-                self.assertFalse(item.icon().isNull())
-                self.assertFalse(w.collection_page.preview.pixmap().isNull())
-                self.assertTrue(w.collection_page.image_link.isEnabled())
-                self.assertIn('Valheim Wiki',w.collection_page.image_source.text())
-                self.assertTrue(hasattr(w,'_open_collection_wiki'))
-                w.close()
-                reset_icon_cache()
+                "token": token, "wiki_title": "Objet de test",
+                "page_url": "https://valheim.wiki/w/Test",
+                "source": "Valheim Wiki",
+            }), encoding="utf-8")
+            with patch("v2_core.app_dir", return_value=root), patch(
+                    "real_assets._wiki_cache", return_value=cache), patch(
+                    "collection_page.catalogue", side_effect=lambda profile=None:
+                    catalogue(profile) + [dict(fake)]):
+                w = NordicWindow(TrackerStore(tmp))
+                try:
+                    book = w.collection_page
+                    book.wiki_cache = cache
+                    book.search.setText(token)
+                    app.processEvents()
+                    self.assertEqual(book.table.rowCount(), 1)
+                    item = book.table.item(0, 0)
+                    self.assertFalse(item.icon().isNull())
+                    self.assertFalse(book.preview.pixmap().isNull())
+                    self.assertTrue(book.image_link.isEnabled())
+                    self.assertIn("Valheim Wiki", book.image_source.text())
+                    self.assertTrue(hasattr(w, "_open_collection_wiki"))
+                finally:
+                    w.close()
+                    w.store.close()
+                    reset_icon_cache()
 
     def test_viking_stats_cards_search_categories_and_favorites(self):
         from valheim_reader import PLAYER_STAT_NAMES, STAT_INDEX
