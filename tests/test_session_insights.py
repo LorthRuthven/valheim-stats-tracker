@@ -29,6 +29,15 @@ class SessionInsightsTests(unittest.TestCase):
         self.assertNotIn("kills", data["gains"])
         self.assertIn("kills", data["resets"])
 
+    def test_intermediate_reset_cannot_generate_false_gain(self):
+        from unittest.mock import patch
+        with patch("session_insights._stat", side_effect=lambda p, key: p[key]):
+            data = session_insights([
+                row(1, 100, 100), row(2, 200, 2), row(3, 300, 120)
+            ])[0]
+        self.assertIn("kills", data["resets"])
+        self.assertNotIn("kills", data["gains"])
+
     def test_no_fake_duration_for_single_snapshot(self):
         self.assertEqual(session_insights([row(1, 100, 1)]), [])
         self.assertEqual(session_insights([]), [])
