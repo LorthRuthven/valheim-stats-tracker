@@ -60,14 +60,17 @@ class AtlasManifestTests(unittest.TestCase):
                          + ", ".join(missing))
 
     def test_transparent_images_are_not_marked_as_authentic_icons(self):
-        from PySide6.QtWidgets import QApplication
-        from real_assets import (
-            bundled_assets, related_icon, character_icon, game_icon, collection_icon,
-        )
+        if not (ROOT / "assets" / "CATALOGUE_ATLAS_AUDIT.json").exists():
+            self.skipTest("Contrôles de pixels sur le paquet Windows construit.")
+        try:
+            from PySide6.QtWidgets import QApplication
+            from real_assets import (
+                bundled_assets, related_icon, character_icon, game_icon, collection_icon,
+            )
+        except ImportError:
+            self.skipTest("Qt non installé dans l'environnement Linux.")
         app = QApplication.instance() or QApplication([])
         root = bundled_assets()
-        if not (root / "CATALOGUE_ATLAS_AUDIT.json").exists():
-            self.skipTest("Contrôles de pixels sur le paquet Windows construit.")
         # Ces sprites Jötunn sont réellement transparents, malgré un PNG valide.
         self.assertTrue(character_icon("$enemy_aspect_dragon").isNull())
         self.assertFalse(related_icon("$enemy_aspect_dragon").isNull())
