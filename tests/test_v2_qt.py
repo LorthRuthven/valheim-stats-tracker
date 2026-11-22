@@ -115,16 +115,20 @@ class QtWindowTests(unittest.TestCase):
                 if (wiki_title(e['token']) is not None
                     and collection.image_state(e['token']) == 'missing')
             ), None)
-            self.assertIsNotNone(eligible)
-            pending = []
-            with patch.object(collection.wiki_cache, 'can_attempt',
-                              side_effect=lambda token: token != eligible), patch.object(
-                         collection, '_start_wiki_download',
-                         side_effect=lambda tokens: pending.extend(tokens)):
+            if eligible is None:
+                # Un catalogue intégralement illustré n'offre plus de cible Wiki.
                 collection._fetch_missing()
-            self.assertTrue(pending)
-            self.assertNotIn(eligible, pending)
-            self.assertLessEqual(len(pending), 20)
+                self.assertFalse(collection._wiki_busy)
+            else:
+                pending = []
+                with patch.object(collection.wiki_cache, 'can_attempt',
+                                  side_effect=lambda token: token != eligible), patch.object(
+                             collection, '_start_wiki_download',
+                             side_effect=lambda tokens: pending.extend(tokens)):
+                    collection._fetch_missing()
+                self.assertTrue(pending)
+                self.assertNotIn(eligible, pending)
+                self.assertLessEqual(len(pending), 500)
             w.show_page(10)
             self.assertEqual(w.stack.currentIndex(),10)
             w.close()

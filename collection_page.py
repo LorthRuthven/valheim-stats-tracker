@@ -44,6 +44,8 @@ class CollectionPage(QWidget):
         self.filtered_entries = []
         self._image_state_cache = {}
         self._wiki_targets = []
+        self._wiki_cancel_requested = False
+        self._wiki_checked = 0
         outer = QVBoxLayout(self)
         outer.setContentsMargins(5, 5, 6, 7)
         outer.setSpacing(7)
@@ -67,9 +69,11 @@ class CollectionPage(QWidget):
         self.coverage_bar.setMinimumHeight(20)
         self.coverage_bar.setFormat("Illustrations : %p %")
         headline.addWidget(self.coverage_bar)
-        self.wiki_button = QPushButton("Compléter 20 images Wiki")
+        self.wiki_button = QPushButton("Chercher les images manquantes (Wiki)")
         self.wiki_button.setObjectName("wikiImportButton")
-        self.wiki_button.setToolTip("Recherche 20 images réelles sur les pages vérifiées du Wiki.")
+        self.wiki_button.setToolTip(
+            "Recherche les visuels exacts encore absents sur le Wiki, en tâche de fond. "
+            "Les objets déjà illustrés ne sont jamais retéléchargés.")
         self.wiki_button.clicked.connect(self._fetch_missing)
         headline.addWidget(self.wiki_button)
         self.game_import_button = QPushButton("Importer depuis Valheim")
@@ -91,6 +95,11 @@ class CollectionPage(QWidget):
         self.wiki_clear = QPushButton("Vider seulement le cache Wiki")
         self.wiki_clear.clicked.connect(self._clear_wiki_cache)
         options.addWidget(self.wiki_clear)
+        self.wiki_cancel_button = QPushButton("Arrêter la recherche Wiki")
+        self.wiki_cancel_button.setObjectName("wikiCancelSearch")
+        self.wiki_cancel_button.clicked.connect(self._cancel_wiki_download)
+        self.wiki_cancel_button.hide()
+        options.addWidget(self.wiki_cancel_button)
         self.copy_missing_button = QPushButton("Copier les images manquantes")
         self.copy_missing_button.setObjectName("collectionCopyMissing")
         self.copy_missing_button.setToolTip("Copie tous les identifiants encore sans vraie illustration pour les compléter précisément.")
@@ -532,7 +541,7 @@ class CollectionPage(QWidget):
         if self._wiki_busy or not self._wiki_active:
             return
         token=self._selected_token()
-        if not token or wiki_title(token) is None or not game_icon(token).isNull():
+        if not token or wiki_title(token) is None or self.image_state(token) != "missing":
             return
         if self.wiki_cache.cached_image(token) is not None:
             self.show_selected()
@@ -566,8 +575,7 @@ class CollectionPage(QWidget):
         from wiki_images import WIKI_NAMES
         targets = [
             entry for entry in self.filtered_entries
-            if (game_icon(entry["token"]).isNull()
-                and self.wiki_cache.cached_image(entry["token"]) is None
+            if (self.image_state(entry["token"]) == "missing"
                 and wiki_title(entry["token"]) is not None
                 and self.wiki_cache.can_attempt(entry["token"]))
         ]
@@ -583,26 +591,36 @@ class CollectionPage(QWidget):
                 "Les échecs sont réessayables après six heures."
             )
             return
-        self._start_wiki_download([entry["token"] for entry in targets[:20]])
+        # Un clic peut compléter tous les prefabs connus par le Wiki.
+        # Le plafond évite une activité réseau non bornée sur un très gros FCH.
+        self._start_wiki_download([entry["token"] for entry in targets[:500]])
 
     def _start_wiki_download(self,tokens):
         if self._wiki_busy or not tokens:
             return
         self._wiki_busy=True
+        self._wiki_cancel_requested=False
+        self._wiki_checked=0
         self._wiki_targets=list(tokens)
         self.wiki_timer.stop()
         self.wiki_button.setEnabled(False)
         self.wiki_clear.setEnabled(False)
+        self.wiki_cancel_button.show()
         self.image_options_button.setChecked(True)
         self.wiki_status.setText(
             f"Valheim Wiki : recherche de {len(tokens)} image(s) manquante(s)…"
         )
         def worker():
             found=0
+            checked=0
             for pos,token in enumerate(tokens):
+                if self._wiki_cancel_requested:
+                    break
                 try:
                     if self.wiki_cache.fetch(token) is not None:
                         found+=1
+                finally:
+                    checked+=1
                 except Exception:
                     # La lecture du wiki est facultative et ne bloque jamais la progression.
                     pass
@@ -613,12 +631,23 @@ class CollectionPage(QWidget):
                 if pos+1<len(tokens):
                     time.sleep(0.6)
             try:
-                self.wiki_batch_done.emit(found,len(tokens))
+                self.wiki_batch_done.emit(found,checked)
             except RuntimeError:
                 pass
         threading.Thread(target=worker,daemon=True,name="ValheimWikiCache").start()
 
+    def _cancel_wiki_download(self):
+        """Interrompt la liste après la requête en cours, sans effacer le cache."""
+        if self._wiki_busy:
+            self._wiki_cancel_requested=True
+            self.wiki_cancel_button.setEnabled(False)
+            self.wiki_status.setText("Arrêt demandé après la recherche en cours…")
+
     def _wiki_received(self,token):
+        self._wiki_checked += 1
+        self.wiki_status.setText(
+            f"Valheim Wiki : {self._wiki_checked}/{len(self._wiki_targets)} "
+            "identifiant(s) vérifié(s). Les images trouvées apparaissent immédiatement.")
         # Une image ajoutée doit apparaître dans la ligne et la fiche sans recharger tout.
         self.invalidate_image_cache(token)
         reset_icon_cache()
@@ -637,6 +666,8 @@ class CollectionPage(QWidget):
         self._wiki_busy=False
         self.wiki_button.setEnabled(True)
         self.wiki_clear.setEnabled(True)
+        self.wiki_cancel_button.hide()
+        self.wiki_cancel_button.setEnabled(True)
         self.invalidate_image_cache()
         problems = [
             self.wiki_cache.last_error(token)
@@ -646,7 +677,8 @@ class CollectionPage(QWidget):
         example = ("\nExemple d'échec : " + problems[0]
                    if problems and found < total else "")
         self.wiki_status.setText(
-            f"Valheim Wiki : {found} nouvelle(s) image(s) sur {total} tentative(s). "
+            ("Recherche interrompue. " if self._wiki_cancel_requested else "")
+            + f"Valheim Wiki : {found} nouvelle(s) image(s) sur {total} tentative(s). "
             f"{len(problems)} échec(s) diagnostiqué(s). "
             f"Cache Wiki : {self.wiki_cache.count()} image(s)."
             + example
