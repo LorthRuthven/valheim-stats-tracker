@@ -1,0 +1,21 @@
+name: Vérifications des propositions de modification
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Tkinter pour les tests historiques
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y python3-tk
+      - name: Contrôler la syntaxe des modules
+        run: |
+          python3 -m py_compile session_insights.py restored_pages.py v2_core.py viking_stats.py
+      - name: Lancer les tests du moteur et de non-régression
+        run: |
+          python3 -m unittest discover -s tests -v
