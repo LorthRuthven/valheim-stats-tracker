@@ -619,11 +619,10 @@ class CollectionPage(QWidget):
                 try:
                     if self.wiki_cache.fetch(token) is not None:
                         found+=1
-                finally:
-                    checked+=1
                 except Exception:
                     # La lecture du wiki est facultative et ne bloque jamais la progression.
                     pass
+                checked+=1
                 try:
                     self.wiki_item_done.emit(token)
                 except RuntimeError:
