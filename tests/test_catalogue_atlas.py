@@ -72,9 +72,16 @@ class AtlasManifestTests(unittest.TestCase):
         app = QApplication.instance() or QApplication([])
         root = bundled_assets()
         # Ces sprites Jötunn sont réellement transparents, malgré un PNG valide.
-        self.assertTrue(character_icon("$enemy_aspect_dragon").isNull())
-        self.assertFalse(related_icon("$enemy_aspect_dragon").isNull())
-        self.assertFalse(collection_icon("$enemy_aspect_dragon").isNull())
+        for token in (
+            "$enemy_aspect_bonemass", "$enemy_aspect_eikthyr",
+            "$enemy_aspect_gdking", "$enemy_aspect_dragon",
+            "$enemy_aspect_fader", "$enemy_aspect_goblinking",
+            "$enemy_aspect_seekerqueen",
+        ):
+            with self.subTest(effect=token):
+                self.assertTrue(character_icon(token).isNull())
+                self.assertFalse(related_icon(token).isNull())
+                self.assertFalse(collection_icon(token).isNull())
         self.assertTrue(game_icon("$item_lingonberries").isNull())
         self.assertFalse(related_icon("$item_lingonberries").isNull())
 
