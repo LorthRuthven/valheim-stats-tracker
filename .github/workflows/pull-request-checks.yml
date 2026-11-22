@@ -1,0 +1,53 @@
+name: Vérifications des propositions de modification
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Tkinter pour les tests historiques
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y python3-tk
+      - name: Contrôler la syntaxe des modules
+        run: |
+          python3 -m py_compile session_insights.py restored_pages.py v2_core.py viking_stats.py
+      - name: Lancer les tests du moteur et de non-régression
+        run: |
+          python3 -m unittest discover -s tests -v
+
+  windows-smoke:
+    runs-on: windows-latest
+    needs: tests
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les dépendances Qt
+        shell: pwsh
+        run: |
+          python -m pip install -r requirements-windows.txt
+      - name: Préparer les images authentiques requises par les tests Qt
+        shell: pwsh
+        run: |
+          python -m tools.fetch_game_assets
+          if ($LASTEXITCODE -ne 0) { throw 'Téléchargement des images échoué' }
+          python -m tools.bundle_inventory_sprites
+          if ($LASTEXITCODE -ne 0) { throw 'Images inventaire non préparées' }
+          python -m tools.bundle_piece_sprites
+          if ($LASTEXITCODE -ne 0) { throw 'Images de constructions non préparées' }
+          python -m tools.bundle_catalogue_atlas
+          if ($LASTEXITCODE -ne 0) { throw 'Atlas non préparé' }
+      - name: Vérifier l'interface des sessions
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -p test_v2_qt.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Qt UI tests failed' }

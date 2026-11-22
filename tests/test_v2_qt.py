@@ -52,6 +52,17 @@ class QtWindowTests(unittest.TestCase):
             self.assertIn('VÉRITABLES ICÔNES VALHEIM',labels)
             w.close()
 
+    def test_session_timeline_and_records_are_present(self):
+        app=QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            self.assertTrue(hasattr(w, "history_session_table"))
+            self.assertEqual(w.history_session_table.columnCount(), 7)
+            self.assertTrue(hasattr(w, "history_record_summary"))
+            self.assertIn("sauvegardes", w.history_record_summary.text())
+            w.close()
+            w.store.db.close()
+
     def test_all_restored_pages_and_windows_updater(self):
         app=QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as tmp:
