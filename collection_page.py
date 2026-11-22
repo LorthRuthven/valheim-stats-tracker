@@ -18,7 +18,7 @@ import time
 from collection_catalog import CATEGORIES, catalogue
 from collection_gallery import CollectionGallery, thematic_material
 from desktop_v2 import label, panel
-from real_assets import game_icon, piece_icon, character_icon, world_icon, collection_icon, creature_trophy_icon, reset_icon_cache
+from real_assets import game_icon, piece_icon, character_icon, world_icon, related_icon, collection_icon, creature_trophy_icon, reset_icon_cache
 from wiki_images import WikiImageCache, wiki_title
 
 MAX_VISIBLE = 350
@@ -140,6 +140,7 @@ class CollectionPage(QWidget):
         self.image_filter.addItem("Images du monde", "world")
         self.image_filter.addItem("Images du Wiki", "wiki")
         self.image_filter.addItem("Trophées associés", "trophy")
+        self.image_filter.addItem("Visuels liés (non exacts)", "related")
         self.image_filter.currentIndexChanged.connect(self.render)
         filters.addWidget(self.image_filter, 2)
         outer.addLayout(filters)
@@ -326,6 +327,8 @@ class CollectionPage(QWidget):
             state = "wiki"
         elif not creature_trophy_icon(token).isNull():
             state = "trophy"
+        elif not related_icon(token).isNull():
+            state = "related"
         else:
             state = "missing"
         self._image_state_cache[token] = state
@@ -379,7 +382,7 @@ class CollectionPage(QWidget):
                 picture_filter == "all"
                 or (picture_filter == "available" and self.image_state(e["token"]) != "missing")
                 or (picture_filter == "missing" and self.image_state(e["token"]) == "missing")
-                or (picture_filter in ("game", "piece", "character", "world", "wiki", "trophy")
+                or (picture_filter in ("game", "piece", "character", "world", "wiki", "trophy", "related")
                     and self.image_state(e["token"]) == picture_filter)
             )
         ]
@@ -388,14 +391,14 @@ class CollectionPage(QWidget):
         self.visible_entries = shown
         self.gallery.set_entries(filtered, selected)
         observed = sum(1 for e in self.entries if e["observed"])
-        stats = {"game": 0, "piece": 0, "character": 0, "world": 0, "wiki": 0, "trophy": 0, "missing": 0}
+        stats = {"game": 0, "piece": 0, "character": 0, "world": 0, "wiki": 0, "trophy": 0, "related": 0, "missing": 0}
         for entry in self.entries:
             stats[self.image_state(entry["token"])] += 1
         illustrated=len(self.entries)-stats["missing"]
         ratio=1000*illustrated/len(self.entries) if self.entries else 0
         self.coverage_bar.setValue(round(ratio))
         self.coverage_bar.setToolTip(
-            f"{illustrated} illustrations du jeu, du Wiki ou trophées associés "
+            f"{illustrated} illustrations réelles, dont {stats['related']} visuels associés non exacts, "
             f"sur {len(self.entries)} entrées."
         )
         self.summary.setText(
@@ -405,7 +408,8 @@ class CollectionPage(QWidget):
             f"{stats['piece']} images de constructions • "
             f"{stats['character']} créatures • {stats['world']} monde • "
             f"{stats['wiki']} images Wiki • "
-            f"{stats['trophy']} trophées associés • {stats['missing']} sans image"
+            f"{stats['trophy']} trophées associés • {stats['related']} visuels liés • "
+            f"{stats['missing']} sans image"
         )
         self.table.blockSignals(True)
         self.table.setUpdatesEnabled(False)
@@ -485,7 +489,13 @@ class CollectionPage(QWidget):
             )
             self.image_link.setEnabled(True)
         else:
-            if self.image_state(entry["token"]) == "character":
+            if self.image_state(entry["token"]) == "related":
+                description = (
+                    "Véritable image Valheim de la créature ou ressource associée. "
+                    "Ce n'est PAS l'image exacte de ce prefab technique. "
+                    "Source : documentation Jötunn / Iron Gate."
+                )
+            elif self.image_state(entry["token"]) == "character":
                 description = ("Image de la créature Valheim correspondant à ce prefab, "
                                "issue de la documentation Jötunn. "
                                "© Iron Gate AB / Coffee Stain Publishing.")

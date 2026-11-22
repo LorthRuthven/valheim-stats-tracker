@@ -59,6 +59,22 @@ class AtlasManifestTests(unittest.TestCase):
                          f"{len(missing)} identifiants du catalogue de base sans image : "
                          + ", ".join(missing))
 
+    def test_transparent_images_are_not_marked_as_authentic_icons(self):
+        from PySide6.QtWidgets import QApplication
+        from real_assets import (
+            bundled_assets, related_icon, character_icon, game_icon, collection_icon,
+        )
+        app = QApplication.instance() or QApplication([])
+        root = bundled_assets()
+        if not (root / "CATALOGUE_ATLAS_AUDIT.json").exists():
+            self.skipTest("Contrôles de pixels sur le paquet Windows construit.")
+        # Ces sprites Jötunn sont réellement transparents, malgré un PNG valide.
+        self.assertTrue(character_icon("$enemy_aspect_dragon").isNull())
+        self.assertFalse(related_icon("$enemy_aspect_dragon").isNull())
+        self.assertFalse(collection_icon("$enemy_aspect_dragon").isNull())
+        self.assertTrue(game_icon("$item_lingonberries").isNull())
+        self.assertFalse(related_icon("$item_lingonberries").isNull())
+
     def test_ambiguous_filenames_get_distinct_real_png_paths(self):
         manifest = load_manifest()
         a=manifest["images"]["items"]["Hair32.png"]

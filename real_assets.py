@@ -34,6 +34,22 @@ def manifest():
 def _qicon(path):
     try:
         if path.is_file() and path.suffix.lower() in ('.png','.jpg','.jpeg','.webp') and path.stat().st_size < 2_000_000:
+            # Certaines images PNG du référentiel Jötunn ne contiennent
+            # aucun pixel visible (textures d'effets, modèles non rendus).
+            # Ne jamais compter un carré transparent comme une illustration.
+            if any(part.startswith("jotunn_") for part in path.parts):
+                try:
+                    from PIL import Image
+                    with Image.open(path) as source:
+                        if "A" in source.getbands():
+                            alpha=source.getchannel("A")
+                            visible=sum(alpha.histogram()[1:])
+                            if visible == 0:
+                                return QIcon()
+                            if "jotunn_characters" in path.parts and visible < 100:
+                                return QIcon()
+                except (OSError, ValueError):
+                    return QIcon()
             pix=QPixmap(str(path))
             if not pix.isNull():
                 return QIcon(pix)
@@ -165,6 +181,29 @@ def world_icon(prefab):
     return QIcon()
 
 
+# Visuels réellement issus de Valheim mais représentant le boss/la plante
+# d'origine, pas l'effet lui-même. Les fiches signalent leur statut associé.
+RELATED_VALHEIM_IMAGES = {
+    "$enemy_aspect_bonemass": ("jotunn_characters", "Bonemass"),
+    "$enemy_aspect_eikthyr": ("jotunn_characters", "Eikthyr"),
+    "$enemy_aspect_gdking": ("jotunn_characters", "gd_king"),
+    "$enemy_aspect_dragon": ("jotunn_characters", "Dragon"),
+    "$enemy_aspect_tentaroot": ("jotunn_characters", "TentaRoot"),
+    "$item_lingonberries": ("jotunn_prefabs", "LingonberryBush"),
+    "$enemy_ghost_old": ("jotunn_characters", "Ghost"),
+}
+
+
+def related_icon(prefab):
+    """Véritable visuel d'un élément ASSOCIÉ, jamais image du prefab exact."""
+    if not isinstance(prefab, str):
+        return QIcon()
+    match=RELATED_VALHEIM_IMAGES.get(prefab.casefold())
+    if not match:
+        return QIcon()
+    return _find_asset(*match)
+
+
 def creature_trophy_icon(prefab):
     """Trophée exact du monstre (jamais présenté comme une photo de lui)."""
     if not isinstance(prefab, str):
@@ -195,7 +234,8 @@ def collection_icon(prefab):
         image_icon = _qicon(image)
         if not image_icon.isNull():
             return image_icon
-    return creature_trophy_icon(prefab)
+    trophy=creature_trophy_icon(prefab)
+    return trophy if not trophy.isNull() else related_icon(prefab)
 
 
 @lru_cache(maxsize=1)
