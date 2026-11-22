@@ -126,3 +126,7 @@ L'exécutable inclut maintenant 1 530 illustrations authentiques d'objets, créa
 ### V2.7.3 — Les derniers prefabs standard sans image
 
 Images vérifiées pour Karve, Drakkar, Drakkar des Ashlands, radeau et matériau rocheux ; photos corrigées pour baignoire et empilement de bois. Un test de couverture sur chaque token de l'Encyclopédie standard empêche désormais toute publication Windows si le catalogue standard conserve des images manquantes. Les éléments uniques à ton personnage sont toujours identifiés dans le rapport « Copier les images manquantes ».
+
+
+## Chronologie des sessions — branche de développement
+L'écran Historique présente jusqu'à douze sessions estimées, reconstituées depuis l'historique SQLite du Viking. Chaque session exige au moins deux sauvegardes séparées d'au plus 90 minutes. L'intervalle affiché est le temps écoulé entre les sauvegardes, **pas** une durée jouée certifiée. Les variations négatives des compteurs sont signalées et exclues des gains. L'affichage conserve les graphiques, exports CSV, succès et données locales existants. Fonction en préparation, non encore publiée dans une release Windows.
