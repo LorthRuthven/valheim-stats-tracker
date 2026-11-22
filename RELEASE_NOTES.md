@@ -1,3 +1,15 @@
+# Valheim Stats Tracker V2.8.0 — Historique et records de sessions
+
+- Nouvelle chronologie des 12 dernières sessions estimées dans Historique, en complément des courbes et des exports CSV.
+- Meilleurs gains observés par session : éliminations, constructions, fabrications et décès.
+- Uniquement les sessions avec au moins deux relevés espacés de 90 minutes au maximum ; l'intervalle entre sauvegardes n'est pas du temps de jeu certifié.
+- Les réinitialisations de compteurs sont vérifiées entre **tous les relevés successifs** d'une session, sans faux gains.
+- Tests du moteur et tests visuels Qt Windows avant publication.
+- Aucune migration destructive ; archives, favoris, succès, SQLite, données locales et fichier .fch en lecture seule conservés.
+- Ni comparaison avancée des personnages ni suivi manuel des fabrications.
+
+---
+
 # Valheim Stats Tracker V2.7.3 — Finitions de couverture de l'Encyclopédie
 
 - Images réelles ajoutées pour les quatre bateaux du catalogue (Karve, drakkar, drakkar des Ashlands, radeau), ainsi que la roche spéciale HardRock.
