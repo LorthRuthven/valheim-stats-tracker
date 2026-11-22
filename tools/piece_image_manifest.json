@@ -241,9 +241,9 @@
       "bytes": 13035
     },
     "$piece_bathtub": {
-      "file": "Raft.png",
-      "git_blob_sha": "e9b2568718807b2168362e4e3ab7c1c899a7e510",
-      "bytes": 16987
+      "file": "piece_bathtub.png",
+      "git_blob_sha": "2963769eaa427e5b4879bed6aff300adab8b2ede",
+      "bytes": 11403
     },
     "$piece_bed": {
       "file": "bed.png",
@@ -1806,9 +1806,9 @@
       "bytes": 13163
     },
     "$piece_woodstack": {
-      "file": "Placeable_HardRock.png",
-      "git_blob_sha": "81a51fdd12ad2509fbc55fd5fc5f7c384c65f881",
-      "bytes": 7850
+      "file": "wood_stack.png",
+      "git_blob_sha": "dcb0f3df50fc13c0004752da9feecb7a1583c7ac",
+      "bytes": 14554
     },
     "$piece_woodstair": {
       "file": "wood_stair.png",
