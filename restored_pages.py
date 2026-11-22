@@ -22,7 +22,7 @@ from valheim_reader import (
     localized_name, prefab_label,
 )
 from v2_core import progress_ranking, pending_actions, session_report
-from session_insights import session_insights, readable_session
+from session_insights import session_insights, session_records, readable_session
 from real_assets import achievement_icon, game_icon, collection_icon
 from game_visuals import boss_game_icon, skill_game_icon, THEMATIC_BOSS_ICONS
 
@@ -652,6 +652,11 @@ class RestoredPagesMixin:
             "Intervalles estimés entre sauvegardes rapprochées ; aucune durée de jeu inventée.")
         self.history_session_count = label("Aucun historique analysable.", muted=True, wrap=True)
         session_layout.addWidget(self.history_session_count)
+        self.history_record_summary = label(
+            "Les records de sessions apparaîtront après plusieurs sauvegardes.",
+            muted=True, wrap=True)
+        self.history_record_summary.setObjectName("historySessionRecords")
+        session_layout.addWidget(self.history_record_summary)
         self.history_session_table = table([
             "Période", "Relevés", "Intervalle", "Créatures", "Constructions",
             "Fabrications", "Décès"
@@ -761,6 +766,14 @@ class RestoredPagesMixin:
             if sessions else
             "Pas de session avec au moins deux sauvegardes rapprochées. "
             "Aucune progression supplémentaire n'est supposée."
+        )
+        records = session_records(sessions)
+        self.history_record_summary.setText(
+            "  •  ".join(
+                f'{r["title"]} : +{txt(r["value"])} ({readable_session(r)})'
+                for r in records
+            ) if records else
+            "Aucun record disponible : deux sauvegardes distinctes sont nécessaires."
         )
         names = ("kills", "builds", "crafts", "deaths")
         rows = []
