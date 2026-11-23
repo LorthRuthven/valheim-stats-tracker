@@ -293,6 +293,9 @@ class TrackerStore:
         self.profile = None
         self.sha = None
         self.stamp = None
+        self._rows_cache = {}
+        self._rows_cache_hits = 0
+        self._rows_cache_misses = 0
 
     def choose(self, filename: str):
         target = Path(filename).expanduser().resolve()
@@ -302,6 +305,7 @@ class TrackerStore:
         self.sha = None
         self.stamp = None
         self.profile = None
+        self._rows_cache.clear()
         write_config_save(str(target), self.directory)
 
     def refresh(self, force=False):
@@ -334,6 +338,7 @@ class TrackerStore:
             except (OSError, SaveError, IndexError, ValueError):
                 pass
         save_snapshot(self.db, profile, digest, target.name, stat_before.st_mtime)
+        self._rows_cache.clear()
         self.profile = profile
         self.sha = digest
         self.stamp = stamp
@@ -341,7 +346,35 @@ class TrackerStore:
                 datetime.fromtimestamp(after.st_mtime).strftime("%d/%m/%Y %H:%M:%S")}
 
     def rows(self, limit=300):
-        return sample_rows(self.db, self.profile["name"], limit) if self.profile else []
+        if not self.profile:
+            return []
+        limit = max(1, min(5000, int(limit)))
+        # Requête SQL très légère : détecte aussi les ajouts extérieurs
+        # avant de réutiliser les profils déjà décompressés.
+        char = self.profile["name"]
+        version = self.db.execute(
+            "SELECT COUNT(*), MAX(id) FROM snapshots WHERE character=?", (char,)
+        ).fetchone()
+        key = (char, limit, version)
+        if key in self._rows_cache:
+            self._rows_cache_hits += 1
+            return list(self._rows_cache[key])
+        self._rows_cache_misses += 1
+        found = sample_rows(self.db, char, limit)
+        if len(self._rows_cache) >= 8:
+            self._rows_cache.clear()
+        self._rows_cache[key] = tuple(found)
+        return list(found)
+
+    def diagnostics(self):
+        """Statistiques techniques locales, sans données personnelles ni réseau."""
+        return {
+            "cached_queries": len(self._rows_cache),
+            "cache_hits": self._rows_cache_hits,
+            "cache_misses": self._rows_cache_misses,
+            "profile_loaded": self.profile is not None,
+            "sample_count": self.db.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0],
+        }
 
     def favorites(self):
         return load_favorites(self.profile["name"], self.directory) if self.profile else set()
