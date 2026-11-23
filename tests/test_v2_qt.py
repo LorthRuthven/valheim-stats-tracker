@@ -52,6 +52,34 @@ class QtWindowTests(unittest.TestCase):
             self.assertIn('VÉRITABLES ICÔNES VALHEIM',labels)
             w.close()
 
+    def test_v29_grouped_navigation_and_dashboard_shortcuts(self):
+        app=QApplication.instance() or QApplication([])
+        from PySide6.QtWidgets import QLabel
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            self.assertEqual(w.stack.count(), 12)
+            self.assertEqual([name for name, _ in w.nav_groups],
+                             ['AVENTURE', 'CHRONIQUES', 'STATISTIQUES',
+                              'DÉCOUVERTE', 'APPLICATION'])
+            visible_indices = [index for _, indices in w.nav_groups
+                               for index in indices]
+            self.assertEqual(set(visible_indices), set(range(12)) - {9})
+            self.assertEqual(len(visible_indices), len(set(visible_indices)))
+            self.assertTrue(w.nav_buttons[9].isHidden())
+            self.assertEqual(set(w.dashboard_shortcuts), {5, 3, 11, 10})
+            self.assertEqual(w.dash_chart.minimumHeight(), 290)
+            self.assertIn('AVENTURE', w.breadcrumb.text())
+            for index in (5, 3, 11, 10):
+                w.dashboard_shortcuts[index].click()
+                self.assertEqual(w.stack.currentIndex(), index)
+                self.assertTrue(w.nav_buttons[index].isChecked())
+            self.assertIn('DÉCOUVERTE', w.breadcrumb.text())
+            w.nav_buttons[4].click()
+            self.assertEqual(w.stack.currentIndex(), 4)
+            self.assertIn('APPLICATION', w.breadcrumb.text())
+            w.close()
+            w.store.db.close()
+
     def test_dashboard_local_clock_and_readable_priority_table(self):
         app=QApplication.instance() or QApplication([])
         from PySide6.QtWidgets import QHeaderView
