@@ -800,13 +800,8 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.viking_stats_page.show_total()
 
     def resizeEvent(self,event):
+        # La QListView virtualisée adapte les colonnes automatiquement.
         super().resizeEvent(event)
-        if not hasattr(self,"activity_grid") or not hasattr(self,"activity_tiles"):
-            return
-        available=max(0,self.width()-300)
-        columns=4 if available>=1220 else 3 if available>=850 else 2
-        if self.activity_columns != columns:
-            self._render_activity_gallery()
 
     def show_page(self,index):
         super().show_page(index)
@@ -824,6 +819,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         if index == 9:
             # La navigation visible reste sur Réglages pour le diagnostic.
             self.nav_buttons[4].setChecked(True)
+        self._refresh_visible_page(index)
         if index == 10 and hasattr(self, 'collection_page'):
             self.collection_page.activate()
         if not self.motion:return
@@ -834,20 +830,47 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         anim.setStartValue(.17);anim.setEndValue(1.);anim.setDuration(260)
         anim.setEasingCurve(QEasingCurve.Type.OutCubic)
         self.fade=anim;anim.start()
-    def populate(self):
-        super().populate()
-        self._refresh_restored_pages()
-        profile=self.store.profile
-        self.collection_page.refresh(profile)
-        rows=self.store.rows(limit=2) if profile else []
+    def _refresh_visible_page(self, index):
+        """Les pages secondaires lourdes sont recalculées à leur ouverture."""
+        pending=getattr(self, "_pending_page_refresh",set())
+        if not self.store.profile or index not in pending:
+            return
+        tasks={
+            0: (self._refresh_dashboard_extra,),
+            2: (self._refresh_combat_detail,),
+            3: (self._draw_history_restored,self._refresh_session_insights),
+            5: (self._refresh_progress_center,),
+            6: (self._refresh_boss_detail,),
+            7: (self._refresh_activity,),
+            8: (self._refresh_skills,),
+            9: (self._refresh_raw,),
+            10: (lambda:self.collection_page.refresh(self.store.profile),),
+            11: (self._refresh_viking_stats,),
+        }
+        for callback in tasks.get(index,()):
+            callback()
+        pending.discard(index)
+
+    def _refresh_viking_stats(self):
+        rows=self.store.rows(limit=2) if self.store.profile else []
         previous=rows[-2][3] if len(rows)>=2 else None
-        self.viking_stats_page.refresh(profile,previous)
+        self.viking_stats_page.refresh(self.store.profile,previous)
+
+    def populate(self):
+        # Le tableau de bord est mis à jour immédiatement. Les autres pages
+        # restent marquées comme à actualiser et sont calculées à l'ouverture.
+        # L'ancien lecteur et ses sauvegardes demeurent inchangés.
+        self._pending_page_refresh={0,2,3,5,6,7,8,9,10,11}
+        super().populate()
+        self._refresh_visible_page(getattr(self,"current_page",0))
+        profile=self.store.profile
         if profile:
             self.hero.title.setText('LA SAGA DE '+profile['name'].upper())
             active=[a for a in self.results if a.get('origin')=='Jeu + Steam']
             finished=sum(bool(a.get('complete')) for a in active)
             self.hero.subtitle.setText(f'{finished} objectifs estimés atteints sur {len(active)} • Tes prochaines conquêtes')
             self.hero.ring.move_to(100*finished/max(1,len(active)),self.motion)
+
     def draw_dashboard(self):
         super().draw_dashboard()
         self._progress_anims=[]
