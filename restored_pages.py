@@ -24,6 +24,7 @@ from valheim_reader import (
 )
 from v2_core import progress_ranking, pending_actions, session_report
 from session_insights import session_insights, session_records, readable_session
+from history_analysis import PERIODS, filter_sessions, session_summary
 from real_assets import achievement_icon, game_icon, collection_icon
 from activity_gallery import ActivityGallery
 from game_visuals import boss_game_icon, skill_game_icon, THEMATIC_BOSS_ICONS
@@ -586,6 +587,16 @@ class RestoredPagesMixin:
             muted=True, wrap=True)
         self.history_record_summary.setObjectName("historySessionRecords")
         session_layout.addWidget(self.history_record_summary)
+        period_row=QHBoxLayout()
+        period_row.addWidget(label("Période des sessions :",muted=True))
+        self.history_session_period=QComboBox()
+        self.history_session_period.setObjectName("historySessionPeriod")
+        for title,seconds in PERIODS:
+            self.history_session_period.addItem(title,seconds)
+        self.history_session_period.currentIndexChanged.connect(self._render_session_period)
+        period_row.addWidget(self.history_session_period)
+        period_row.addStretch(1)
+        session_layout.addLayout(period_row)
         self.history_session_table = table([
             "Période", "Relevés", "Intervalle", "Créatures", "Constructions",
             "Fabrications", "Décès"
@@ -593,7 +604,40 @@ class RestoredPagesMixin:
         self.history_session_table.setObjectName("historySessionTimeline")
         self.history_session_table.setMinimumHeight(240)
         session_layout.addWidget(self.history_session_table)
+        self.history_session_table.setSelectionBehavior(
+            QTableWidget.SelectionBehavior.SelectRows)
+        self.history_session_table.itemSelectionChanged.connect(self._show_selected_session)
+        self.history_session_detail=label(
+            "Choisis une session pour voir le détail et les écarts avec la précédente.",
+            muted=True,wrap=True)
+        self.history_session_detail.setObjectName("historySessionDetail")
+        session_layout.addWidget(self.history_session_detail)
         interior.layout().addWidget(session_panel)
+        self.history_sessions_cache=[]
+        self.history_visible_sessions=[]
+        comparison,comparison_layout=panel(
+            "COMPARAISON DES TENDANCES",
+            "Deux statistiques sur la même période, avec des échelles distinctes.")
+        choices=QHBoxLayout()
+        choices.addWidget(label("Comparer à :",muted=True))
+        self.history_compare_metric=QComboBox()
+        self.history_compare_metric.setObjectName("historyCompareMetric")
+        for i in range(self.history_metric.count()):
+            self.history_compare_metric.addItem(
+                self.history_metric.itemText(i),self.history_metric.itemData(i))
+        idx=self.history_compare_metric.findData("crafted")
+        if idx>=0:
+            self.history_compare_metric.setCurrentIndex(idx)
+        self.history_compare_metric.currentIndexChanged.connect(self._draw_history_restored)
+        choices.addWidget(self.history_compare_metric)
+        choices.addStretch(1)
+        comparison_layout.addLayout(choices)
+        from desktop_v2 import TrendChart
+        self.history_compare_chart=TrendChart()
+        self.history_compare_chart.setObjectName("historyCompareChart")
+        self.history_compare_chart.setMinimumHeight(230)
+        comparison_layout.addWidget(self.history_compare_chart)
+        interior.layout().addWidget(comparison)
         self.history_metric.currentIndexChanged.connect(self._draw_history_restored)
         self.history_period.currentIndexChanged.connect(self._draw_history_restored)
 
