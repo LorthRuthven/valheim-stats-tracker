@@ -6,6 +6,7 @@ Le fonctionnement des succès est fourni par valheim_reader ; pas de fausses val
 from __future__ import annotations
 
 import csv
+import unicodedata
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
@@ -56,6 +57,12 @@ def group_control():
     for name, key in GROUP_CHOICES:
         widget.addItem(name, key)
     return widget
+
+def search_normalize(text):
+    """Recherche tolérante aux accents, à la casse et aux espaces."""
+    raw = unicodedata.normalize("NFKD", str(text)).casefold()
+    return "".join(c for c in raw if not unicodedata.combining(c))
+
 
 def activity_category(key):
     token = key.casefold()
@@ -345,9 +352,19 @@ class RestoredPagesMixin:
         self.activity_sort.addItem("Les plus nombreux","most")
         self.activity_sort.addItem("Ordre alphabétique","az")
         self.activity_sort.addItem("Les moins nombreux","least")
+        self.activity_min_count=QComboBox()
+        self.activity_min_count.setObjectName("activityMinimumCount")
+        for title,threshold in (
+            ("Toutes quantités",0),("10 et plus",10),
+            ("100 et plus",100),("1 000 et plus",1000)
+        ):
+            self.activity_min_count.addItem(title,threshold)
+        self.activity_search.setPlaceholderText(
+            "Recherche multi-mots, noms FR, familles, identifiants (accents facultatifs)…")
         filters.addWidget(self.activity_search,5)
         filters.addWidget(self.activity_family,3)
         filters.addWidget(self.activity_sort,3)
+        filters.addWidget(self.activity_min_count,2)
         body.addLayout(filters)
         self.activity_summary=label("Charge un Viking pour consulter ses activités.",muted=True,wrap=True)
         body.addWidget(self.activity_summary)
@@ -449,7 +466,7 @@ class RestoredPagesMixin:
         page.addStretch(1)
 
         for widget in (self.activity_choice,self.activity_difficulty,
-                       self.activity_family,self.activity_sort):
+                       self.activity_family,self.activity_sort,self.activity_min_count):
             widget.currentIndexChanged.connect(self._refresh_activity)
         self.activity_search.textChanged.connect(self._refresh_activity)
 
@@ -910,7 +927,8 @@ class RestoredPagesMixin:
         group=self.activity_difficulty.currentData()
         action=self.activity_choice.currentData()
         data=self.store.profile.get("groups",{}).get(group,{}).get(action,{})
-        needle=self.activity_search.text().strip().casefold()
+        needles=search_normalize(self.activity_search.text()).strip().split()
+        minimum=self.activity_min_count.currentData() or 0
         group_filter=self.activity_family.currentData()
         rows=[]
         families={}
@@ -922,9 +940,12 @@ class RestoredPagesMixin:
             if not 0<number<float("inf"):
                 continue
             display=_display_token(key)
-            if needle not in display.casefold() and needle not in key.casefold():
-                continue
             family=activity_category(key)
+            searchable=search_normalize(" ".join((display,key,family)))
+            if any(word not in searchable for word in needles):
+                continue
+            if number < minimum:
+                continue
             if group_filter and family!=group_filter:
                 continue
             rows.append((family,display,number,key))
