@@ -78,6 +78,12 @@ QStackedWidget,QScrollArea{{background:transparent;border:none;}}
 QScrollArea>QWidget>QWidget{{background:transparent;}}
 QFrame#sidebar{{background:{SIDEBAR};border-right:1px solid #38464a;}}
 QFrame#topbar{{background:#101b23;border-bottom:1px solid #33444b;}}
+QLabel#pageBreadcrumb{{color:#e2b378;font:bold 9pt 'Segoe UI';}}
+QFrame#panel{{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #1e3039,stop:1 #14222c);border:1px solid #456069;border-radius:14px;}}
+QPushButton:focus{{border:1px solid #e5bc84;}}
+QComboBox:focus,QLineEdit:focus{{border:1px solid #e5bc84;}}
+QTableWidget::item:selected,QTreeWidget::item:selected{{background:#37544f;color:#fff4dd;}}
+QLabel#muted{{background:transparent;color:#b4cbc8;}}
 QFrame#panel{{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #1e3039,stop:1 #14222c);border:1px solid #385057;border-radius:14px;}}
 QFrame#metric{{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #22343d,stop:1 #17262f);border:1px solid #3e555b;border-radius:13px;}}
 QFrame#metric:hover{{background:#28404a;border:1px solid {BRONZE};}}
@@ -326,8 +332,9 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         top=QFrame();top.setObjectName('topbar')
         head=QHBoxLayout(top);head.setContentsMargins(27,18,27,17)
         titlecol=QVBoxLayout()
-        breadcrumb=QLabel('✧   JOURNAL DU VIKING  /  DIXIÈME MONDE')
-        breadcrumb.setStyleSheet('color:#e2b378;font:bold 9pt Segoe UI;')
+        self.breadcrumb=QLabel('✧   JOURNAL DU VIKING  /  AVENTURE')
+        self.breadcrumb.setObjectName('pageBreadcrumb')
+        breadcrumb=self.breadcrumb
         titlecol.addWidget(breadcrumb)
         self.header_title=QLabel('Vue d’ensemble')
         self.header_title.setStyleSheet('color:#f8ecdb;font:bold 22pt Segoe UI;')
@@ -784,6 +791,17 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
 
     def show_page(self,index):
         super().show_page(index)
+        if hasattr(self, 'breadcrumb') and 0 <= index < len(self.NAV):
+            categories = {
+                0: 'AVENTURE', 1: 'AVENTURE', 5: 'AVENTURE',
+                2: 'CHRONIQUES', 3: 'CHRONIQUES',
+                6: 'CHRONIQUES', 7: 'CHRONIQUES',
+                8: 'STATISTIQUES', 11: 'STATISTIQUES',
+                10: 'DÉCOUVERTE', 4: 'APPLICATION', 9: 'APPLICATION',
+            }
+            self.breadcrumb.setText(
+                '✧   JOURNAL DU VIKING  /  ' + categories.get(index, 'AVENTURE')
+            )
         if index == 9:
             # La navigation visible reste sur Réglages pour le diagnostic.
             self.nav_buttons[4].setChecked(True)
