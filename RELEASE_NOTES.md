@@ -1,3 +1,12 @@
+# Valheim Stats Tracker V2.8.1 — Vue d’ensemble plus lisible
+
+- Ajout d’une horloge **réelle, locale et à la seconde** avec la date dans la Vue d’ensemble, sans connexion réseau, indépendante de l’heure du monde Valheim et des relevés .fch.
+- Lisibilité améliorée des priorités : colonne des succès étendue, valeurs de progression mieux cadrées, alternance des lignes et cibles plus grandes.
+- Graphique principal plus haut et bandeau discret pour l’heure du PC.
+- Préservation intégrale des succès, profils, archives, courbes, favoris et paramètres.
+
+---
+
 # Valheim Stats Tracker V2.8.0 — Historique et records de sessions
 
 - Nouvelle chronologie des 12 dernières sessions estimées dans Historique, en complément des courbes et des exports CSV.
