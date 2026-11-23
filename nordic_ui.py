@@ -645,6 +645,15 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
                 lambda _=False:self.show_page(9)
             )
             diagnostic_layout.addWidget(self.raw_diagnostic_button)
+            cache_button=QPushButton('Analyser les performances locales')
+            cache_button.setObjectName('localPerformanceDiagnostics')
+            cache_button.clicked.connect(self._refresh_performance_diagnostics)
+            diagnostic_layout.addWidget(cache_button)
+            self.performance_diagnostics=label(
+                'Diagnostic disponible sans connexion Internet.',
+                muted=True,wrap=True)
+            self.performance_diagnostics.setObjectName('performanceDiagnosticsResult')
+            diagnostic_layout.addWidget(self.performance_diagnostics)
             diagnostic_layout.addWidget(label(
                 'Les activités et statistiques utiles restent disponibles '
                 'dans leurs pages dédiées. Les noms et indices bruts '
@@ -652,6 +661,16 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
                 muted=True, wrap=True
             ))
             inner.layout().insertWidget(5,diagnostics)
+
+    def _refresh_performance_diagnostics(self):
+        stats=self.store.diagnostics()
+        self.performance_diagnostics.setText(
+            f"Relevés historiques : {stats['sample_count']}  •  "
+            f"Cache : {stats['cached_queries']} entrées  •  "
+            f"Lectures réutilisées : {stats['cache_hits']}  •  "
+            f"Recalculs : {stats['cache_misses']}\\n"
+            "Les .fch restent uniquement lus. Aucune donnée n'est envoyée."
+        )
 
     def _open_collection_wiki(self):
         self.show_page(10)
