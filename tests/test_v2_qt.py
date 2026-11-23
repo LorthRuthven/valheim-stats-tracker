@@ -102,6 +102,21 @@ class QtWindowTests(unittest.TestCase):
             w.close()
             w.store.db.close()
 
+    def test_v3_history_selection_periods_comparison_and_local_diagnostic(self):
+        app=QApplication.instance() or QApplication([])
+        from PySide6.QtWidgets import QComboBox
+        from history_analysis import filter_sessions
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            self.assertEqual(w.history_session_period.count(),5)
+            self.assertEqual(w.history_compare_metric.currentData(),"crafted")
+            self.assertGreaterEqual(w.history_compare_chart.minimumHeight(),230)
+            self.assertTrue(hasattr(w,"history_session_detail"))
+            w._refresh_performance_diagnostics()
+            self.assertIn("Cache :",w.performance_diagnostics.text())
+            w.close()
+            w.store.db.close()
+
     def test_session_timeline_and_records_are_present(self):
         app=QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as tmp:
@@ -473,6 +488,7 @@ class QtWindowTests(unittest.TestCase):
             self.assertEqual(len(w.activity_rows),25)
             self.assertEqual(w.activity_gallery.model_data.rowCount(),25)
             self.assertEqual(w.activity_gallery.model_data.rows[0][2],25.0)
+            self.assertEqual(w.activity_min_count.count(),4)
             self.assertEqual(w.activity_gallery.objectName(),"activityContinuousGallery")
             self.assertFalse(hasattr(w,"activity_prev"))
             self.assertFalse(hasattr(w,"activity_next"))
