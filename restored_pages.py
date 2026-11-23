@@ -6,7 +6,6 @@ Le fonctionnement des succès est fourni par valheim_reader ; pas de fausses val
 from __future__ import annotations
 
 import csv
-import unicodedata
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
@@ -28,6 +27,7 @@ from session_insights import session_insights, session_records, readable_session
 from history_analysis import PERIODS, filter_sessions, session_summary
 from real_assets import achievement_icon, game_icon, collection_icon
 from activity_gallery import ActivityGallery
+from activity_search import search_normalize
 from game_visuals import boss_game_icon, skill_game_icon, THEMATIC_BOSS_ICONS
 
 GROUP_CHOICES = (
@@ -57,12 +57,6 @@ def group_control():
     for name, key in GROUP_CHOICES:
         widget.addItem(name, key)
     return widget
-
-def search_normalize(text):
-    """Recherche tolérante aux accents, à la casse et aux espaces."""
-    raw = unicodedata.normalize("NFKD", str(text)).casefold()
-    return "".join(c for c in raw if not unicodedata.combining(c))
-
 
 def activity_category(key):
     token = key.casefold()
