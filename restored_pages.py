@@ -732,38 +732,62 @@ class RestoredPagesMixin:
     def _refresh_session_insights(self):
         if not self.store.profile or not hasattr(self, "history_session_table"):
             return
-        sessions = session_insights(self.store.rows(limit=5000))
+        self.history_sessions_cache = session_insights(
+            self.store.rows(limit=5000), limit=5000)
+        self._render_session_period()
+
+    def _render_session_period(self):
+        if not hasattr(self, "history_session_period"):
+            return
+        sessions = filter_sessions(
+            getattr(self, "history_sessions_cache", []),
+            self.history_session_period.currentData())
+        self.history_visible_sessions = sessions
         self.history_session_count.setText(
-            (f"{len(sessions)} sessions estimées affichées (au plus 12). "
-             "Intervalle = temps entre les sauvegardes, pas temps réellement joué.")
+            (f"{len(sessions)} sessions issues des relevés • "
+             "Intervalle entre sauvegardes, pas temps réellement joué.")
             if sessions else
-            "Pas de session avec au moins deux sauvegardes rapprochées. "
-            "Aucune progression supplémentaire n'est supposée."
-        )
+            "Aucune session avec deux sauvegardes rapprochées dans cette période.")
         records = session_records(sessions)
         self.history_record_summary.setText(
-            "  •  ".join(
-                f'{r["title"]} : +{txt(r["value"])} ({readable_session(r)})'
-                for r in records
-            ) if records else
-            "Aucun record disponible : deux sauvegardes distinctes sont nécessaires."
-        )
+            " • ".join(
+                f'{item["title"]} : +{txt(item["value"])} ({readable_session(item)})'
+                for item in records
+            ) if records else "Aucun record mesurable pour la période choisie.")
         names = ("kills", "builds", "crafts", "deaths")
         rows = []
         for item in sessions:
-            gain = item["gains"]
-            def show(name):
-                return "—" if name not in gain else "+" + txt(gain[name])
+            gains = item["gains"]
             rows.append((
                 readable_session(item), str(item["samples"]),
                 f'{item["span_minutes"]:.0f} min',
-                *(show(name) for name in names)
+                *("—" if key not in gains else "+" + txt(gains[key])
+                  for key in names)
             ))
+        self.history_session_table.blockSignals(True)
         _fill_table(self.history_session_table, rows)
+        self.history_session_table.clearSelection()
+        self.history_session_table.blockSignals(False)
         for i, item in enumerate(sessions):
             if item["resets"]:
-                self.history_session_table.item(i, 0).setToolTip(
-                    "Compteurs en recul ignorés : " + ", ".join(item["resets"]))
+                cell = self.history_session_table.item(i, 0)
+                if cell is not None:
+                    cell.setToolTip("Compteurs exclus : " + ", ".join(item["resets"]))
+        self.history_session_detail.setText(
+            "Choisis une session pour examiner ses gains et la comparer à la précédente."
+            if sessions else "Aucune session dans cette période.")
+
+    def _show_selected_session(self):
+        if not hasattr(self, "history_session_table"):
+            return
+        index = self.history_session_table.currentRow()
+        sessions = getattr(self, "history_visible_sessions", [])
+        if not 0 <= index < len(sessions):
+            return
+        current = sessions[index]
+        previous = sessions[index+1] if index+1 < len(sessions) else None
+        self.history_session_detail.setText(
+            readable_session(current) + "\n" + session_summary(current, previous))
 
     def _refresh_progress_center(self):
         if not self.store.profile or not hasattr(self,'focus_table'):return
@@ -1006,6 +1030,15 @@ class RestoredPagesMixin:
             points=[p for p in points if p[0]>=cutoff]
         self.history_chart.set_data(points,
             self.history_metric.currentText()+(' • gains' if gains else ' • total'))
+        if hasattr(self, "history_compare_chart"):
+            compare = history_points(records,
+                self.history_compare_metric.currentData(), group, changes=gains)
+            if period is not None and compare:
+                cutoff = compare[-1][0]-period
+                compare = [p for p in compare if p[0]>=cutoff]
+            self.history_compare_chart.set_data(compare,
+                self.history_compare_metric.currentText()
+                + (' • gains' if gains else ' • total'))
 
     def export_history_csv(self):
         if not self.store.profile:return
