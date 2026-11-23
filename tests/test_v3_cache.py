@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 
 from v2_core import TrackerStore
-from restored_pages import search_normalize
+from activity_search import search_normalize
 
 
 class V3CacheTests(unittest.TestCase):
