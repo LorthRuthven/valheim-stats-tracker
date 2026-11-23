@@ -97,6 +97,13 @@ QPushButton#primary{{background:{BRONZE};color:#1c2428;border-color:#f6d79f;}}
 QPushButton#nav{{background:transparent;border:1px solid transparent;text-align:left;padding:12px 14px;color:#b3c2bf;}}
 QPushButton#nav:hover{{background:#273b43;border-color:#3e565a;}}
 QPushButton#nav:checked{{background:#303b37;color:#ffdbae;border-color:#96774e;font-weight:bold;}}
+QPushButton#nav:focus{{border:1px solid #d5a66c;}}
+QLabel#navSection{{color:#e6bb83;font:bold 9pt 'Segoe UI';padding:13px 10px 4px 12px;}}
+QFrame#dashboardQuickActions{{background:#152730;border:1px solid #39545b;border-radius:12px;}}
+QPushButton#dashboardShortcut{{background:#253a43;border:1px solid #4c6769;border-radius:10px;text-align:left;padding:10px 13px;}}
+QPushButton#dashboardShortcut:hover{{background:#36515b;border-color:#d6a56b;}}
+QFrame#dashboardSessionPanel{{background:#192f39;border:1px solid #4a666b;border-radius:14px;}}
+QLabel#dashboardSectionTitle{{color:#f6d4a0;font:bold 11pt 'Segoe UI';}}
 QLineEdit,QComboBox{{background:#24343e;border:1px solid #475f61;border-radius:8px;padding:9px;color:{FG};}}
 QTableWidget,QTreeWidget{{background:#162630;alternate-background-color:#1c2d37;border:1px solid #344d53;border-radius:8px;color:{FG};selection-background-color:#3c5c53;outline:none;}}
 QHeaderView::section{{background:#23363d;color:#e9c7a1;border:0;border-bottom:1px solid #41575c;padding:10px;font-weight:600;}}
@@ -260,7 +267,7 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         tag=QLabel('  CHRONIQUES NORDIQUES  •  V'+VERSION)
         tag.setStyleSheet('color:#ddae6f;font:9pt Segoe UI;')
         menu.addWidget(tag);menu.addSpacing(4)
-        menu.addWidget(label('LES CHAPITRES',muted=True))
+        menu.addWidget(label('NAVIGATION',muted=True))
         # La navigation reste accessible sur les petits ecrans, meme avec 12 pages.
         nav_scroller=QScrollArea()
         nav_scroller.setWidgetResizable(True)
@@ -278,14 +285,26 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             btn.setMinimumHeight(35)
             btn.setIcon(rune_icon(nav_icons[idx]))
             btn.clicked.connect(lambda _=False,i=idx:self.show_page(i))
-            # La page n°9 est conservée pour les anciens liens et les tests,
-            # mais accessible uniquement par Réglages > Diagnostic avancé.
-            if idx == 9:
-                btn.setParent(nav_container)
-                btn.hide()
-            else:
-                nav_layout.addWidget(btn)
             self.nav_buttons.append(btn)
+
+        # Les identifiants de pages restent inchangés pour les raccourcis et les
+        # données enregistrées. Seul l'ordre VISUEL du menu est réorganisé.
+        self.nav_groups = (
+            ('AVENTURE', (0, 5, 1)),
+            ('CHRONIQUES', (3, 2, 6, 7)),
+            ('STATISTIQUES', (11, 8)),
+            ('DÉCOUVERTE', (10,)),
+            ('APPLICATION', (4,)),
+        )
+        for heading, indices in self.nav_groups:
+            section=QLabel(heading)
+            section.setObjectName('navSection')
+            nav_layout.addWidget(section)
+            for idx in indices:
+                nav_layout.addWidget(self.nav_buttons[idx])
+        # Page de diagnostic historique invisible dans la navigation.
+        self.nav_buttons[9].setParent(nav_container)
+        self.nav_buttons[9].hide()
         nav_layout.addStretch(1)
         nav_scroller.setWidget(nav_container)
         menu.addWidget(nav_scroller,1)
@@ -415,6 +434,30 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
             self.dash_clock_timer.timeout.connect(self._update_dashboard_clock)
             self.dash_clock_timer.start()
 
+        # Accès direct aux tâches courantes, utilisable même avant de charger
+        # un personnage. Aucune modification de sauvegarde.
+        if layout is not None:
+            quick = QFrame()
+            quick.setObjectName('dashboardQuickActions')
+            quick_row = QHBoxLayout(quick)
+            quick_row.setContentsMargins(14, 10, 14, 10)
+            quick_row.setSpacing(10)
+            self.dashboard_shortcuts = {}
+            for title, index, icon in (
+                ('Mes objectifs', 5, 'trophy'),
+                ('Historique', 3, 'history'),
+                ('Stats du Viking', 11, 'tree'),
+                ('Encyclopédie', 10, 'compass'),
+            ):
+                button = QPushButton(title)
+                button.setObjectName('dashboardShortcut')
+                button.setIcon(rune_icon(icon, 24))
+                button.setToolTip('Ouvrir : ' + self.NAV[index][0])
+                button.clicked.connect(lambda _=False, page=index: self.show_page(page))
+                quick_row.addWidget(button, 1)
+                self.dashboard_shortcuts[index] = button
+            layout.insertWidget(2, quick)
+
         # Le tableau donne plus de place aux titres des succès ; les deux
         # colonnes numériques restent faciles à scanner en écran 1440p.
         self.dash_priority.setObjectName('dashboardPriority')
@@ -432,7 +475,13 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
         self.dash_priority.setToolTip(
             "Double-clique sur un succès pour consulter son détail.")
         self.dash_priority.cellDoubleClicked.connect(self._jump_to_achievement)
-        self.dash_chart.setMinimumHeight(230)
+        self.dash_chart.setMinimumHeight(290)
+        self.dash_chart.setToolTip('Historique des éliminations, calculé à partir des relevés du personnage.')
+        # Lisibilité des textes de session et des indicateurs secondaires.
+        self.dash_session.setWordWrap(True)
+        self.dash_session.setMinimumWidth(240)
+        for value in self.dash_metrics.values():
+            value.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
     def _update_dashboard_clock(self):
         """Actualise l'horloge chaque seconde, même sans personnage chargé."""
