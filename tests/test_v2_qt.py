@@ -102,6 +102,23 @@ class QtWindowTests(unittest.TestCase):
             w.close()
             w.store.db.close()
 
+    def test_v3_secondary_pages_refresh_only_when_opened(self):
+        app=QApplication.instance() or QApplication([])
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            w.set_motion(False)
+            w.store.profile={"name":"Viking fictif"}
+            w._pending_page_refresh={7}
+            with patch.object(w, "_refresh_activity") as refreshed:
+                w.show_page(7)
+                self.assertEqual(refreshed.call_count,1)
+                self.assertNotIn(7,w._pending_page_refresh)
+                w.show_page(7)
+                self.assertEqual(refreshed.call_count,1)
+            w.close()
+            w.store.db.close()
+
     def test_v3_history_selection_periods_comparison_and_local_diagnostic(self):
         app=QApplication.instance() or QApplication([])
         from PySide6.QtWidgets import QComboBox
@@ -508,6 +525,13 @@ class QtWindowTests(unittest.TestCase):
             w.activity_gallery._open(index)
             self.assertTrue(w.activity_open_encyclopedia.isEnabled())
             self.assertIn("wood",w.activity_detail.text().casefold())
+            first_token=w.activity_selected_token
+            self.assertTrue(w.activity_next_card.isEnabled())
+            w.activity_next_card.click()
+            self.assertNotEqual(w.activity_selected_token,first_token)
+            self.assertTrue(w.activity_previous_card.isEnabled())
+            w.activity_previous_card.click()
+            self.assertEqual(w.activity_selected_token,first_token)
             # Les 25 cartes restent dans un seul modèle, sans changement de page.
             w.resize(1100,800)
             app.processEvents()
