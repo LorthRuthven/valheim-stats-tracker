@@ -8,11 +8,11 @@ from __future__ import annotations
 import math
 import json
 from pathlib import Path
-from PySide6.QtCore import Qt, QByteArray, QRectF, QSize, QTimer, QUrl, Property, QPropertyAnimation, QEasingCurve, QObject, Signal
+from PySide6.QtCore import Qt, QByteArray, QRectF, QSize, QTimer, QUrl, QDateTime, Property, QPropertyAnimation, QEasingCurve, QObject, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QIcon, QPixmap, QLinearGradient, QDesktopServices
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
-    QApplication, QFrame, QVBoxLayout, QHBoxLayout, QLabel,
+    QApplication, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QHeaderView,
     QPushButton, QStackedWidget, QWidget, QSizePolicy,
     QGraphicsOpacityEffect, QProgressBar, QCheckBox, QComboBox, QScrollArea
 )
@@ -81,6 +81,13 @@ QFrame#topbar{{background:#101b23;border-bottom:1px solid #33444b;}}
 QFrame#panel{{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #1e3039,stop:1 #14222c);border:1px solid #385057;border-radius:14px;}}
 QFrame#metric{{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #22343d,stop:1 #17262f);border:1px solid #3e555b;border-radius:13px;}}
 QFrame#metric:hover{{background:#28404a;border:1px solid {BRONZE};}}
+QFrame#dashboardClock{{background:#1a3038;border:1px solid #54716e;border-radius:12px;}}
+QLabel#dashboardClockTime{{font:bold 23pt 'Segoe UI';color:#f4d39b;}}
+QLabel#dashboardClockDate{{font:10pt 'Segoe UI';color:#d2e1d9;}}
+QLabel#dashboardClockCaption{{font:bold 9pt 'Segoe UI';color:#a9c6c2;}}
+QTableWidget#dashboardPriority{{background:#182b34;border:1px solid #405c60;alternate-background-color:#20343d;}}
+QTableWidget#dashboardPriority::item{{padding:9px 8px;}}
+QFrame#dashboardSession{{background:#1a2d37;border:1px solid #456166;border-radius:12px;}}
 QLabel#section{{color:#fff1dd;background:transparent;font:bold 13pt 'Segoe UI';}}
 QLabel#muted{{background:transparent;color:{MUTED};}}
 QLabel#metricValue{{background:transparent;color:#fff1df;font:bold 23pt 'Segoe UI';}}
@@ -374,8 +381,66 @@ class NordicWindow(RestoredPagesMixin,BaseTracker):
 
     def _make_dashboard(self):
         super()._make_dashboard()
-        self.dash_priority.verticalHeader().setDefaultSectionSize(47)
+        # Heure locale du PC : sans lien avec l'horloge de Valheim ni le .fch.
+        page = self.stack.widget(0)
+        inner = page.widget() if hasattr(page, 'widget') else None
+        layout = inner.layout() if inner is not None else None
+        if layout is not None:
+            strip = QFrame()
+            strip.setObjectName('dashboardClock')
+            strip_layout = QHBoxLayout(strip)
+            strip_layout.setContentsMargins(22, 12, 22, 12)
+            strip_layout.setSpacing(20)
+            about = QVBoxLayout()
+            about.setSpacing(3)
+            heading = QLabel('AUJOURD’HUI • HEURE RÉELLE')
+            heading.setObjectName('dashboardClockCaption')
+            about.addWidget(heading)
+            self.dash_clock_date = QLabel('—')
+            self.dash_clock_date.setObjectName('dashboardClockDate')
+            about.addWidget(self.dash_clock_date)
+            strip_layout.addLayout(about, 1)
+            self.dash_clock_time = QLabel('--:--:--')
+            self.dash_clock_time.setObjectName('dashboardClockTime')
+            self.dash_clock_time.setAlignment(Qt.AlignmentFlag.AlignRight |
+                                             Qt.AlignmentFlag.AlignVCenter)
+            self.dash_clock_time.setToolTip(
+                "Heure locale de Windows, indépendante du temps dans Valheim.")
+            strip_layout.addWidget(self.dash_clock_time)
+            # La bannière de personnage reste la première section visible.
+            layout.insertWidget(1, strip)
+            self._update_dashboard_clock()
+            self.dash_clock_timer = QTimer(self)
+            self.dash_clock_timer.setInterval(1000)
+            self.dash_clock_timer.timeout.connect(self._update_dashboard_clock)
+            self.dash_clock_timer.start()
+
+        # Le tableau donne plus de place aux titres des succès ; les deux
+        # colonnes numériques restent faciles à scanner en écran 1440p.
+        self.dash_priority.setObjectName('dashboardPriority')
+        self.dash_priority.setAlternatingRowColors(True)
+        self.dash_priority.setShowGrid(False)
+        self.dash_priority.setWordWrap(False)
+        self.dash_priority.setMinimumHeight(295)
+        header = self.dash_priority.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        self.dash_priority.setColumnWidth(1, 165)
+        self.dash_priority.setColumnWidth(2, 100)
+        self.dash_priority.verticalHeader().setDefaultSectionSize(51)
+        self.dash_priority.setToolTip(
+            "Double-clique sur un succès pour consulter son détail.")
         self.dash_priority.cellDoubleClicked.connect(self._jump_to_achievement)
+        self.dash_chart.setMinimumHeight(230)
+
+    def _update_dashboard_clock(self):
+        """Actualise l'horloge chaque seconde, même sans personnage chargé."""
+        if not hasattr(self, 'dash_clock_time'):
+            return
+        now = QDateTime.currentDateTime()
+        self.dash_clock_time.setText(now.toString('HH:mm:ss'))
+        self.dash_clock_date.setText(now.toString('dddd d MMMM yyyy'))
     def _make_collection_page(self):
         self.collection_page=CollectionPage(self)
         self.collection_page.game_import_requested.connect(self._import_game_icons)
