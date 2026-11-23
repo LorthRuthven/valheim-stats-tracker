@@ -423,6 +423,21 @@ class RestoredPagesMixin:
         self.activity_detail=label(
             "Sélectionne une carte pour consulter son détail.",muted=True,wrap=True)
         gallery_layout.addWidget(self.activity_detail)
+        browse=QHBoxLayout()
+        self.activity_previous_card=QPushButton("‹ Fiche précédente")
+        self.activity_next_card=QPushButton("Fiche suivante ›")
+        self.activity_previous_card.setObjectName("activityPreviousCard")
+        self.activity_next_card.setObjectName("activityNextCard")
+        self.activity_previous_card.setEnabled(False)
+        self.activity_next_card.setEnabled(False)
+        self.activity_previous_card.clicked.connect(
+            lambda _=False:self._activity_move_selection(-1))
+        self.activity_next_card.clicked.connect(
+            lambda _=False:self._activity_move_selection(1))
+        browse.addWidget(self.activity_previous_card)
+        browse.addWidget(self.activity_next_card)
+        browse.addStretch(1)
+        gallery_layout.addLayout(browse)
         self.activity_open_encyclopedia=QPushButton("Voir dans l'Encyclopédie")
         self.activity_open_encyclopedia.setObjectName("activityOpenEncyclopedia")
         self.activity_open_encyclopedia.setEnabled(False)
@@ -501,6 +516,10 @@ class RestoredPagesMixin:
             self.activity_selected_token=None
             self.activity_detail.setText("Sélectionne une carte pour consulter son détail.")
             self.activity_open_encyclopedia.setEnabled(False)
+            self.activity_previous_card.setEnabled(False)
+            self.activity_next_card.setEnabled(False)
+        elif self.activity_selected_token:
+            self._select_activity_token(self.activity_selected_token)
 
     def _select_activity_token(self, token):
         entry=next((r for r in self.activity_rows if r[3]==token),None)
@@ -513,6 +532,20 @@ class RestoredPagesMixin:
             f"Identifiant Valheim : {key}"
         )
         self.activity_open_encyclopedia.setEnabled(True)
+        position=next((i for i,r in enumerate(self.activity_rows) if r[3]==key),0)
+        self.activity_previous_card.setEnabled(position>0)
+        self.activity_next_card.setEnabled(position+1<len(self.activity_rows))
+        self.activity_gallery.setCurrentIndex(
+            self.activity_gallery.model_data.index(position))
+
+    def _activity_move_selection(self, offset):
+        if not self.activity_rows:
+            return
+        position=next((i for i,r in enumerate(self.activity_rows)
+                       if r[3]==self.activity_selected_token),0)
+        target=max(0,min(len(self.activity_rows)-1,position+offset))
+        self._select_activity_token(self.activity_rows[target][3])
+        self.activity_gallery.scrollTo(self.activity_gallery.model_data.index(target))
 
     def _activity_open_encyclopedia(self):
         token=self.activity_selected_token
