@@ -1,3 +1,15 @@
+# Valheim Stats Tracker V2.9.0 — Refonte de l'interface
+
+- Navigation organisée en cinq sections lisibles : Aventure, Chroniques, Statistiques, Découverte et Application. Tous les écrans et raccourcis historiques restent associés aux mêmes identifiants internes.
+- Vue d'ensemble : quatre accès rapides vers les objectifs, l'historique, les statistiques du Viking et l'Encyclopédie.
+- Lisibilité : graphique principal agrandi, meilleur contraste des panneaux, sélection et focus clavier plus visibles.
+- Fil d'Ariane contextuel pour retrouver la catégorie de chaque écran.
+- Conservation de l'horloge réelle locale (V2.8.1), des images Valheim authentiques, des succès et de toutes les données précédentes.
+- Tests automatiques Qt Windows : navigation, horloge, raccourcis et non-régression de l'interface.
+- Aucune migration destructrice : sauvegardes .fch en lecture seule et historique SQLite préservé.
+
+---
+
 # Valheim Stats Tracker V2.8.1 — Vue d’ensemble plus lisible
 
 - Ajout d’une horloge **réelle, locale et à la seconde** avec la date dans la Vue d’ensemble, sans connexion réseau, indépendante de l’heure du monde Valheim et des relevés .fch.
