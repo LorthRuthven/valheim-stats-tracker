@@ -52,6 +52,31 @@ class QtWindowTests(unittest.TestCase):
             self.assertIn('VÉRITABLES ICÔNES VALHEIM',labels)
             w.close()
 
+    def test_dashboard_local_clock_and_readable_priority_table(self):
+        app=QApplication.instance() or QApplication([])
+        from PySide6.QtWidgets import QHeaderView
+        from PySide6.QtCore import QDateTime
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            self.assertTrue(w.dash_clock_timer.isActive())
+            self.assertEqual(w.dash_clock_timer.interval(), 1000)
+            self.assertEqual(
+                w.dash_clock_time.text(),
+                QDateTime.currentDateTime().toString('HH:mm:ss')
+            )
+            self.assertTrue(w.dash_clock_date.text())
+            self.assertEqual(w.dash_priority.objectName(), 'dashboardPriority')
+            self.assertTrue(w.dash_priority.alternatingRowColors())
+            self.assertEqual(
+                w.dash_priority.horizontalHeader().sectionResizeMode(0),
+                QHeaderView.ResizeMode.Stretch
+            )
+            self.assertEqual(w.dash_priority.columnWidth(1), 165)
+            self.assertGreaterEqual(w.dash_chart.minimumHeight(), 230)
+            w.dash_clock_timer.stop()
+            w.close()
+            w.store.db.close()
+
     def test_session_timeline_and_records_are_present(self):
         app=QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as tmp:
