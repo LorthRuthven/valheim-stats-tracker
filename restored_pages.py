@@ -7,9 +7,10 @@ from __future__ import annotations
 
 import csv
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QTimer
 from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import (
     QComboBox, QFileDialog, QGridLayout, QHBoxLayout, QHeaderView, QLabel,
@@ -23,7 +24,10 @@ from valheim_reader import (
 )
 from v2_core import progress_ranking, pending_actions, session_report
 from session_insights import session_insights, session_records, readable_session
+from history_analysis import PERIODS, filter_sessions, session_summary
 from real_assets import achievement_icon, game_icon, collection_icon
+from activity_gallery import ActivityGallery
+from activity_search import search_normalize
 from game_visuals import boss_game_icon, skill_game_icon, THEMATIC_BOSS_ICONS
 
 GROUP_CHOICES = (
@@ -342,9 +346,19 @@ class RestoredPagesMixin:
         self.activity_sort.addItem("Les plus nombreux","most")
         self.activity_sort.addItem("Ordre alphabétique","az")
         self.activity_sort.addItem("Les moins nombreux","least")
+        self.activity_min_count=QComboBox()
+        self.activity_min_count.setObjectName("activityMinimumCount")
+        for title,threshold in (
+            ("Toutes quantités",0),("10 et plus",10),
+            ("100 et plus",100),("1 000 et plus",1000)
+        ):
+            self.activity_min_count.addItem(title,threshold)
+        self.activity_search.setPlaceholderText(
+            "Recherche multi-mots, noms FR, familles, identifiants (accents facultatifs)…")
         filters.addWidget(self.activity_search,5)
         filters.addWidget(self.activity_family,3)
         filters.addWidget(self.activity_sort,3)
+        filters.addWidget(self.activity_min_count,2)
         body.addLayout(filters)
         self.activity_summary=label("Charge un Viking pour consulter ses activités.",muted=True,wrap=True)
         body.addWidget(self.activity_summary)
@@ -385,76 +399,50 @@ class RestoredPagesMixin:
         page.addWidget(intro)
 
         self.activity_gallery_panel, gallery_layout=panel(
-            "GALERIE DES OBJETS",
-            "Une carte par objet : sprite du jeu, nom, famille et quantité exacte. "
-            "Les images thématiques sont signalées."
+            "GALERIE CONTINUE",
+            "Défilement illimité : les cartes hors écran ne sont pas dessinées. "
+            "Clique sur un objet pour accéder à sa fiche et à l'Encyclopédie."
         )
-        self.activity_gallery_panel.setSizePolicy(
-            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum
-        )
-        nav=QHBoxLayout()
+        gallery_layout.addWidget(label(
+            "Filtre par nom français, identifiant, famille ou quantité et parcours "
+            "tous les résultats sans changer de page.", muted=True, wrap=True))
         self.activity_gallery_count=label("Aucune activité",muted=True,wrap=True)
-        nav.addWidget(self.activity_gallery_count,1)
-        self.activity_prev=QPushButton("‹ Précédent")
-        self.activity_next=QPushButton("Suivant ›")
-        self.activity_prev.setObjectName("activityPrevPage")
-        self.activity_next.setObjectName("activityNextPage")
-        self.activity_prev.clicked.connect(lambda _=False:self._activity_move_page(-1))
-        self.activity_next.clicked.connect(lambda _=False:self._activity_move_page(1))
-        nav.addWidget(self.activity_prev)
-        nav.addWidget(self.activity_next)
-        gallery_layout.addLayout(nav)
-
+        gallery_layout.addWidget(self.activity_gallery_count)
         self.activity_empty=label(
-            "Aucune activité enregistrée pour ce choix. Essaie un autre filtre "
-            "ou un autre niveau de difficulté.",muted=True,wrap=True)
+            "Aucune activité enregistrée pour ce choix. Essaie un autre filtre.",
+            muted=True,wrap=True)
         gallery_layout.addWidget(self.activity_empty)
-        self.activity_grid=QGridLayout()
-        self.activity_grid.setSpacing(13)
-        self.activity_grid.setAlignment(Qt.AlignmentFlag.AlignTop)
-        gallery_layout.addLayout(self.activity_grid)
-        self.activity_tiles=[]
-        self.activity_page_size=16
-        self.activity_page_number=0
+        self.activity_gallery=ActivityGallery()
+        self.activity_gallery.activated_token.connect(self._select_activity_token)
+        gallery_layout.addWidget(self.activity_gallery, 1)
         self.activity_rows=[]
+        self.activity_selected_token=None
         self.activity_columns=0
-        for _ in range(self.activity_page_size):
-            tile=QFrame()
-            tile.setObjectName("activityGalleryCard")
-            tile.setMinimumWidth(220)
-            tile.setFixedHeight(143)
-            tile.setStyleSheet(
-                "QFrame#activityGalleryCard {background:#182e38;"
-                "border:1px solid #415f65;border-radius:12px;}"
-                "QFrame#activityGalleryCard:hover {background:#263e46;"
-                "border:1px solid #cca274;}"
-            )
-            inner=QHBoxLayout(tile)
-            inner.setContentsMargins(12,12,12,12)
-            inner.setSpacing(12)
-            picture=QLabel()
-            picture.setObjectName("activityGameImage")
-            picture.setFixedSize(65,65)
-            picture.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            inner.addWidget(picture)
-            column=QVBoxLayout()
-            column.setSpacing(4)
-            family=label("—",muted=True,wrap=True)
-            name=label("—",wrap=True)
-            name.setStyleSheet("color:#f1e7d9;font:bold 11pt 'Segoe UI';")
-            quantity=label("—")
-            quantity.setStyleSheet("color:#f7c483;font:bold 18pt 'Segoe UI';")
-            hint=label("",muted=True,wrap=True)
-            hint.setStyleSheet("color:#a8bcbc;font:8pt 'Segoe UI';")
-            column.addWidget(family)
-            column.addWidget(name)
-            column.addWidget(quantity)
-            column.addWidget(hint)
-            column.addStretch(1)
-            inner.addLayout(column,1)
-            self.activity_tiles.append((tile,picture,family,name,quantity,hint))
-            self.activity_grid.addWidget(tile,0,0)
-            tile.hide()
+        self.activity_page_number=0  # Compatibilité avec l'ancien historique.
+        self.activity_tiles=[]         # Plus de widgets de pages fixes.
+        self.activity_detail=label(
+            "Sélectionne une carte pour consulter son détail.",muted=True,wrap=True)
+        gallery_layout.addWidget(self.activity_detail)
+        browse=QHBoxLayout()
+        self.activity_previous_card=QPushButton("‹ Fiche précédente")
+        self.activity_next_card=QPushButton("Fiche suivante ›")
+        self.activity_previous_card.setObjectName("activityPreviousCard")
+        self.activity_next_card.setObjectName("activityNextCard")
+        self.activity_previous_card.setEnabled(False)
+        self.activity_next_card.setEnabled(False)
+        self.activity_previous_card.clicked.connect(
+            lambda _=False:self._activity_move_selection(-1))
+        self.activity_next_card.clicked.connect(
+            lambda _=False:self._activity_move_selection(1))
+        browse.addWidget(self.activity_previous_card)
+        browse.addWidget(self.activity_next_card)
+        browse.addStretch(1)
+        gallery_layout.addLayout(browse)
+        self.activity_open_encyclopedia=QPushButton("Voir dans l'Encyclopédie")
+        self.activity_open_encyclopedia.setObjectName("activityOpenEncyclopedia")
+        self.activity_open_encyclopedia.setEnabled(False)
+        self.activity_open_encyclopedia.clicked.connect(self._activity_open_encyclopedia)
+        gallery_layout.addWidget(self.activity_open_encyclopedia)
         page.addWidget(self.activity_gallery_panel)
 
         detail,detail_layout=panel(
@@ -487,7 +475,7 @@ class RestoredPagesMixin:
         page.addStretch(1)
 
         for widget in (self.activity_choice,self.activity_difficulty,
-                       self.activity_family,self.activity_sort):
+                       self.activity_family,self.activity_sort,self.activity_min_count):
             widget.currentIndexChanged.connect(self._refresh_activity)
         self.activity_search.textChanged.connect(self._refresh_activity)
 
@@ -514,79 +502,65 @@ class RestoredPagesMixin:
             line.show()
         self.activity_family_empty.setVisible(not bool(ranked))
 
-    def _activity_move_page(self, offset):
-        total_pages=max(1,(len(self.activity_rows)+self.activity_page_size-1)
-                        //self.activity_page_size)
-        self.activity_page_number=max(
-            0,min(total_pages-1,self.activity_page_number+offset)
-        )
-        self._render_activity_gallery()
-
     def _render_activity_gallery(self):
-        if not hasattr(self,"activity_tiles"):
+        if not hasattr(self,"activity_gallery"):
             return
         rows=self.activity_rows
-        total_pages=max(1,(len(rows)+self.activity_page_size-1)
-                        //self.activity_page_size)
-        self.activity_page_number=max(0,min(self.activity_page_number,total_pages-1))
-        first=self.activity_page_number*self.activity_page_size
-        visible=rows[first:first+self.activity_page_size]
         self.activity_gallery_count.setText(
-            (f"{first+1}–{first+len(visible)} sur {len(rows)} objets"
-             f"  •  Page {self.activity_page_number+1}/{total_pages}")
+            f"{len(rows)} objets • Défilement continu • Aucun changement de page"
             if rows else "Aucun objet dans cette sélection"
         )
-        self.activity_prev.setEnabled(self.activity_page_number>0)
-        self.activity_next.setEnabled(self.activity_page_number+1<total_pages)
-        self.activity_empty.setVisible(not rows)
-        # La largeur réelle de la fenêtre est stable avant la disposition
-        # des pages ; le panneau conserve deux colonnes sur petit écran.
-        available=max(0,self.width()-300)
-        columns=4 if available>=1220 else 3 if available>=850 else 2
-        self.activity_columns=columns
+        self.activity_empty.setVisible(not bool(rows))
+        self.activity_gallery.set_rows(rows)
+        if not rows or self.activity_selected_token not in {row[3] for row in rows}:
+            self.activity_selected_token=None
+            self.activity_detail.setText("Sélectionne une carte pour consulter son détail.")
+            self.activity_open_encyclopedia.setEnabled(False)
+            self.activity_previous_card.setEnabled(False)
+            self.activity_next_card.setEnabled(False)
+        elif self.activity_selected_token:
+            self._select_activity_token(self.activity_selected_token)
 
-        thematic={
-            "Bois et arbres":"Wood",
-            "Métaux et minerais":"Iron",
-            "Pierre et minéraux":"Wishbone",
-            "Cuisine et nourriture":"CarrotSoup",
-            "Plantes et graines":"Cultivator",
-            "Matériel et armes":"SwordIron",
-            "Constructions":"Hammer",
-            "Autres":"Wishbone",
-        }
-        for index,(tile,picture,family,name,quantity,hint) in enumerate(self.activity_tiles):
-            self.activity_grid.removeWidget(tile)
-            if index>=len(visible):
-                tile.hide()
-                continue
-            group,display,count,key=visible[index]
-            image=game_icon(key)
-            exact=not image.isNull()
-            if not exact:
-                image=collection_icon(key)
-                exact=not image.isNull()
-            if image.isNull():
-                image=game_icon(thematic[group])
-            picture.clear()
-            if not image.isNull():
-                picture.setPixmap(image.pixmap(QSize(62,62)))
-                picture.setToolTip(
-                    "Vrai sprite de cet objet Valheim" if exact
-                    else "Sprite Valheim thématique : l'objet exact n'a pas d'image locale"
-                )
-            else:
-                picture.setText("Image\nabsente")
-                picture.setWordWrap(True)
-                picture.setStyleSheet("color:#b8c6c7;font:8pt 'Segoe UI';")
-            family.setText(group.upper())
-            name.setText(display)
-            quantity.setText(txt(count))
-            hint.setText("UNITÉS ENREGISTRÉES" if exact else "IMAGE THÉMATIQUE VALHEIM")
-            tile.setToolTip(f"{display}\n{txt(count)} unité(s)\n{group}\n"
-                            f"Identifiant : {key}")
-            self.activity_grid.addWidget(tile,index//columns,index%columns)
-            tile.show()
+    def _select_activity_token(self, token):
+        entry=next((r for r in self.activity_rows if r[3]==token),None)
+        if entry is None:
+            return
+        family,name,count,key=entry
+        self.activity_selected_token=key
+        self.activity_detail.setText(
+            f"{name}  •  {txt(count)} actions enregistrées  •  {family}\n"
+            f"Identifiant Valheim : {key}"
+        )
+        self.activity_open_encyclopedia.setEnabled(True)
+        position=next((i for i,r in enumerate(self.activity_rows) if r[3]==key),0)
+        self.activity_previous_card.setEnabled(position>0)
+        self.activity_next_card.setEnabled(position+1<len(self.activity_rows))
+        self.activity_gallery.setCurrentIndex(
+            self.activity_gallery.model_data.index(position))
+
+    def _activity_move_selection(self, offset):
+        if not self.activity_rows:
+            return
+        position=next((i for i,r in enumerate(self.activity_rows)
+                       if r[3]==self.activity_selected_token),0)
+        target=max(0,min(len(self.activity_rows)-1,position+offset))
+        self._select_activity_token(self.activity_rows[target][3])
+        self.activity_gallery.scrollTo(self.activity_gallery.model_data.index(target))
+
+    def _activity_open_encyclopedia(self):
+        token=self.activity_selected_token
+        if not token or not hasattr(self,"collection_page"):
+            return
+        collection=self.collection_page
+        # Les filtres précédents ne doivent pas masquer l'objet demandé.
+        collection.search.clear()
+        collection.category.setCurrentIndex(0)
+        collection.activity.setCurrentIndex(0)
+        collection.image_filter.setCurrentIndex(0)
+        collection.render()
+        self.show_page(10)
+        collection.activate()
+        collection._select_gallery_entry(token)
 
     def _make_skill_detail(self):
         page=self._scroll_page()
@@ -657,6 +631,16 @@ class RestoredPagesMixin:
             muted=True, wrap=True)
         self.history_record_summary.setObjectName("historySessionRecords")
         session_layout.addWidget(self.history_record_summary)
+        period_row=QHBoxLayout()
+        period_row.addWidget(label("Période des sessions :",muted=True))
+        self.history_session_period=QComboBox()
+        self.history_session_period.setObjectName("historySessionPeriod")
+        for title,seconds in PERIODS:
+            self.history_session_period.addItem(title,seconds)
+        self.history_session_period.currentIndexChanged.connect(self._render_session_period)
+        period_row.addWidget(self.history_session_period)
+        period_row.addStretch(1)
+        session_layout.addLayout(period_row)
         self.history_session_table = table([
             "Période", "Relevés", "Intervalle", "Créatures", "Constructions",
             "Fabrications", "Décès"
@@ -664,7 +648,40 @@ class RestoredPagesMixin:
         self.history_session_table.setObjectName("historySessionTimeline")
         self.history_session_table.setMinimumHeight(240)
         session_layout.addWidget(self.history_session_table)
+        self.history_session_table.setSelectionBehavior(
+            QTableWidget.SelectionBehavior.SelectRows)
+        self.history_session_table.itemSelectionChanged.connect(self._show_selected_session)
+        self.history_session_detail=label(
+            "Choisis une session pour voir le détail et les écarts avec la précédente.",
+            muted=True,wrap=True)
+        self.history_session_detail.setObjectName("historySessionDetail")
+        session_layout.addWidget(self.history_session_detail)
         interior.layout().addWidget(session_panel)
+        self.history_sessions_cache=[]
+        self.history_visible_sessions=[]
+        comparison,comparison_layout=panel(
+            "COMPARAISON DES TENDANCES",
+            "Deux statistiques sur la même période, avec des échelles distinctes.")
+        choices=QHBoxLayout()
+        choices.addWidget(label("Comparer à :",muted=True))
+        self.history_compare_metric=QComboBox()
+        self.history_compare_metric.setObjectName("historyCompareMetric")
+        for i in range(self.history_metric.count()):
+            self.history_compare_metric.addItem(
+                self.history_metric.itemText(i),self.history_metric.itemData(i))
+        idx=self.history_compare_metric.findData("crafted")
+        if idx>=0:
+            self.history_compare_metric.setCurrentIndex(idx)
+        self.history_compare_metric.currentIndexChanged.connect(self._draw_history_restored)
+        choices.addWidget(self.history_compare_metric)
+        choices.addStretch(1)
+        comparison_layout.addLayout(choices)
+        from desktop_v2 import TrendChart
+        self.history_compare_chart=TrendChart()
+        self.history_compare_chart.setObjectName("historyCompareChart")
+        self.history_compare_chart.setMinimumHeight(230)
+        comparison_layout.addWidget(self.history_compare_chart)
+        interior.layout().addWidget(comparison)
         self.history_metric.currentIndexChanged.connect(self._draw_history_restored)
         self.history_period.currentIndexChanged.connect(self._draw_history_restored)
 
@@ -759,38 +776,62 @@ class RestoredPagesMixin:
     def _refresh_session_insights(self):
         if not self.store.profile or not hasattr(self, "history_session_table"):
             return
-        sessions = session_insights(self.store.rows(limit=5000))
+        self.history_sessions_cache = session_insights(
+            self.store.rows(limit=5000), limit=5000)
+        self._render_session_period()
+
+    def _render_session_period(self):
+        if not hasattr(self, "history_session_period"):
+            return
+        sessions = filter_sessions(
+            getattr(self, "history_sessions_cache", []),
+            self.history_session_period.currentData())
+        self.history_visible_sessions = sessions
         self.history_session_count.setText(
-            (f"{len(sessions)} sessions estimées affichées (au plus 12). "
-             "Intervalle = temps entre les sauvegardes, pas temps réellement joué.")
+            (f"{len(sessions)} sessions issues des relevés • "
+             "Intervalle entre sauvegardes, pas temps réellement joué.")
             if sessions else
-            "Pas de session avec au moins deux sauvegardes rapprochées. "
-            "Aucune progression supplémentaire n'est supposée."
-        )
+            "Aucune session avec deux sauvegardes rapprochées dans cette période.")
         records = session_records(sessions)
         self.history_record_summary.setText(
-            "  •  ".join(
-                f'{r["title"]} : +{txt(r["value"])} ({readable_session(r)})'
-                for r in records
-            ) if records else
-            "Aucun record disponible : deux sauvegardes distinctes sont nécessaires."
-        )
+            " • ".join(
+                f'{item["title"]} : +{txt(item["value"])} ({readable_session(item)})'
+                for item in records
+            ) if records else "Aucun record mesurable pour la période choisie.")
         names = ("kills", "builds", "crafts", "deaths")
         rows = []
         for item in sessions:
-            gain = item["gains"]
-            def show(name):
-                return "—" if name not in gain else "+" + txt(gain[name])
+            gains = item["gains"]
             rows.append((
                 readable_session(item), str(item["samples"]),
                 f'{item["span_minutes"]:.0f} min',
-                *(show(name) for name in names)
+                *("—" if key not in gains else "+" + txt(gains[key])
+                  for key in names)
             ))
+        self.history_session_table.blockSignals(True)
         _fill_table(self.history_session_table, rows)
+        self.history_session_table.clearSelection()
+        self.history_session_table.blockSignals(False)
         for i, item in enumerate(sessions):
             if item["resets"]:
-                self.history_session_table.item(i, 0).setToolTip(
-                    "Compteurs en recul ignorés : " + ", ".join(item["resets"]))
+                cell = self.history_session_table.item(i, 0)
+                if cell is not None:
+                    cell.setToolTip("Compteurs exclus : " + ", ".join(item["resets"]))
+        self.history_session_detail.setText(
+            "Choisis une session pour examiner ses gains et la comparer à la précédente."
+            if sessions else "Aucune session dans cette période.")
+
+    def _show_selected_session(self):
+        if not hasattr(self, "history_session_table"):
+            return
+        index = self.history_session_table.currentRow()
+        sessions = getattr(self, "history_visible_sessions", [])
+        if not 0 <= index < len(sessions):
+            return
+        current = sessions[index]
+        previous = sessions[index+1] if index+1 < len(sessions) else None
+        self.history_session_detail.setText(
+            readable_session(current) + "\n" + session_summary(current, previous))
 
     def _refresh_progress_center(self):
         if not self.store.profile or not hasattr(self,'focus_table'):return
@@ -913,7 +954,8 @@ class RestoredPagesMixin:
         group=self.activity_difficulty.currentData()
         action=self.activity_choice.currentData()
         data=self.store.profile.get("groups",{}).get(group,{}).get(action,{})
-        needle=self.activity_search.text().strip().casefold()
+        needles=search_normalize(self.activity_search.text()).strip().split()
+        minimum=self.activity_min_count.currentData() or 0
         group_filter=self.activity_family.currentData()
         rows=[]
         families={}
@@ -925,9 +967,12 @@ class RestoredPagesMixin:
             if not 0<number<float("inf"):
                 continue
             display=_display_token(key)
-            if needle not in display.casefold() and needle not in key.casefold():
-                continue
             family=activity_category(key)
+            searchable=search_normalize(" ".join((display,key,family)))
+            if any(word not in searchable for word in needles):
+                continue
+            if number < minimum:
+                continue
             if group_filter and family!=group_filter:
                 continue
             rows.append((family,display,number,key))
@@ -1033,6 +1078,15 @@ class RestoredPagesMixin:
             points=[p for p in points if p[0]>=cutoff]
         self.history_chart.set_data(points,
             self.history_metric.currentText()+(' • gains' if gains else ' • total'))
+        if hasattr(self, "history_compare_chart"):
+            compare = history_points(records,
+                self.history_compare_metric.currentData(), group, changes=gains)
+            if period is not None and compare:
+                cutoff = compare[-1][0]-period
+                compare = [p for p in compare if p[0]>=cutoff]
+            self.history_compare_chart.set_data(compare,
+                self.history_compare_metric.currentText()
+                + (' • gains' if gains else ' • total'))
 
     def export_history_csv(self):
         if not self.store.profile:return

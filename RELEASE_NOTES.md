@@ -1,3 +1,15 @@
+# Valheim Stats Tracker V3.0.0 — Activités, historique et performances
+
+- Activités sans pagination : grille Qt virtualisée à défilement continu, cartes illustrées, navigation fiche précédente/suivante et clic ouvrant une fiche puis l'Encyclopédie.
+- Recherche multi-mots tolérante aux accents, aux identifiants et aux familles, avec seuils de quantité.
+- Historique : filtrage par période, fiche de session et comparaison avec la précédente, records mesurés par période.
+- Deux graphiques indépendants sur la même période pour comparer les tendances, sans mélanger des unités incompatibles.
+- Cache borné des relevés SQLite décompressés, avec invalidation après une nouvelle sauvegarde ou un changement de personnage. Les pages secondaires ne sont recalculées qu'à leur ouverture après un nouveau relevé. Diagnostic local consultable dans Réglages.
+- Maintien de tous les succès, personnages, favoris, images Valheim et archives. Les .fch restent en lecture seule.
+- Les intervalles entre sauvegardes ne représentent pas du temps de jeu confirmé.
+
+---
+
 # Valheim Stats Tracker V2.9.0 — Refonte de l'interface
 
 - Navigation organisée en cinq sections lisibles : Aventure, Chroniques, Statistiques, Découverte et Application. Tous les écrans et raccourcis historiques restent associés aux mêmes identifiants internes.

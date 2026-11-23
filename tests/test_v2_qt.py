@@ -102,6 +102,38 @@ class QtWindowTests(unittest.TestCase):
             w.close()
             w.store.db.close()
 
+    def test_v3_secondary_pages_refresh_only_when_opened(self):
+        app=QApplication.instance() or QApplication([])
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            w.set_motion(False)
+            w.store.profile={"name":"Viking fictif"}
+            w._pending_page_refresh={7}
+            with patch.object(w, "_refresh_activity") as refreshed:
+                w.show_page(7)
+                self.assertEqual(refreshed.call_count,1)
+                self.assertNotIn(7,w._pending_page_refresh)
+                w.show_page(7)
+                self.assertEqual(refreshed.call_count,1)
+            w.close()
+            w.store.db.close()
+
+    def test_v3_history_selection_periods_comparison_and_local_diagnostic(self):
+        app=QApplication.instance() or QApplication([])
+        from PySide6.QtWidgets import QComboBox
+        from history_analysis import filter_sessions
+        with tempfile.TemporaryDirectory() as tmp:
+            w=NordicWindow(TrackerStore(tmp))
+            self.assertEqual(w.history_session_period.count(),5)
+            self.assertEqual(w.history_compare_metric.currentData(),"crafted")
+            self.assertGreaterEqual(w.history_compare_chart.minimumHeight(),230)
+            self.assertTrue(hasattr(w,"history_session_detail"))
+            w._refresh_performance_diagnostics()
+            self.assertIn("Cache :",w.performance_diagnostics.text())
+            w.close()
+            w.store.db.close()
+
     def test_session_timeline_and_records_are_present(self):
         app=QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as tmp:
@@ -471,35 +503,42 @@ class QtWindowTests(unittest.TestCase):
             self.assertEqual(_display_token("$item_raspberry"),"Framboise")
             self.assertEqual(_display_token("$item_mushroom"),"Champignon")
             self.assertEqual(len(w.activity_rows),25)
-            self.assertEqual(w.activity_page_number,0)
-            self.assertEqual(len(w.activity_tiles),16)
-            self.assertEqual(sum(not tile[0].isHidden()
-                                 for tile in w.activity_tiles),16)
-            self.assertTrue(w.activity_next.isEnabled())
-            self.assertFalse(w.activity_prev.isEnabled())
+            self.assertEqual(w.activity_gallery.model_data.rowCount(),25)
+            self.assertEqual(w.activity_gallery.model_data.rows[0][2],25.0)
+            self.assertEqual(w.activity_min_count.count(),4)
+            self.assertEqual(w.activity_gallery.objectName(),"activityContinuousGallery")
+            self.assertFalse(hasattr(w,"activity_prev"))
+            self.assertFalse(hasattr(w,"activity_next"))
             self.assertTrue(w.activity_technical_content.isHidden())
             self.assertEqual(w.activity_items.rowCount(),25)
             self.assertEqual(w.activity_metrics["types"].text(),"25")
             self.assertEqual(len(w.activity_family_bars),5)
             self.assertEqual(w.activity_family_bars[0][1].text(),"Bois et arbres")
             self.assertEqual(w.activity_family_bars[0][2].value(),1000)
+            from PySide6.QtCore import Qt
+            from PySide6.QtWidgets import QListView
+            self.assertEqual(w.activity_gallery.layoutMode(),QListView.LayoutMode.Batched)
+            self.assertEqual(
+                w.activity_gallery.verticalScrollMode(),
+                QListView.ScrollMode.ScrollPerPixel)
+            index=w.activity_gallery.model_data.index(0)
+            w.activity_gallery._open(index)
+            self.assertTrue(w.activity_open_encyclopedia.isEnabled())
+            self.assertIn("wood",w.activity_detail.text().casefold())
+            first_token=w.activity_selected_token
+            self.assertTrue(w.activity_next_card.isEnabled())
+            w.activity_next_card.click()
+            self.assertNotEqual(w.activity_selected_token,first_token)
+            self.assertTrue(w.activity_previous_card.isEnabled())
+            w.activity_previous_card.click()
+            self.assertEqual(w.activity_selected_token,first_token)
+            # Les 25 cartes restent dans un seul modèle, sans changement de page.
             w.resize(1100,800)
             app.processEvents()
-            self.assertEqual(w.activity_columns,2)
+            self.assertEqual(w.activity_gallery.model_data.rowCount(),25)
             w.resize(1650,940)
             app.processEvents()
-            self.assertEqual(w.activity_columns,4)
-            w.activity_next.click()
-            app.processEvents()
-            self.assertEqual(w.activity_page_number,1)
-            self.assertEqual(sum(not tile[0].isHidden()
-                                 for tile in w.activity_tiles),9)
-            # Le passage à la dernière page ne doit pas générer
-            # d'énorme espace vide au-dessus du titre de la galerie.
-            gallery_heading=w.activity_gallery_panel.layout().itemAt(0).widget()
-            self.assertLess(gallery_heading.geometry().y(),90)
-            self.assertTrue(w.activity_prev.isEnabled())
-            self.assertFalse(w.activity_next.isEnabled())
+            self.assertEqual(w.activity_gallery.model_data.rowCount(),25)
             w.activity_sort.setCurrentText("Les moins nombreux")
             self.assertEqual(w.activity_page_number,0)
             self.assertEqual(w.activity_rows[0][2],1.0)

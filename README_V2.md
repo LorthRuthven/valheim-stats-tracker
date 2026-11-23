@@ -1,4 +1,4 @@
-# Valheim Stats Tracker V2.9.0
+# Valheim Stats Tracker V3.0.0
 
 **Windows 10/11 :** dans la V2.5.2 ou une version ultérieure, choisir **Réglages → Mises à jour Windows → Vérifier les mises à jour**. L'application vérifie l'archive officielle GitHub Releases et son SHA-256, installe la nouvelle version dans un dossier séparé après contrôle de la protection antivirus Windows, puis propose de redémarrer.
 
