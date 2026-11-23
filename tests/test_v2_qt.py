@@ -59,7 +59,8 @@ class QtWindowTests(unittest.TestCase):
             w=NordicWindow(TrackerStore(tmp))
             self.assertTrue(w.dash_clock_timer.isActive())
             self.assertEqual(w.dash_clock_timer.interval(), 1000)
-            self.assertRegex(w.dash_clock_time.text(), r'^\\d{2}:\\d{2}:\\d{2}
+            self.assertEqual(len(w.dash_clock_time.text().split(':')), 3)
+            self.assertTrue(all(part.isdigit() for part in w.dash_clock_time.text().split(':')))
             self.assertTrue(w.dash_clock_date.text())
             self.assertEqual(w.dash_priority.objectName(), 'dashboardPriority')
             self.assertTrue(w.dash_priority.alternatingRowColors())
